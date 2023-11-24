@@ -17,6 +17,7 @@ ENV/
 __pycache__/
 build/
 data/
+creds/
 db/
 develop-eggs/
 dist/

@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  actuarial-api:
+    build: .
+    ports:
+      - 1001:1000
+    command: uvicorn src.main:app --host 0.0.0.0 --port 1000 --reload --loop asyncio

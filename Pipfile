@@ -1,0 +1,34 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+python-dotenv = "*"
+typing-extensions = "*"
+typing = "*"
+uvicorn = "*"
+aiohttp = "*"
+asyncio = "*"
+numpy = "*"
+pandas = "*"
+aiometer = "*"
+dlt = "*"
+google-cloud-bigquery-storage = "*"
+pydantic = "*"
+pyyaml = "*"
+isort = "*"
+dbt-bigquery = "*"
+pandas-gbq = "*"
+jinja2 = "*"
+google = "*"
+
+[dev-packages]
+pipenv = "*"
+black = "*" 
+pyright = "*"
+pydocstyle = "*"
+pytest = "*"
+
+[requires]
+python_version = "3.11.4"

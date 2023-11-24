@@ -1,0 +1,3 @@
+version: 1
+dbt-project-dir: src/connext_dbt
+disable-tracking: true

@@ -6,8 +6,10 @@ WITH connext_tokens AS (
     ct.token_address,
     ct.token_name,
     ct.is_xerc20
-  FROM `mainnet-bigq.public.connext_tokens` ct
+  FROM `mainnet-bigq.stage.connext_tokens` ct
 )
+
+-- Adding BNB decimal asset changes to USD values only
 
 , semi_ready AS (
 SELECT
@@ -20,7 +22,7 @@ SELECT
   tiu.origin_sender,
   tiu.bridged_amt,
   -- origin
-  cc_origin.is_xerc20 AS is_origin_asset_xerc20,
+  CAST(cc_origin.is_xerc20 AS BOOL) AS is_origin_asset_xerc20,
   coalesce(cc_origin.token_name, tiu.origin_transacting_asset) AS origin_asset,
   tiu.origin_transacting_amount,
 

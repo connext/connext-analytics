@@ -10,7 +10,6 @@ sr.destination_chain,
 sr.origin_asset,
 sr.destination_asset,
 COUNT(DISTINCT sr.transfer_id) AS transfers,
-COUNT(DISTINCT sr.xcall_caller) AS callers,
 SUM(sr.usd_bridged_amount) AS usd_bridged_amount
 -- FROM `mainnet-bigq`.`stage`.`stg_transfers_raw_usd` sr
 FROM {{ref( "connext_dbt", "stg_transfers_raw_usd")}} sr

@@ -4,7 +4,7 @@ connext_dbt:
       dataset: public
       job_execution_timeout_seconds: 300
       job_retries: 1
-      keyfile: creds/mainnet-bigq-b32efe721225.json
+      keyfile: creds/mainnet-bigq-ed7013889f29.json
       location: US
       method: service-account
       priority: interactive

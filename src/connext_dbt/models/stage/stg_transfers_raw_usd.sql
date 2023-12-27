@@ -106,8 +106,8 @@ SELECT
   sr.xcall_timestamp,
   sr.execute_timestamp,
   sr.reconcile_timestamp,
-  sr.origin_chain,
-  sr.destination_chain,
+  sr.origin_domain,
+  sr.destination_domain,
   sr.origin_chain_name,
   sr.destination_chain_name,
   sr.caller_type,
@@ -117,6 +117,12 @@ SELECT
     WHEN (sr.contract_author = "LiFi") OR (sr.contract_author = "Socket") THEN True
     ELSE False
   END AS lifi_socket_indicator,
+  CASE
+    WHEN (STARTS_WITH(sr.origin_asset, 'next') OR STARTS_WITH(sr.destination_asset, 'next')) THEN "nextAsset"
+    WHEN sr.contract_author = "LiFi" THEN "LiFi"
+    WHEN sr.contract_author = "Socket" THEN "Socket"
+  ELSE "Bridge - Other"
+  END AS user_group,
   sr.message_status,
   sr.status,
   sr.error_message,

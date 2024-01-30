@@ -22,6 +22,8 @@ dbt-bigquery = "*"
 pandas-gbq = "*"
 jinja2 = "*"
 google = "*"
+great-expectations = "*"
+httpx = "*"
 
 [dev-packages]
 pipenv = "*"

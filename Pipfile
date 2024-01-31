@@ -4,33 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-python-dotenv = "*"
-typing-extensions = "*"
-typing = "*"
-uvicorn = "*"
-aiohttp = "*"
 asyncio = "*"
+httpx = "*"
 numpy = "*"
 pandas = "*"
-aiometer = "*"
-dlt = "*"
-google-cloud-bigquery-storage = "*"
-pydantic = "*"
-pyyaml = "*"
-isort = "*"
-dbt-bigquery = "*"
 pandas-gbq = "*"
-jinja2 = "*"
-google = "*"
-great-expectations = "*"
-httpx = "*"
+fastapi = "*"
+uvicorn = "*"
+nest-asyncio = "*"
 
 [dev-packages]
-pipenv = "*"
-black = "*" 
-pyright = "*"
-pydocstyle = "*"
-pytest = "*"
+black="*"
 
 [requires]
 python_version = "3.11.4"

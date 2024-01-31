@@ -1,6 +1,7 @@
 import asyncio
 import httpx
 import pandas as pd
+import pandas_gbq
 import logging
 import json
 from itertools import product
@@ -16,6 +17,7 @@ logging.basicConfig(
 )
 
 base_url = "https://li.quest/v1"
+project_id = "mainnet-bigq"
 
 
 async def get_data(ext_url: str):
@@ -39,9 +41,17 @@ async def all_chains(ext_url="/chains"):
     if result is not None:
         result_j = json.loads(result)
         df = pd.json_normalize(result_j["chains"])
-        df["tokenlistUrl"] = df["tokenlistUrl"].fillna("")
-        df["faucetUrls"] = df["faucetUrls"].fillna("")
-        logging.info(f"The dataframe we pulled, shape: {df.shape}")
+        df = df.rename(columns=lambda x: x.replace(".", "_"))
+        df["faucetUrls"] = df["faucetUrls"].apply(
+            lambda x: x[0] if type(x) == list else x
+        )
+        df["metamask_blockExplorerUrls"] = df["metamask_blockExplorerUrls"].apply(
+            lambda x: x[0] if type(x) == list else x
+        )
+        df["metamask_rpcUrls"] = df["metamask_rpcUrls"].apply(
+            lambda x: x[0] if type(x) == list else x
+        )
+
         return df
 
 
@@ -87,7 +97,7 @@ async def get_tokens(ext_url: str = "/tokens"):
                     tokens_df = pd.DataFrame(all_tokens)
             return tokens_df
     except httpx.HTTPStatusError as e:
-        print(f"Error: {e}")
+        logging.info(f"Error: {e}")
         return None
 
 
@@ -113,7 +123,7 @@ async def get_tools(ext_url: str = "/tools"):
                 )
 
     except httpx.HTTPStatusError as e:
-        print(f"Error: {e}")
+        logging.info(f"Error: {e}")
         return None
 
 
@@ -221,19 +231,24 @@ async def get_routes(sem, url, payload):
     try:
         async with sem:
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload)
+                headers = {
+                    "accept": "application/json",
+                    "content-type": "application/json",
+                }
+                response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
-                pprint(response.status_code)
                 return response.json()
-    except httpx.HTTPError as e:
-        print(f"HTTP error occurred for {url}: {e}")
+
+    except httpx.HTTPStatusError as exc:
+        logging.info(f"Request failed with status code {exc.response.status_code}")
+        logging.info(f"Error message: {exc}")
         return None
-    except Exception as e:
-        print(f"An unexpected error occurred for {url}: {e}")
+    except Exception as exc:
+        logging.info(f"An unexpected error occurred: {str(exc)}")
         return None
 
 
-async def main_routes(payloads, max_concurrency=20, ext_url="/advanced/routes"):
+async def main_routes(payloads, max_concurrency=10, ext_url="/advanced/routes"):
     url = base_url + ext_url
     sem = Semaphore(max_concurrency)
     tasks = []
@@ -241,13 +256,74 @@ async def main_routes(payloads, max_concurrency=20, ext_url="/advanced/routes"):
         task = get_routes(sem, url, payload)
         tasks.append(task)
     responses = await asyncio.gather(*tasks)
-    return responses
+    filtered_responses = [r for r in responses if r is not None]
+
+    normalized_data_df = pd.DataFrame()
+    for r in filtered_responses:
+        routes = r["routes"]
+        for route in routes:
+            # Normalize the steps for the current route
+            steps_df = pd.json_normalize(route, record_path="steps")
+
+            # Initialize empty lists to store fees and gas costs data
+            fees_data = []
+            gas_costs_data = []
+
+            # Loop through each step to extract and normalize fees and gas costs
+            for step in route["steps"]:
+                # Normalize fees and append to the fees_data list
+                if step["estimate"]["feeCosts"]:
+                    fees = pd.json_normalize(step["estimate"]["feeCosts"])
+                    fees_data.append(fees)
+
+                # Normalize gas costs and append to the gas_costs_data list
+                if step["estimate"]["gasCosts"]:
+                    gas_costs = pd.json_normalize(step["estimate"]["gasCosts"])
+                    gas_costs_data.append(gas_costs)
+
+            # Concatenate all fees and gas costs data
+            fees_df = pd.concat(fees_data, ignore_index=True)
+            gas_costs_df = pd.concat(gas_costs_data, ignore_index=True)
+
+            # Extract the route metadata (excluding the 'steps')
+            metadata = {k: v for k, v in route.items() if k != "steps"}
+
+            # Normalize the metadata
+            metadata_df = pd.json_normalize(metadata)
+
+            # Add a prefix to each metadata column name to prevent conflicts
+            metadata_df.columns = ["route_" + col for col in metadata_df.columns]
+
+            # Repeat the metadata for each step in the current route
+            repeated_metadata_df = pd.concat(
+                [metadata_df] * len(steps_df), ignore_index=True
+            )
+
+            # Concatenate the steps DataFrame with the repeated metadata DataFrame
+            enriched_steps_df = pd.concat([steps_df, repeated_metadata_df], axis=1)
+
+            # Concatenate the fees and gas costs DataFrames with the enriched steps DataFrame
+            enriched_df = pd.concat([enriched_steps_df, fees_df, gas_costs_df], axis=1)
+
+            # Append the enriched DataFrame to the normalized data DataFrame
+            normalized_data_df = pd.concat(
+                [normalized_data_df, enriched_df], ignore_index=True
+            )
+
+    return normalized_data_df
+
 
 
 if __name__ == "__main__":
     # 1. get all chains:
     chains_df = asyncio.run(all_chains())
-    # pprint(chains_df.dtypes)
+    pandas_gbq.to_gbq(
+        dataframe=chains_df,
+        project_id=project_id,
+        destination_table="stage.source_lifi__chains",
+        if_exists="replace",
+    )
+
 
     # 2. connections
     # connections = asyncio.run(get_connections())
@@ -260,7 +336,6 @@ if __name__ == "__main__":
     # Get Bridges
 
     tools_df = asyncio.run(get_tools())
-    # pprint(tools_df.dtypes)
 
     # 3. Routes
     # 3.1 get all pathways
@@ -272,4 +347,3 @@ if __name__ == "__main__":
     )
 
     routes = asyncio.run(main_routes(payloads=pathways))
-    pprint(len(routes))

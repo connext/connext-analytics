@@ -1,9 +1,11 @@
+import json
 import nest_asyncio
 import asyncio
 import pandas_gbq
+import pandas as pd
 from fastapi import FastAPI
 from src.integrations.lifi import (
-    project_id,
+    PROJECT_ID,
     get_connections,
     all_chains,
     get_tokens,
@@ -11,6 +13,7 @@ from src.integrations.lifi import (
     generate_pathways,
     main_routes,
 )
+from src.integrations.utilities import upload_json_to_gcs
 
 nest_asyncio.apply()
 
@@ -30,7 +33,7 @@ def lifi_chain_pipeline():
     chains_df = asyncio.run(all_chains())
     pandas_gbq.to_gbq(
         dataframe=chains_df,
-        project_id=project_id,
+        project_id=PROJECT_ID,
         destination_table="stage.source_lifi__chains",
         if_exists="replace",
     )
@@ -43,7 +46,7 @@ def lifi_connections_pipeline():
     connections = asyncio.run(get_connections())
     pandas_gbq.to_gbq(
         dataframe=connections,
-        project_id=project_id,
+        project_id=PROJECT_ID,
         destination_table="stage.source_lifi__connections",
         if_exists="replace",
         chunksize=100000,
@@ -57,7 +60,7 @@ def lifi_tokens_pipeline():
     tokens = asyncio.run(get_tokens())
     pandas_gbq.to_gbq(
         dataframe=tokens,
-        project_id=project_id,
+        project_id=PROJECT_ID,
         destination_table="stage.source_lifi__tokens",
         if_exists="replace",
         chunksize=100000,
@@ -71,7 +74,7 @@ def lifi_tools_pipeline():
     tools = asyncio.run(get_tools())
     pandas_gbq.to_gbq(
         dataframe=tools,
-        project_id=project_id,
+        project_id=PROJECT_ID,
         destination_table="stage.source_lifi__tools",
         if_exists="replace",
         chunksize=100000,
@@ -90,16 +93,28 @@ def lifi_routes_pipeline():
     pathways = generate_pathways(
         connext_chains_ids=tools_df,
         chains=chains_df,
-        token_df=tokens_df,
+        tokens_df=tokens_df,
         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
     )
-    routes = asyncio.run(main_routes(payloads=pathways))
+    pathways_df = pd.DataFrame(pathways).astype(str)
 
     pandas_gbq.to_gbq(
-        dataframe=routes,
-        project_id=project_id,
-        destination_table="stage.source_lifi__routes",
+        dataframe=pathways_df,
+        project_id=PROJECT_ID,
+        destination_table="stage.source_lifi__pathways",
         if_exists="replace",
         chunksize=100000,
     )
+
+    routes = asyncio.run(main_routes(payloads=pathways))
+    upload_json_to_gcs(routes, "lifi_routes")
+
+    # pandas_gbq.to_gbq(
+    #     dataframe=routes,
+    #     project_id=PROJECT_ID,
+    
+    #     destination_table="stage.source_lifi__routes",
+    #     if_exists="replace",
+    #     chunksize=100000,
+    # )
     return {"message": "lifi routes pipeline finished"}

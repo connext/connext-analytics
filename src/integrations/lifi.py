@@ -9,22 +9,30 @@ from pprint import pprint
 from datetime import datetime
 import os
 from asyncio import Semaphore
+from src.integrations.utilities import get_secret_gcp_secrete_manager
 
+
+BASE_URL = "https://li.quest/v1"
+PROJECT_ID = "mainnet-bigq"
+source_lifi__api_key = get_secret_gcp_secrete_manager(
+    secret_name="source_lifi__api_key"
+)
+HEADERS = {
+    "accept": "application/json",
+    "x-lifi-api-key": f"{source_lifi__api_key}",
+}
 
 # Configure the logging settings
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-base_url = "https://li.quest/v1"
-project_id = "mainnet-bigq"
-
 
 async def get_data(ext_url: str):
-    url = base_url + ext_url
+    url = BASE_URL + ext_url
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
+            response = await client.get(url, headers=HEADERS)
             response.raise_for_status()
             return response.text
     except httpx.HTTPError as e:
@@ -67,13 +75,13 @@ async def connections_pd_explode(df):
 
 
 async def get_connections(ext_url: str = "/connections"):
-    url = base_url + ext_url
+    url = BASE_URL + ext_url
     bridges = "amarok"
     params = {"allowBridges": bridges}
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params)
+            response = await client.get(url, params=params, headers=HEADERS)
             response.raise_for_status()
             connections_df = pd.json_normalize(response.json()["connections"])
             return await connections_pd_explode(df=connections_df)
@@ -84,10 +92,10 @@ async def get_connections(ext_url: str = "/connections"):
 
 
 async def get_tokens(ext_url: str = "/tokens"):
-    url = base_url + ext_url
+    url = BASE_URL + ext_url
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
+            response = await client.get(url, headers=HEADERS)
             response.raise_for_status()  # Raise an exception for HTTP errors (e.g., 404, 500)
             tokens_data = response.json()
             if tokens_data:
@@ -102,11 +110,11 @@ async def get_tokens(ext_url: str = "/tokens"):
 
 
 async def get_tools(ext_url: str = "/tools"):
-    url = base_url + ext_url
+    url = BASE_URL + ext_url
 
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
+            response = await client.get(url, headers=HEADERS)
             response.raise_for_status()
             tools_data = response.json()
             if tools_data:
@@ -131,7 +139,7 @@ def generate_pathways(
     connext_chains_ids: pd.DataFrame,
     chains: pd.DataFrame,
     tokens: list,
-    token_df: pd.DataFrame,
+    tokens_df: pd.DataFrame,
 ):
     """generate json inputs from the chains data to query routes"""
 
@@ -145,7 +153,7 @@ def generate_pathways(
 
     pathways_df = pd.merge(
         pathways_df,
-        chains_df[["id", "key", "name"]],
+        chains[["id", "key", "name"]],
         how="outer",
         left_on="toChainId",
         right_on="id",
@@ -204,7 +212,7 @@ def generate_pathways(
         inplace=True,
     )
 
-    pathways = pathways_df.to_dict(orient="records")
+    pathways = pathways_df.drop_duplicates().to_dict(orient="records")
 
     multiple_pathways = []
     for p in pathways:
@@ -213,7 +221,8 @@ def generate_pathways(
                 "allowDestinationCall": True,
                 "fromChainId": p["fromChainId"],
                 "fromTokenAddress": p["fromTokenAddress"],
-                "fromAddress": p["fromTokenAddress"],
+                # "fromAddress": p["fromTokenAddress"],
+                "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
                 "toChainId": p["toChainId"],
                 "toTokenAddress": p["toTokenAddress"],
             }
@@ -223,19 +232,17 @@ def generate_pathways(
             )
 
             multiple_pathways.append(pathway)
-
-    return multiple_pathways
+    df_multiple_pathways = pd.DataFrame(multiple_pathways)
+    df_multiple_pathways = df_multiple_pathways.drop_duplicates()
+    logging.info(f"Number of pathways: {df_multiple_pathways.shape}")
+    return df_multiple_pathways.to_dict("records")
 
 
 async def get_routes(sem, url, payload):
     try:
         async with sem:
             async with httpx.AsyncClient() as client:
-                headers = {
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                }
-                response = await client.post(url, json=payload, headers=headers)
+                response = await client.post(url, json=payload, headers=HEADERS)
                 response.raise_for_status()
                 return response.json()
 
@@ -249,7 +256,7 @@ async def get_routes(sem, url, payload):
 
 
 async def main_routes(payloads, max_concurrency=10, ext_url="/advanced/routes"):
-    url = base_url + ext_url
+    url = BASE_URL + ext_url
     sem = Semaphore(max_concurrency)
     tasks = []
     for payload in payloads:
@@ -257,93 +264,96 @@ async def main_routes(payloads, max_concurrency=10, ext_url="/advanced/routes"):
         tasks.append(task)
     responses = await asyncio.gather(*tasks)
     filtered_responses = [r for r in responses if r is not None]
+    return filtered_responses
 
-    normalized_data_df = pd.DataFrame()
-    for r in filtered_responses:
-        routes = r["routes"]
-        for route in routes:
-            # Normalize the steps for the current route
-            steps_df = pd.json_normalize(route, record_path="steps")
+    # with open("data.json", "w") as f:
+    #     json.dump(filtered_responses, f, indent=4)
 
-            # Initialize empty lists to store fees and gas costs data
-            fees_data = []
-            gas_costs_data = []
+    # normalized_data_df = pd.DataFrame()
+    # for r in filtered_responses:
+    #     routes = r["routes"]
+    #     for route in routes:
+    #         # Normalize the steps for the current route
+    #         steps_df = pd.json_normalize(route, record_path="steps")
 
-            # Loop through each step to extract and normalize fees and gas costs
-            for step in route["steps"]:
-                # Normalize fees and append to the fees_data list
-                if step["estimate"]["feeCosts"]:
-                    fees = pd.json_normalize(step["estimate"]["feeCosts"])
-                    fees_data.append(fees)
+    #         # Initialize empty lists to store fees and gas costs data
+    #         fees_data = []
+    #         gas_costs_data = []
 
-                # Normalize gas costs and append to the gas_costs_data list
-                if step["estimate"]["gasCosts"]:
-                    gas_costs = pd.json_normalize(step["estimate"]["gasCosts"])
-                    gas_costs_data.append(gas_costs)
+    #         # Loop through each step to extract and normalize fees and gas costs
+    #         for step in route["steps"]:
+    #             # Normalize fees and append to the fees_data list
+    #             if step["estimate"]["feeCosts"]:
+    #                 fees = pd.json_normalize(step["estimate"]["feeCosts"])
+    #                 fees_data.append(fees)
 
-            # Concatenate all fees and gas costs data
-            fees_df = pd.concat(fees_data, ignore_index=True)
-            gas_costs_df = pd.concat(gas_costs_data, ignore_index=True)
+    #             # Normalize gas costs and append to the gas_costs_data list
+    #             if step["estimate"]["gasCosts"]:
+    #                 gas_costs = pd.json_normalize(step["estimate"]["gasCosts"])
+    #                 gas_costs_data.append(gas_costs)
 
-            # Extract the route metadata (excluding the 'steps')
-            metadata = {k: v for k, v in route.items() if k != "steps"}
+    #         # Concatenate all fees and gas costs data
+    #         fees_df = pd.concat(fees_data, ignore_index=True)
+    #         gas_costs_df = pd.concat(gas_costs_data, ignore_index=True)
 
-            # Normalize the metadata
-            metadata_df = pd.json_normalize(metadata)
+    #         # Extract the route metadata (excluding the 'steps')
+    #         metadata = {k: v for k, v in route.items() if k != "steps"}
 
-            # Add a prefix to each metadata column name to prevent conflicts
-            metadata_df.columns = ["route_" + col for col in metadata_df.columns]
+    #         # Normalize the metadata
+    #         metadata_df = pd.json_normalize(metadata)
 
-            # Repeat the metadata for each step in the current route
-            repeated_metadata_df = pd.concat(
-                [metadata_df] * len(steps_df), ignore_index=True
-            )
+    #         # Add a prefix to each metadata column name to prevent conflicts
+    #         metadata_df.columns = ["route_" + col for col in metadata_df.columns]
 
-            # Concatenate the steps DataFrame with the repeated metadata DataFrame
-            enriched_steps_df = pd.concat([steps_df, repeated_metadata_df], axis=1)
+    #         # Repeat the metadata for each step in the current route
+    #         repeated_metadata_df = pd.concat(
+    #             [metadata_df] * len(steps_df), ignore_index=True
+    #         )
 
-            # Concatenate the fees and gas costs DataFrames with the enriched steps DataFrame
-            enriched_df = pd.concat([enriched_steps_df, fees_df, gas_costs_df], axis=1)
+    #         # Concatenate the steps DataFrame with the repeated metadata DataFrame
+    #         enriched_steps_df = pd.concat([steps_df, repeated_metadata_df], axis=1)
 
-            # Append the enriched DataFrame to the normalized data DataFrame
-            normalized_data_df = pd.concat(
-                [normalized_data_df, enriched_df], ignore_index=True
-            )
+    #         # Concatenate the fees and gas costs DataFrames with the enriched steps DataFrame
+    #         enriched_df = pd.concat([enriched_steps_df, fees_df, gas_costs_df], axis=1)
 
-    return normalized_data_df
+    #         # Append the enriched DataFrame to the normalized data DataFrame
+    #         normalized_data_df = pd.concat(
+    #             [normalized_data_df, enriched_df], ignore_index=True
+    #         )
 
-
-
-if __name__ == "__main__":
-    # 1. get all chains:
-    chains_df = asyncio.run(all_chains())
-    pandas_gbq.to_gbq(
-        dataframe=chains_df,
-        project_id=project_id,
-        destination_table="stage.source_lifi__chains",
-        if_exists="replace",
-    )
+    # return normalized_data_df
 
 
-    # 2. connections
-    # connections = asyncio.run(get_connections())
-    # print(connections.drop_duplicates().shape)
+# if __name__ == "__main__":
+#     # 1. get all chains:
+#     chains_df = asyncio.run(all_chains())
+#     pandas_gbq.to_gbq(
+#         dataframe=chains_df,
+#         project_id=project_id,
+#         destination_table="stage.source_lifi__chains",
+#         if_exists="replace",
+#     )
 
-    # Get tokens
-    tokens_df = asyncio.run(get_tokens())
-    # pprint(tokens_df)
 
-    # Get Bridges
+#     # 2. connections
+#     # connections = asyncio.run(get_connections())
+#     # print(connections.drop_duplicates().shape)
 
-    tools_df = asyncio.run(get_tools())
+#     # Get tokens
+#     tokens_df = asyncio.run(get_tokens())
+#     # pprint(tokens_df)
 
-    # 3. Routes
-    # 3.1 get all pathways
-    pathways = generate_pathways(
-        connext_chains_ids=tools_df,
-        chains=chains_df,
-        token_df=tokens_df,
-        tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
-    )
+#     # Get Bridges
 
-    routes = asyncio.run(main_routes(payloads=pathways))
+#     tools_df = asyncio.run(get_tools())
+
+#     # 3. Routes
+#     # 3.1 get all pathways
+#     pathways = generate_pathways(
+#         connext_chains_ids=tools_df,
+#         chains=chains_df,
+#         token_df=tokens_df,
+#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
+#     )
+
+#     routes = asyncio.run(main_routes(payloads=pathways))

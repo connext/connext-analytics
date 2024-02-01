@@ -12,6 +12,9 @@ pandas-gbq = "*"
 fastapi = "*"
 uvicorn = "*"
 nest-asyncio = "*"
+google-cloud-bigquery = "*"
+google-cloud-secret-manager = "*"
+google-cloud-storage = "*"
 
 [dev-packages]
 black="*"

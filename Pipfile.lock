@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "023db263286728b4bdf1b4385cfb380df7b379b8a0537c7dacc05ec8c4f79bc7"
+            "sha256": "b9069e66264b2186cb217d0ebbbd4c46d697318c38ad3010a634ea4d0b679990"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -207,7 +207,7 @@
                 "sha256:0ae07b90d5052ba3a296a2210a2144c28469300d71f6f455881f94c2df543057",
                 "sha256:7a9a92c7b1f6a6bf8b4c05c150e49f4ad1a03dd591dbd4522381b3f23bf07c73"
             ],
-            "markers": "python_version >= '3.7'",
+            "index": "pypi",
             "version": "==3.17.1"
         },
         "google-cloud-bigquery-storage": {
@@ -225,6 +225,22 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==2.4.1"
+        },
+        "google-cloud-secret-manager": {
+            "hashes": [
+                "sha256:2bf58be569710773f0757d7a788e2860767aa1c148a5255e53b228da3fbcf446",
+                "sha256:8254e2960c06a8dc91aeac3c894afba0893a674582f0e0ecfc22f894e6173c2f"
+            ],
+            "index": "pypi",
+            "version": "==2.17.0"
+        },
+        "google-cloud-storage": {
+            "hashes": [
+                "sha256:2d23fcf59b55e7b45336729c148bb1c464468c69d5efbaee30f7201dd90eb97e",
+                "sha256:8641243bbf2a2042c16a6399551fbb13f062cbc9a2de38d6c0bb5426962e9dbd"
+            ],
+            "index": "pypi",
+            "version": "==2.14.0"
         },
         "google-crc32c": {
             "hashes": [
@@ -315,6 +331,14 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==1.62.0"
+        },
+        "grpc-google-iam-v1": {
+            "hashes": [
+                "sha256:53902e2af7de8df8c1bd91373d9be55b0743ec267a7428ea638db3775becae89",
+                "sha256:fad318608b9e093258fbf12529180f400d1c44453698a33509cc6ecf005b294e"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==0.13.0"
         },
         "grpcio": {
             "hashes": [

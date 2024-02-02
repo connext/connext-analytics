@@ -1,22 +1,20 @@
 import asyncio
 import httpx
 import pandas as pd
-import pandas_gbq
 import logging
 import json
 from itertools import product
 from pprint import pprint
 from datetime import datetime
 import os
+import dotenv
 from asyncio import Semaphore
 from src.integrations.utilities import get_secret_gcp_secrete_manager
 
-
+dotenv.load_dotenv()
 BASE_URL = "https://li.quest/v1"
 PROJECT_ID = "mainnet-bigq"
-source_lifi__api_key = get_secret_gcp_secrete_manager(
-    secret_name="source_lifi__api_key"
-)
+source_lifi__api_key = os.getenv("source_lifi__api_key")
 HEADERS = {
     "accept": "application/json",
     "x-lifi-api-key": f"{source_lifi__api_key}",
@@ -32,8 +30,11 @@ async def get_data(ext_url: str):
     url = BASE_URL + ext_url
     try:
         async with httpx.AsyncClient() as client:
+            print(f"This is a header: {HEADERS}")
             response = await client.get(url, headers=HEADERS)
+            print(f"This is a header: {response.headers}")
             response.raise_for_status()
+            logging.info("call successfull!")
             return response.text
     except httpx.HTTPError as e:
         logging.info(f"HTTP error occurred: {e}")
@@ -46,6 +47,7 @@ async def get_data(ext_url: str):
 # Handle JSON to Dataframe aswell as Great Expectations beforeHand
 async def all_chains(ext_url="/chains"):
     result = await get_data(ext_url=ext_url)
+    print(len(result))
     if result is not None:
         result_j = json.loads(result)
         df = pd.json_normalize(result_j["chains"])
@@ -322,6 +324,18 @@ async def main_routes(payloads, max_concurrency=10, ext_url="/advanced/routes"):
     #         )
 
     # return normalized_data_df
+
+
+async def lifi_routes_cs_2_bq():
+    "Pull json files from cs"
+
+
+
+
+
+
+
+
 
 
 # if __name__ == "__main__":

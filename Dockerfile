@@ -12,8 +12,8 @@ COPY Pipfile.lock Pipfile ./
 RUN pip install pipenv
 RUN pipenv install --dev --system --deploy
 
-EXPOSE 80
+EXPOSE 8080
 
 COPY . /app
 
-CMD ["uvicorn", "src.pipelines:app", "--host", "0.0.0.0", "--port", "80", "--reload", "--interface", "auto"]
+CMD ["uvicorn", "src.pipelines:app", "--host", "0.0.0.0", "--port", "8080", "--reload", "--interface", "auto"]

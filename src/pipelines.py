@@ -1,4 +1,6 @@
+import os
 import json
+import dotenv
 import nest_asyncio
 import asyncio
 import pandas_gbq
@@ -6,6 +8,7 @@ import pandas as pd
 from fastapi import FastAPI
 from src.integrations.lifi import (
     PROJECT_ID,
+    source_lifi__api_key,
     get_connections,
     all_chains,
     get_tokens,
@@ -13,13 +16,16 @@ from src.integrations.lifi import (
     generate_pathways,
     main_routes,
 )
+from google.oauth2 import service_account
 from src.integrations.utilities import upload_json_to_gcs
 
+dotenv.load_dotenv()
 nest_asyncio.apply()
 
 app = FastAPI(
     title="LiFi Integration", description="Pipline that run LIFI integrations"
 )
+BQ_creds = json.loads(os.getenv("BQ_creds"))
 
 
 @app.get("/")
@@ -31,11 +37,14 @@ def start():
 def lifi_chain_pipeline():
     print("start")
     chains_df = asyncio.run(all_chains())
+    print("data pulled successfully")
+    print(f"size of data: {chains_df.shape} and head: {chains_df.head()}")
     pandas_gbq.to_gbq(
         dataframe=chains_df,
         project_id=PROJECT_ID,
         destination_table="stage.source_lifi__chains",
         if_exists="replace",
+        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi chains pipeline finished"}
 
@@ -50,6 +59,7 @@ def lifi_connections_pipeline():
         destination_table="stage.source_lifi__connections",
         if_exists="replace",
         chunksize=100000,
+        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi connections pipeline finished"}
 
@@ -58,12 +68,15 @@ def lifi_connections_pipeline():
 def lifi_tokens_pipeline():
     print("start")
     tokens = asyncio.run(get_tokens())
+    print("data pulled successfully")
+    print(f"size of data: {tokens.shape} and head: {tokens.head()}")
     pandas_gbq.to_gbq(
         dataframe=tokens,
         project_id=PROJECT_ID,
         destination_table="stage.source_lifi__tokens",
         if_exists="replace",
         chunksize=100000,
+        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi tokens pipeline finished"}
 
@@ -78,6 +91,7 @@ def lifi_tools_pipeline():
         destination_table="stage.source_lifi__tools",
         if_exists="replace",
         chunksize=100000,
+        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi tools pipeline finished"}
 
@@ -104,15 +118,16 @@ def lifi_routes_pipeline():
         destination_table="stage.source_lifi__pathways",
         if_exists="replace",
         chunksize=100000,
+        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
-
+    
     routes = asyncio.run(main_routes(payloads=pathways))
     upload_json_to_gcs(routes, "lifi_routes")
 
     # pandas_gbq.to_gbq(
     #     dataframe=routes,
     #     project_id=PROJECT_ID,
-    
+
     #     destination_table="stage.source_lifi__routes",
     #     if_exists="replace",
     #     chunksize=100000,

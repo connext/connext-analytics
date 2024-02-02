@@ -15,6 +15,7 @@ nest-asyncio = "*"
 google-cloud-bigquery = "*"
 google-cloud-secret-manager = "*"
 google-cloud-storage = "*"
+python-dotenv = "*"
 
 [dev-packages]
 black="*"

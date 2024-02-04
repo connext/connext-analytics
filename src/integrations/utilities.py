@@ -1,7 +1,13 @@
+import os
+import pandas as pd
+import pandas_gbq
+import dotenv
 from google.cloud import secretmanager
 from google.cloud import storage
 import json
 from datetime import datetime
+from jinja2 import Template
+from google.oauth2 import service_account
 
 
 def get_secret_gcp_secrete_manager(secret_name: str):
@@ -30,3 +36,24 @@ def upload_json_to_gcs(data, bucket_name):
 
     # Upload the JSON data to the file
     blob.upload_from_string(json_data, content_type="application/json")
+
+
+def read_sql_from_file_add_template(sql_file_name, template_data) -> str:
+    """
+    Get sql query from sql file
+    """
+
+    sql_dir = f"src/sql/{sql_file_name}.sql"
+
+    with open(sql_dir, "r") as sql_file:
+        file = sql_file.read()
+        query = Template(file).render(template_data)
+        return query
+
+
+def get_raw_from_bq(sql_file_name) -> pd.DataFrame:
+
+    with open(f"src/sql/{sql_file_name}.sql", "r") as file:
+        sql = file.read()
+
+    return pandas_gbq.read_gbq(sql)

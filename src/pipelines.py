@@ -1,6 +1,4 @@
 import logging
-import os
-import json
 import nest_asyncio
 import asyncio
 import pandas_gbq
@@ -17,13 +15,12 @@ from src.integrations.lifi import (
     get_upload_data_from_cs_bucket,
     get_greater_than_date_from_bq_lifi_routes,
 )
-from google.oauth2 import service_account
+from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import upload_json_to_gcs
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
 
-BQ_creds = os.getenv("BQ_creds")
 app = FastAPI(
     title="LiFi Integration", description="Pipline that run LIFI integrations"
 )
@@ -38,15 +35,12 @@ def start():
 def lifi_chain_pipeline():
     print("start")
     chains_df = asyncio.run(all_chains())
-    if chains_df:
-        print("data pulled successfully")
-        print(f"size of data: {chains_df.shape} and head: {chains_df.head()}")
+    if not chains_df.empty:
         pandas_gbq.to_gbq(
             dataframe=chains_df,
             project_id=PROJECT_ID,
             destination_table="stage.source_lifi__chains",
             if_exists="replace",
-            credentials=service_account.Credentials.from_service_account_info(BQ_creds),
         )
         return {"message": "lifi chains pipeline finished"}
     else:
@@ -64,7 +58,6 @@ def lifi_connections_pipeline():
         destination_table="stage.source_lifi__connections",
         if_exists="replace",
         chunksize=100000,
-        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi connections pipeline finished"}
 
@@ -81,7 +74,6 @@ def lifi_tokens_pipeline():
         destination_table="stage.source_lifi__tokens",
         if_exists="replace",
         chunksize=100000,
-        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi tokens pipeline finished"}
 
@@ -96,7 +88,6 @@ def lifi_tools_pipeline():
         destination_table="stage.source_lifi__tools",
         if_exists="replace",
         chunksize=100000,
-        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
     return {"message": "lifi tools pipeline finished"}
 
@@ -123,7 +114,6 @@ def lifi_routes_pipeline():
         destination_table="stage.source_lifi__pathways",
         if_exists="replace",
         chunksize=100000,
-        credentials=service_account.Credentials.from_service_account_info(BQ_creds),
     )
 
     routes = asyncio.run(main_routes(payloads=pathways))
@@ -139,3 +129,9 @@ def lifi_routes_upload_to_bq():
         greater_than_date=get_greater_than_date_from_bq_lifi_routes()
     )
     return {"message": "Finished uploading data from CS bucket to BQ"}
+
+
+@app.get("/hop_explorer/transfers/pipeline")
+def hop_explorer__transfers_pipeline():
+    asyncio.run(get_transfers_data())
+    return {"message": "Finished uploading data to BQ till date"}

@@ -6,22 +6,14 @@ import logging
 import json
 import numpy as np
 import pandas_gbq
+from dotenv import load_dotenv
 from itertools import product
-from pprint import pprint
 from datetime import datetime
 from asyncio import Semaphore
-from src.integrations.utilities import get_secret_gcp_secrete_manager
 from google.cloud import storage
 from src.integrations.utilities import get_raw_from_bq
+from src.integrations.utilities import get_secret_gcp_secrete_manager
 
-
-BASE_URL = "https://li.quest/v1"
-PROJECT_ID = "mainnet-bigq"
-source_lifi__api_key = os.getenv("source_lifi__api_key")
-HEADERS = {
-    "accept": "application/json",
-    "x-lifi-api-key": f"{source_lifi__api_key}",
-}
 
 # Configure the logging settings
 logging.basicConfig(
@@ -29,15 +21,25 @@ logging.basicConfig(
 )
 
 
+PROJECT_ID = "mainnet-bigq"
+source_lifi__api_key = get_secret_gcp_secrete_manager(
+    secret_name="source_lifi__api_key"
+)
+
+# Load the .env file"
+BASE_URL = "https://li.quest/v1"
+HEADERS = {
+    "accept": "application/json",
+    "x-lifi-api-key": f"{source_lifi__api_key}",
+}
+
+
 async def get_data(ext_url: str):
     url = BASE_URL + ext_url
     try:
         async with httpx.AsyncClient() as client:
-            print(f"This is a header: {HEADERS}")
             response = await client.get(url, headers=HEADERS)
-            print(f"This is a header: {response.headers}")
             response.raise_for_status()
-            logging.info("call successfull!")
             return response.text
     except httpx.HTTPError as e:
         logging.info(f"HTTP error occurred: {e}")
@@ -49,11 +51,13 @@ async def get_data(ext_url: str):
 
 # Handle JSON to Dataframe aswell as Great Expectations beforeHand
 async def all_chains(ext_url="/chains"):
+
     result = await get_data(ext_url=ext_url)
-    print(len(result))
     if result is not None:
         result_j = json.loads(result)
         df = pd.json_normalize(result_j["chains"])
+        logging.info(f"{df.shape}")
+
         df = df.rename(columns=lambda x: x.replace(".", "_"))
         df["faucetUrls"] = df["faucetUrls"].apply(
             lambda x: x[0] if type(x) == list else x
@@ -100,6 +104,7 @@ async def get_tokens(ext_url: str = "/tokens"):
     url = BASE_URL + ext_url
     try:
         async with httpx.AsyncClient() as client:
+            print(HEADERS)
             response = await client.get(url, headers=HEADERS)
             response.raise_for_status()  # Raise an exception for HTTP errors (e.g., 404, 500)
             tokens_data = response.json()

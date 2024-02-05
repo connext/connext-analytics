@@ -1,3 +1,4 @@
+from cmath import log
 import time
 import random
 import asyncio
@@ -21,9 +22,6 @@ URL_HOP_EXPLORER__BASE = "https://explorer-api.hop.exchange/v1"
 URL_HOP_EXPLORER__TRANSFERS = "/transfers"
 
 
-# hop_explorer_url = "/transfers?startDate=2023-01-09&endDate=2024-01-15&page=4700"
-
-
 def get_latest_date_from_hop_explorer__transfers():
     try:
         df = get_raw_from_bq(sql_file_name="latest_date_from_hop_explorer__transfers")
@@ -32,9 +30,9 @@ def get_latest_date_from_hop_explorer__transfers():
         return datetime.fromisoformat(max_date).date()
 
     except pandas_gbq.exceptions.GenericGBQException as e:
-        if "404 Not found" in str(e):
+        if "Reason: 404" in str(e):
             logging.info("No data found in BQ, starting from the beginning")
-            return date(2023, 1, 9)
+            return date(2023, 9, 1)
         else:
             raise
 
@@ -64,17 +62,19 @@ async def get_data(ext_url: str, params: dict) -> list:
     try:
         async with httpx.AsyncClient() as client:
 
-            delay = random.uniform(0.2, 2)
+            delay = random.uniform(0.2, 10)
             time.sleep(delay)
             response = await client.get(url, params=params)
             response.raise_for_status()
             data = response.json()["data"]
+            logging.info(f"{len(data)} rows returned")
             for d in data:
                 d.update({"request_url": str(response.url)})
             return data
 
     except httpx.HTTPError as e:
         logging.info(f"HTTP error occurred: {e}")
+        logging.info(f"Status code: {response.status_code}")
         return None
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON on {url}: {e}")
@@ -90,9 +90,10 @@ async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFram
         start_date=get_latest_date_from_hop_explorer__transfers()
     )
     logging.info(f"Generating {len(transfers_params)} days of data to pull")
-    page = 1
+
     for param in transfers_params:
         daily_transfers = []
+        page = 1
         while True:
             logging.info(f"Processing page {page}")
             param.update({"page": str(page)})

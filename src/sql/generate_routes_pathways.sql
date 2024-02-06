@@ -1,0 +1,1 @@
+SELECT * FROM `mainnet-bigq.stage.source_lifi__pathways`

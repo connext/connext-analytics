@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import pandas_gbq
-import dotenv
 from google.cloud import secretmanager
 from google.cloud import storage
 import json

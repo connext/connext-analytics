@@ -1,5 +1,6 @@
 from email import header
 import os
+import nest_asyncio
 import asyncio
 from pprint import pprint
 import httpx
@@ -16,6 +17,7 @@ from google.cloud import storage
 from src.integrations.utilities import get_raw_from_bq
 from src.integrations.utilities import get_secret_gcp_secrete_manager
 
+nest_asyncio.apply()
 
 # Configure the logging settings
 logging.basicConfig(
@@ -132,6 +134,9 @@ def get_routes_pathways_from_bq():
     """
     try:
         df = get_raw_from_bq(sql_file_name="generate_routes_pathways")
+        pprint(df.columns)
+        df["fromChainId"] = df["fromChainId"].astype(float).astype(int)
+        df["toChainId"] = df["toChainId"].astype(float).astype(int)
         df["uniqueRoutesPerBridge"] = "false"
         df["sort"] = "output"
         del df["allowDestinationCall"]
@@ -139,21 +144,36 @@ def get_routes_pathways_from_bq():
             columns={"fromAddress": "userAddress"},
             inplace=True,
         )
-        df["fromchainId"] = df["fromchainId"].astype(int)
-        df["tochainId"] = df["tochainId"].astype(int)
 
-        # return df.to_dict(orient="records")
-        return []
+        return df.to_dict(orient="records")
+        # return [
+        #     {
+        #         "fromChainId": "137",
+        #         "fromTokenAddress": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
+        #         "toChainId": "56",
+        #         "toTokenAddress": "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3",
+        #         "fromAmount": "100000000",
+        #         "userAddress": "0x3e8cB4bd04d81498aB4b94a392c334F5328b237b",
+        #         "uniqueRoutesPerBridge": "false",
+        #         "sort": "output",
+        #     }
+        # ]
     except Exception as e:
         logging.info(f"An unexpected error occurred: {e}")
         raise
 
 
 async def get_routes(sem, url, payload):
+
     try:
         async with sem:
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, params=payload, headers=HEADERS)
+                response = await client.get(
+                    url,
+                    params=payload,
+                    headers=HEADERS,
+                    timeout=httpx.Timeout(10.0, connect=10.0, read=10.0),
+                )
                 response.raise_for_status()
                 return response.json()
 
@@ -174,7 +194,7 @@ async def get_all_routes(max_concurrency=10, ext_url="/quote"):
     for payload in payloads:
         task = get_routes(sem, url, payload)
         tasks.append(task)
-    responses = await asyncio.gather(*[tasks[0]])
+    responses = await asyncio.gather(*tasks)
 
     filtered_responses = [r for r in responses if r is not None]
     return filtered_responses
@@ -191,6 +211,5 @@ if __name__ == "__main__":
     # pprint(get_routes_pathways_from_bq())
 
     routes = asyncio.run(get_all_routes())
-
     pprint(routes)
     pprint(len(routes))

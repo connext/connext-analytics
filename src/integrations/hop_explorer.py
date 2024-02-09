@@ -110,6 +110,8 @@ async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFram
             df.to_csv("data/hop_explorer__transfers_jan15.csv", index=False)
             df.columns = df.columns.str.lower()
             df.columns = df.columns.str.replace(".", "_")
+            df["deadline"] = 0
+            pprint(df.dtypes)
             pandas_gbq.to_gbq(
                 dataframe=df,
                 project_id=PROJECT_ID,

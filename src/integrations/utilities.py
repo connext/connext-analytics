@@ -1,4 +1,5 @@
 import os
+import logging
 import pandas as pd
 import pandas_gbq
 from google.cloud import secretmanager
@@ -7,6 +8,10 @@ import json
 from datetime import datetime
 from jinja2 import Template
 from google.oauth2 import service_account
+from google.cloud import bigquery
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 def get_secret_gcp_secrete_manager(secret_name: str):
@@ -37,17 +42,25 @@ def upload_json_to_gcs(data, bucket_name):
     blob.upload_from_string(json_data, content_type="application/json")
 
 
-def read_sql_from_file_add_template(sql_file_name, template_data) -> str:
+def read_sql_from_file_add_template(sql_file_name, template_data: dict) -> str:
     """
-    Get sql query from sql file
+    Get SQL query from SQL file and apply Jinja2 templating.
     """
+    try:
+        sql_dir = os.path.join("src", "sql", f"{sql_file_name}.sql")
 
-    sql_dir = f"src/sql/{sql_file_name}.sql"
+        with open(sql_dir, "r") as sql_file:
+            file_content = sql_file.read()
+            query = Template(file_content).render(template_data)
+            print(query)
+            return query
 
-    with open(sql_dir, "r") as sql_file:
-        file = sql_file.read()
-        query = Template(file).render(template_data)
-        return query
+    except FileNotFoundError:
+        print(f"The file {sql_dir} was not found.")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
 
 
 def get_raw_from_bq(sql_file_name) -> pd.DataFrame:
@@ -56,3 +69,38 @@ def get_raw_from_bq(sql_file_name) -> pd.DataFrame:
         sql = file.read()
 
     return pandas_gbq.read_gbq(sql)
+
+
+def pull_data_from_gcp_cs():
+    # Old data compare:
+    # "gs://lifi_routes/2024-02-05_20-50-22.json"
+    # storage_client = storage.Client()
+    # bucket = storage_client.get_bucket("lifi_routes")
+    # blob = bucket.blob("2024-02-05_20-50-22.json")
+    # data = json.loads(blob.download_as_text())
+    # df = convert_json_to_df(json_file=data)
+    # print(df)
+    pass
+
+
+def run_bigquery_query(sql_query: str):
+    """
+    Run a SQL query in BigQuery using ADC.
+
+    Args:
+        sql_query (str): The SQL query to execute.
+
+    Returns:
+        List[Dict]: A list of dictionaries representing the rows returned by the query.
+    """
+    try:
+        client = bigquery.Client()
+        query_job = client.query(sql_query)
+        query_job.result()
+        logging.info("Query completed successfully.")
+
+        return {"message": "Query completed successfully."}
+
+    except Exception as e:
+        logging.info(f"An error occurred while running the query: {e}")
+        return {"message": f"An error occurred while running the query: {e}"}

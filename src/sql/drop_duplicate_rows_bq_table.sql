@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `{{ id }}` AS
+SELECT DISTINCT *
+FROM `{{ id }}`;

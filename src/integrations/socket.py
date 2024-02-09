@@ -243,11 +243,14 @@ def get_upload_data_from_socket_cs_bucket(
                 chunksize=100000,
                 api_method="load_csv",
             )
+            logging.info(f"{df.shape} rows Added!")
+            return f"{df.shape} rows Added!"
 
         else:
             logging.info(
                 f"{dt} is not greater than {greater_than_date}, Data Already Added!"
             )
+            return f"{dt} is not greater than {greater_than_date}, Data Already Added!"
 
 
 def convert_socket_routes_json_to_df(json_blob):

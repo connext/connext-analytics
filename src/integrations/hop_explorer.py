@@ -67,18 +67,19 @@ async def get_data(ext_url: str, params: dict) -> list:
             response = await client.get(url, params=params)
             response.raise_for_status()
             data = response.json()["data"]
-            logging.info(f"{len(data)} rows returned")
-            for d in data:
-                d.update({"request_url": str(response.url)})
-            return data
-
+            if data:
+                for d in data:
+                    d.update({"request_url": str(response.url)})
+                return data
+            else:
+                return None
     except httpx.HTTPError as e:
         logging.info(f"HTTP error occurred: {e}")
         logging.info(f"Status code: {response.status_code}")
         return None
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON on {url}: {e}")
-        return [{}]
+        return None
     except Exception as e:
         logging.info(f"An unexpected error occurred: {e}")
         return None
@@ -98,15 +99,15 @@ async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFram
             logging.info(f"Processing page {page}")
             param.update({"page": str(page)})
             res = await get_data(ext_url=ext_url, params=param)
-            daily_transfers.extend(res)
-
             if not res:
                 break
-
+            daily_transfers.extend(res)
             page += 1
 
         df = pd.DataFrame(daily_transfers)
         if not df.empty:
+            pprint(df)
+            df.to_csv("data/hop_explorer__transfers_jan15.csv", index=False)
             df.columns = df.columns.str.lower()
             df.columns = df.columns.str.replace(".", "_")
             pandas_gbq.to_gbq(
@@ -115,6 +116,7 @@ async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFram
                 destination_table="stage.source_hop_explorer__transfers",
                 if_exists="append",
                 chunksize=100000,
+                api_method="load_csv",
             )
 
             logging.info(f"{len(df)} rows inserted")

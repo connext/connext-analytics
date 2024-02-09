@@ -22,7 +22,12 @@ from src.integrations.socket import (
     get_greater_than_date_from_bq_socket_routes,
 )
 from src.integrations.hop_explorer import get_transfers_data
-from src.integrations.utilities import upload_json_to_gcs, get_raw_from_bq
+from src.integrations.utilities import (
+    upload_json_to_gcs,
+    get_raw_from_bq,
+    read_sql_from_file_add_template,
+    run_bigquery_query,
+)
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
@@ -162,7 +167,26 @@ def socket_routes_pipeline():
 @app.get("/socket/routes/upload_to_bq/")
 def socket_routes_upload_to_bq():
 
-    get_upload_data_from_socket_cs_bucket(
+    output = get_upload_data_from_socket_cs_bucket(
         greater_than_date=get_greater_than_date_from_bq_socket_routes()
     )
-    return {"message": "Finished uploading data from CS bucket to BQ"}
+    return {"message": f"{output}"}
+
+
+# -----
+# Utils
+# -----
+@app.get("/utils/drop_duplicate_rows_from_bq/")
+def drop_duplicate_rows_from_bq(bq_table_id: str):
+    """
+    Drop duplicate rows from BQ table
+    INPUT
+        bq_table_id - Full identifier of the BigQuery table, e.g., "mainnet-bigq.raw.source_socket__bridges"
+    """
+    logging.info(f"Dropping duplicate rows from {bq_table_id}")
+
+    sql = read_sql_from_file_add_template(
+        sql_file_name="drop_duplicate_rows_bq_table",
+        template_data={"id": bq_table_id},
+    )
+    return run_bigquery_query(sql_query=sql)

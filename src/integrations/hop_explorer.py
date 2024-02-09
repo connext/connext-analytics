@@ -107,7 +107,6 @@ async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFram
         df = pd.DataFrame(daily_transfers)
         if not df.empty:
             pprint(df)
-            df.to_csv("data/hop_explorer__transfers_jan15.csv", index=False)
             df.columns = df.columns.str.lower()
             df.columns = df.columns.str.replace(".", "_")
             df["deadline"] = 0

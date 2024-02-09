@@ -1,4 +1,6 @@
+import json
 from email import header
+from locale import normalize
 import os
 import nest_asyncio
 import asyncio
@@ -6,14 +8,12 @@ from pprint import pprint
 import httpx
 import pandas as pd
 import logging
-import json
 import numpy as np
 import pandas_gbq
+from google.cloud import storage
 from dotenv import load_dotenv
-from itertools import product
 from datetime import datetime
 from asyncio import Semaphore
-from google.cloud import storage
 from src.integrations.utilities import get_raw_from_bq
 from src.integrations.utilities import get_secret_gcp_secrete_manager
 
@@ -137,27 +137,16 @@ def get_routes_pathways_from_bq():
         pprint(df.columns)
         df["fromChainId"] = df["fromChainId"].astype(float).astype(int)
         df["toChainId"] = df["toChainId"].astype(float).astype(int)
+        df["fromAmount"] = df["fromAmount"].apply(lambda x: int(x))
         df["uniqueRoutesPerBridge"] = "false"
         df["sort"] = "output"
-        del df["allowDestinationCall"]
+        # del df["allowDestinationCall"]
         df.rename(
             columns={"fromAddress": "userAddress"},
             inplace=True,
         )
 
         return df.to_dict(orient="records")
-        # return [
-        #     {
-        #         "fromChainId": "137",
-        #         "fromTokenAddress": "0x2791bca1f2de4661ed88a30c99a7a9449aa84174",
-        #         "toChainId": "56",
-        #         "toTokenAddress": "0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3",
-        #         "fromAmount": "100000000",
-        #         "userAddress": "0x3e8cB4bd04d81498aB4b94a392c334F5328b237b",
-        #         "uniqueRoutesPerBridge": "false",
-        #         "sort": "output",
-        #     }
-        # ]
     except Exception as e:
         logging.info(f"An unexpected error occurred: {e}")
         raise
@@ -186,7 +175,7 @@ async def get_routes(sem, url, payload):
         return None
 
 
-async def get_all_routes(max_concurrency=10, ext_url="/quote"):
+async def get_all_routes(max_concurrency=5, ext_url="/quote"):
     payloads = get_routes_pathways_from_bq()
     url = URL_SOCKET__BASE + ext_url
     sem = Semaphore(max_concurrency)
@@ -200,16 +189,100 @@ async def get_all_routes(max_concurrency=10, ext_url="/quote"):
     return filtered_responses
 
 
-if __name__ == "__main__":
+def get_greater_than_date_from_bq_socket_routes():
+    try:
+        df = get_raw_from_bq(sql_file_name="latest_date_from_socket_routes")
+        return np.array(df["latest_upload_datetime"].dt.to_pydatetime())[0].replace(
+            tzinfo=None
+        )
+    except pandas_gbq.exceptions.GenericGBQException as e:
+        if "Reason: 404" in str(e):
+            return datetime(2024, 1, 1, 1, 1, 1)
+        else:
+            raise
 
-    logging.info("Starting the script")
-    # pprint(get_chains(ext_url="/supported/chains"))
 
-    # pprint(get_bridges())
+def get_upload_data_from_socket_cs_bucket(
+    greater_than_date, bucket_name="socket_routes"
+):
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blobs = bucket.list_blobs()
+    for blob in blobs:
+        logging.info(f"Pulling data for: {blob.name}")
 
-    # pprint(get_tokens())
-    # pprint(get_routes_pathways_from_bq())
+        name = os.path.splitext(blob.name)[0]
+        dt = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
 
-    routes = asyncio.run(get_all_routes())
-    pprint(routes)
-    pprint(len(routes))
+        if dt > greater_than_date:
+            data = json.loads(blob.download_as_text())
+            print(f"data: {len(data)}")
+
+            # convert the data to df
+            df = convert_socket_routes_json_to_df(json_blob=data)
+            name = os.path.splitext(blob.name)[0]
+            df["upload_datetime"] = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
+            df.columns = df.columns.str.lower()
+            df.columns = df.columns.str.replace(".", "_")
+            for col in df.columns:
+                if df[col].apply(isinstance, args=(list,)).any():
+                    df[col] = df[col].apply(
+                        lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x
+                    )
+
+                    df = df.astype(
+                        {col: "int" for col in df.select_dtypes(include=[bool]).columns}
+                    )
+
+            # upload to bq
+            pandas_gbq.to_gbq(
+                dataframe=df,
+                project_id=PROJECT_ID,
+                destination_table="raw.source_socket__routes",
+                if_exists="append",
+                chunksize=100000,
+                api_method="load_csv",
+            )
+
+        else:
+            logging.info(
+                f"{dt} is not greater than {greater_than_date}, Data Already Added!"
+            )
+
+
+def convert_socket_routes_json_to_df(json_blob):
+
+    normalized_data_df = pd.DataFrame()
+    for r in json_blob:
+        route = r["result"]
+        metadata = {
+            k: v for k, v in route.items() if k not in ["routes", "bridgeRouteErrors"]
+        }
+        metadata_df = pd.json_normalize(metadata, sep="_")
+        routes_df = pd.DataFrame()
+        if route["routes"]:
+            for r in route["routes"]:
+                route_data = {
+                    k: v
+                    for k, v in r.items()
+                    if k not in ["chainGasBalances", "minimumGasBalances"]
+                }
+                route_df = pd.json_normalize(route_data, sep="_")
+                routes_df = pd.concat([routes_df, route_df], ignore_index=True)
+
+        flattened_df = pd.merge(routes_df, metadata_df, how="cross")
+        normalized_data_df = pd.concat(
+            [normalized_data_df, flattened_df], ignore_index=True
+        )
+
+    normalized_data_df.columns = normalized_data_df.columns.str.replace(".", "_")
+    return normalized_data_df
+
+
+# if __name__ == "__main__":
+
+#     logging.info("Starting the script")
+
+#     # with open("data/socket_routes.json", "r") as json_file:
+#     #     data = json.load(json_file)
+#     # convert_socket_routes_json_to_df(json_blob=data)

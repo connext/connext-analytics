@@ -56,3 +56,15 @@ def get_raw_from_bq(sql_file_name) -> pd.DataFrame:
         sql = file.read()
 
     return pandas_gbq.read_gbq(sql)
+
+
+def pull_data_from_gcp_cs():
+    # Old data compare:
+    # "gs://lifi_routes/2024-02-05_20-50-22.json"
+    # storage_client = storage.Client()
+    # bucket = storage_client.get_bucket("lifi_routes")
+    # blob = bucket.blob("2024-02-05_20-50-22.json")
+    # data = json.loads(blob.download_as_text())
+    # df = convert_json_to_df(json_file=data)
+    # print(df)
+    pass

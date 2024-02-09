@@ -1,5 +1,6 @@
 import os
 import asyncio
+import pprint
 import httpx
 import pandas as pd
 import logging
@@ -252,7 +253,12 @@ async def get_routes(sem, url, payload):
     try:
         async with sem:
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload, headers=HEADERS)
+                response = await client.post(
+                    url,
+                    json=payload,
+                    headers=HEADERS,
+                    timeout=httpx.Timeout(10.0, connect=10.0, read=10.0),
+                )
                 response.raise_for_status()
                 return response.json()
 
@@ -383,7 +389,7 @@ def get_greater_than_date_from_bq_lifi_routes():
             raise
 
 
-def get_upload_data_from_cs_bucket(greater_than_date, bucket_name="lifi_routes"):
+def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_routes"):
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)
     blobs = bucket.list_blobs()
@@ -427,3 +433,13 @@ def get_upload_data_from_cs_bucket(greater_than_date, bucket_name="lifi_routes")
             logging.info(
                 f"{dt} is not greater than {greater_than_date}, Data Already Added!"
             )
+
+
+# if __name__ == "__main__":
+
+#     with open("data/lifi_routes.json", "r") as json_file:
+#         data = json.load(json_file)
+
+#     df = convert_json_to_df(json_file=data)
+#     print(df)
+# [2393 rows x 99 columns]

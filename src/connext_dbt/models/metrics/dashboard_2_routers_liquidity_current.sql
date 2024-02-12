@@ -121,14 +121,15 @@ SELECT
   SUM(r.locked_usd) AS locked_usd,
   SUM(r.removed_usd) AS removed_usd,
   SUM(r.supplied_usd) AS supplied_usd,
-  SUM(p.pool_1_amount) AS pool_1_amount,
-  SUM(p.pool_2_amount) AS pool_2_amount
+  SUM(p.usd_pool_1_amount) AS usd_pool_1_amount,
+  SUM(p.usd_pool_2_amount) AS usd_pool_2_amount
 FROM
   router_liquidity r
 LEFT JOIN
   pools_tvl_usd p
 ON
   r.asset = p.token_2_name
+  AND r.domain = p.chain
 GROUP BY
   1,
   2,

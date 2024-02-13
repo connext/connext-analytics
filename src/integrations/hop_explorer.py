@@ -42,11 +42,13 @@ def generate_date_logic(start_date):
     Based on the start date generate params to pass
     end date is the same day till_date is today
     """
-
-    till_date = datetime.today().date()
-
+    utc_now = datetime.utcnow()
+    est_offset = timedelta(hours=-5)
+    est_now = utc_now + est_offset
+    till_date = est_now.date()
+    print(till_date)
     params = []
-    while start_date <= till_date:
+    while start_date < till_date:
         start_date += timedelta(days=1)
         param = {
             "startDate": start_date.strftime("%Y-%m-%d"),
@@ -110,7 +112,14 @@ async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFram
             df.columns = df.columns.str.lower()
             df.columns = df.columns.str.replace(".", "_")
             df["deadline"] = 0
-            pprint(df.dtypes)
+            df["estimatedrelativetimeuntilbond"] = 0
+
+            # filter out bad data
+            for col in df.columns:
+                if df[col].dtype == "int64" or df[col].dtype == "float64":
+                    df[col] = (
+                        pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+                    )
             pandas_gbq.to_gbq(
                 dataframe=df,
                 project_id=PROJECT_ID,

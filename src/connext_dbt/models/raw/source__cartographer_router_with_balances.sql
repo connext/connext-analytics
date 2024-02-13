@@ -44,6 +44,6 @@ LEFT JOIN
   `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_prices` asset_prices
 ON
   assets.canonical_id = asset_prices.canonical_id
-INNER JOIN
+LEFT JOIN
   MaxAssetPrices
 ON asset_prices.canonical_id = MaxAssetPrices.canonical_id AND asset_prices.timestamp = MaxAssetPrices.max_timestamp

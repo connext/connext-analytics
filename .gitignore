@@ -37,3 +37,6 @@ node_modules
 .vscode/settings.json
 template/
 src/connext_dbt/reports
+
+# file
+profiles.yml

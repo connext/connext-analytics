@@ -15,6 +15,7 @@ from src.integrations.lifi import (
     main_routes,
     get_upload_data_from_lifi_cs_bucket,
     get_greater_than_date_from_bq_lifi_routes,
+    generate_alt_pathways_by_chain_key_inputs,
 )
 from src.integrations.socket import (
     get_all_routes,
@@ -92,7 +93,7 @@ def lifi_tokens_pipeline():
 @app.get("/lifi/tools/pipeline")
 def lifi_tools_pipeline():
     print("start")
-    tools = asyncio.run(get_tools())
+    tools, df_lifi__bridges_exchanges = asyncio.run(get_tools())
     pandas_gbq.to_gbq(
         dataframe=tools,
         project_id=PROJECT_ID,
@@ -100,7 +101,73 @@ def lifi_tools_pipeline():
         if_exists="replace",
         chunksize=100000,
     )
+
+    # Bridges & exchanges
+    df_expanded = pd.json_normalize(df_lifi__bridges_exchanges["supportedChains"])
+    df_lifi__bridges_exchanges = pd.concat(
+        [df_lifi__bridges_exchanges.drop(["supportedChains"], axis=1), df_expanded],
+        axis=1,
+    )
+    pandas_gbq.to_gbq(
+        dataframe=df_lifi__bridges_exchanges,
+        project_id=PROJECT_ID,
+        destination_table="stage.source_lifi__bridges_exchanges",
+        if_exists="replace",
+        chunksize=100000,
+    )
+
     return {"message": "lifi tools pipeline finished"}
+
+
+@app.get("/lifi/generate_alt_pathways_by_chain_ids")
+def lifi_generate_alt_pathways_by_chain_key_inputs():
+    """
+    Adding hard coded chain ids for now
+    [ ] REPLACE ALL these generate Pathways with one SQL to rule all
+    anyway, all possible pathways are aviable in source_lifi__pathways.
+    [ ] Add a integration tag and to success and fail for each of these paths
+    """
+
+    gp = generate_alt_pathways_by_chain_key_inputs(
+        chain_keys=["era", "bas", "ava", "pze"],
+        tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
+    )
+
+    logging.info(f"gp: {len(gp)}")
+    df_gp = pd.DataFrame(gp)
+    pandas_gbq.to_gbq(
+        dataframe=df_gp.astype(str),
+        project_id=PROJECT_ID,
+        destination_table="mainnet-bigq.stage.source_lifi__pathways",
+        if_exists="append",
+        chunksize=100000,
+    )
+    return {"message": "lifi paths added to source_lifi__pathways. pipeline finished"}
+
+
+# -----
+# ALTernative chains Routes: "era", "bas", "ava", "pze"
+# -----
+
+
+@app.get("/lifi/alt_chains_routes/pipeline")
+def alt_chain_route_pipeline():
+    """Pull Alt chains data and add them to Cloud storage"""
+    gp = generate_alt_pathways_by_chain_key_inputs(
+        chain_keys=["era", "bas", "ava", "pze"],
+        tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
+    )
+    logging.info(f"gp: {len(gp)}")
+    df_pathways = pd.DataFrame(gp)
+    df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
+    pathways = df_pathways.to_dict("records")
+    routes = asyncio.run(main_routes(payloads=pathways))
+    upload_json_to_gcs(routes, "lifi_routes")
+
+
+# -----
+# Routes
+# -----
 
 
 @app.get("/lifi/routes/pipeline")
@@ -179,6 +246,7 @@ def socket_routes_upload_to_bq():
 @app.get("/utils/drop_duplicate_rows_from_bq/")
 def drop_duplicate_rows_from_bq(bq_table_id: str):
     """
+    This is a high resource consumption query. Run with care. Make sure data is no bigger than 100K.
     Drop duplicate rows from BQ table
     INPUT
         bq_table_id - Full identifier of the BigQuery table, e.g., "mainnet-bigq.raw.source_socket__bridges"

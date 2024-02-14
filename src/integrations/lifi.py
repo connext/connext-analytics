@@ -1,10 +1,11 @@
 import os
 import asyncio
-import pprint
+from pprint import pprint
 import httpx
 import pandas as pd
 import logging
 import json
+from jinja2 import Template
 import numpy as np
 import pandas_gbq
 from dotenv import load_dotenv
@@ -12,8 +13,12 @@ from itertools import product
 from datetime import datetime
 from asyncio import Semaphore
 from google.cloud import storage
-from src.integrations.utilities import get_raw_from_bq
-from src.integrations.utilities import get_secret_gcp_secrete_manager
+from src.integrations.utilities import (
+    get_raw_from_bq,
+    nearest_power_of_ten,
+    get_secret_gcp_secrete_manager,
+    upload_json_to_gcs,
+)
 
 
 # Configure the logging settings
@@ -121,6 +126,7 @@ async def get_tokens(ext_url: str = "/tokens"):
 
 
 async def get_tools(ext_url: str = "/tools"):
+    "Add a bridge/chain filter based on ids to consider to generate paths"
     url = BASE_URL + ext_url
 
     try:
@@ -137,12 +143,51 @@ async def get_tools(ext_url: str = "/tools"):
                         exchanges_df.assign(source="exchanges"),
                     ]
                 )
+
                 return pd.json_normalize(
                     tools_df[tools_df["key"] == "amarok"]["supportedChains"].values[0]
-                )
+                ), tools_df.explode("supportedChains").reset_index(drop=True)
 
     except httpx.HTTPStatusError as e:
         logging.info(f"Error: {e}")
+        return None
+
+
+def generate_alt_pathways_by_chain_key_inputs(chain_keys: list, tokens: list):
+    """
+    chain_keys is a list of chain keys
+    from get_chains() enpoints -> stored in BQ lifi chain
+
+        eg: ["era", "bas", "ava","pze"]
+    """
+    try:
+        sql_file_name = "generate_alternative_chains_ids_for_pathways"
+        sql_dir = os.path.join("src", "sql", f"{sql_file_name}.sql")
+
+        with open(sql_dir, "r") as sql_file:
+            file_content = sql_file.read()
+            query = Template(file_content).render(
+                keys=", ".join(f'"{key}"' for key in chain_keys)
+            )
+
+            df_chain_ids = pandas_gbq.read_gbq(query)
+            logging.info(f"df_chain_ids: {df_chain_ids.shape}")
+
+            alt_pathways_df = generate_pathways(
+                connext_chains_ids=df_chain_ids,
+                chains=asyncio.run(all_chains()),
+                tokens=tokens,
+                tokens_df=asyncio.run(get_tokens()),
+            )
+
+            logging.info(f"alt_pathways_df: {alt_pathways_df}")
+            return alt_pathways_df
+
+    except FileNotFoundError:
+        print(f"The file {sql_dir} was not found.")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
         return None
 
 
@@ -152,7 +197,14 @@ def generate_pathways(
     tokens: list,
     tokens_df: pd.DataFrame,
 ):
-    """generate json inputs from the chains data to query routes"""
+    """generate json inputs from the chains data to query routes
+
+    connext_chains_ids: These come from support chains col in tools
+    endpoint that gives bridges and exchanges
+    chains: This is stracted from chains endpoint
+    tokens: This is a list of tokens symbols provided as a list
+    tokens_df: This is stracted from Tokens endpoint
+    """
 
     pathways_df = pd.merge(
         connext_chains_ids,
@@ -244,6 +296,9 @@ def generate_pathways(
 
             multiple_pathways.append(pathway)
     df_multiple_pathways = pd.DataFrame(multiple_pathways)
+    df_multiple_pathways["fromAmount"] = df_multiple_pathways["fromAmount"].apply(
+        nearest_power_of_ten
+    )
     df_multiple_pathways = df_multiple_pathways.drop_duplicates()
     logging.info(f"Number of pathways: {df_multiple_pathways.shape}")
     return df_multiple_pathways.to_dict("records")
@@ -437,9 +492,13 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
 
 # if __name__ == "__main__":
 
-#     with open("data/lifi_routes.json", "r") as json_file:
-#         data = json.load(json_file)
-
-#     df = convert_json_to_df(json_file=data)
-#     print(df)
-# [2393 rows x 99 columns]
+#     gp = generate_alt_pathways_by_chain_key_inputs(
+#         chain_keys=["era", "bas", "ava", "pze"],
+#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
+#     )
+#     logging.info(f"gp: {len(gp)}")
+#     df_pathways = pd.DataFrame(gp)
+#     df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
+#     pathways = df_pathways.to_dict("records")
+#     routes = asyncio.run(main_routes(payloads=pathways))
+#     upload_json_to_gcs(routes, "lifi_routes")

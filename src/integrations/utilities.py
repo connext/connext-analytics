@@ -104,3 +104,15 @@ def run_bigquery_query(sql_query: str):
     except Exception as e:
         logging.info(f"An error occurred while running the query: {e}")
         return {"message": f"An error occurred while running the query: {e}"}
+
+
+import numpy as np
+
+
+def nearest_power_of_ten(value):
+
+    log_value = np.log10(float(value))
+    rounded_log = np.round(log_value)
+    power_of_ten = np.power(10, rounded_log)
+    # formatted_result = format(float(power_of_ten), ".15f")
+    return power_of_ten

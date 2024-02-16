@@ -1,0 +1,1 @@
+SELECT max({{date_col}}) AS {{date_col}} FROM `{{ table_id }}`;

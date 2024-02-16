@@ -52,7 +52,6 @@ def read_sql_from_file_add_template(sql_file_name, template_data: dict) -> str:
         with open(sql_dir, "r") as sql_file:
             file_content = sql_file.read()
             query = Template(file_content).render(template_data)
-            print(query)
             return query
 
     except FileNotFoundError:

@@ -1,43 +1,48 @@
 from pprint import pprint
 import pandas as pd
-from src.integrations.utilities import get_raw_from_bq
-
-
+from src.integrations.utilities import (
+    convert_lists_and_booleans_to_strings,
+)
+import json
 import itertools
+from google.cloud import storage
 
 
-def get_all_combinations():
-    # Generate permutations for b and d
-    b_perms = list(itertools.permutations(range(1, 12)))
-    d_perms = list(itertools.permutations(range(1, 12)))
-
-    # Iterate over all permutations for b and d
-    for b_perm in b_perms:
-        for d_perm in d_perms:
-            # Ensure b and d are not the same permutation
-            if b_perm != d_perm:
-                # Iterate over all values for a and c
-                for a in range(1, 7):
-                    for c in range(1, 6):
-                        # Create the combination tuple
-                        combination = (a, b_perm, c, d_perm)
+def get_data():
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket("socket_routes")
+    blob = bucket.get_blob("2024-02-16_02-24-08.json")
+    data = json.loads(blob.download_as_text())
+    with open("data/ad_hoc_socket_routes.json", "w") as f:
+        json.dump(data, f)
+    return data
 
 
 if __name__ == "__main__":
     print("Running ad_hoc_socket_routes.py")
-    # df_all_socket_routes = get_raw_from_bq(sql_file_name="all_socket_routes")
-    # df_all_socket_routes.to_csv("data/all_socket_routes.csv", index=False)
+    # json_blob = get_data()
 
-    # Pull daa from csv file above to a dataframe
-    # df_all_socket_routes = pd.read_csv("data/cs_all_socket_routes.csv")
-    # exploded = df_all_socket_routes["usertxs"].explode().to_frame()
-    # exploded.reset_index(inplace=True)
-    # exploded.rename(columns={"index": "org_index"}, inplace=True)
-    # df_expanded = pd.json_normalize(exploded["usertxs"])
-    # df_combined = exploded.join(df_expanded).add_prefix("asset_")
+    with open("data/ad_hoc_socket_routes.json", "r") as f:
+        json_blob = json.load(f)
 
-    # # df_expanded.to_csv("data/cs_all_socket_routes_exploded.csv", index=False)
+    all_steps = []
+    for r in json_blob:
+        if "routes" in r["result"]:
+            routes = r["result"]["routes"]
+            for r in routes:
+                if "userTxs" in r:
+                    for u in r["userTxs"]:
+                        if "steps" in u:
+                            steps = u["steps"]
+                            step_counter = 0
+                            for step in steps:
+                                step["step_id"] = step_counter
+                                step["route_id"] = r["routeId"]
+                                step["routePath"] = u["routePath"]
+                                step["userTxIndex"] = u["userTxIndex"]
+                                all_steps.append(step)
+                                step_counter += 1
 
-    # pprint(df_expanded.columns)
-    # pprint(df_expanded.shape)
-    pprint(len(get_all_combinations()))
+    steps_df = pd.json_normalize(all_steps)
+    steps_df = convert_lists_and_booleans_to_strings(steps_df)
+    steps_df.to_csv("data/ad_hoc_socket_routes_steps_norm.csv", index=False)

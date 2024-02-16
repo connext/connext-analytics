@@ -10,8 +10,8 @@ from src.integrations.lifi import (
     PROJECT_ID,
     get_connections,
     all_chains,
-    get_tokens,
-    get_tools,
+    get_tokens as get_tokens_lifi,
+    get_tools as get_tools_lifi,
     generate_pathways,
     main_routes,
     get_upload_data_from_lifi_cs_bucket,
@@ -20,11 +20,13 @@ from src.integrations.lifi import (
 )
 from src.integrations.socket import (
     get_chains,
-    get_tokens,
+    get_tokens as get_tokens_socket,
     get_bridges,
     get_all_routes,
     get_upload_data_from_socket_cs_bucket,
-    get_greater_than_date_from_bq_socket_routes,
+)
+from src.integrations.helpers_routes_aggreagators import (
+    get_greater_than_date_from_bq_table,
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.hop_explorer import get_transfers_data
@@ -111,7 +113,7 @@ def lifi_connections_pipeline():
 @app.get("/lifi/tokens/pipeline")
 def lifi_tokens_pipeline():
     print("start")
-    tokens = asyncio.run(get_tokens())
+    tokens = asyncio.run(get_tokens_lifi())
     print("data pulled successfully")
     print(f"size of data: {tokens.shape} and head: {tokens.head()}")
     pandas_gbq.to_gbq(
@@ -127,7 +129,7 @@ def lifi_tokens_pipeline():
 @app.get("/lifi/tools/pipeline")
 def lifi_tools_pipeline():
     print("start")
-    tools, df_lifi__bridges_exchanges = asyncio.run(get_tools())
+    tools, df_lifi__bridges_exchanges = asyncio.run(get_tools_lifi())
     pandas_gbq.to_gbq(
         dataframe=tools,
         project_id=PROJECT_ID,
@@ -264,12 +266,12 @@ def socket_chain_pipeline():
 
 @app.get("/socket/tokens/pipeline")
 def socket_tokens_pipeline():
-    msg_output = get_tokens()
+    msg_output = get_tokens_socket()
     return msg_output
 
 
 @app.get("/socket/bridges/pipeline")
-def socket_tokens_pipeline():
+def socket_bridge_pipeline():
     msg_output = get_bridges()
     return msg_output
 
@@ -289,7 +291,14 @@ def socket_routes_pipeline():
 def socket_routes_upload_to_bq():
 
     output = get_upload_data_from_socket_cs_bucket(
-        greater_than_date=get_greater_than_date_from_bq_socket_routes()
+        greater_than_date_routes=get_greater_than_date_from_bq_table(
+            table_id="mainnet-bigq.raw.source_socket__routes",
+            date_col="upload_datetime",
+        ),
+        greater_than_date_steps=get_greater_than_date_from_bq_table(
+            table_id="mainnet-bigq.raw.source_socket__routes_steps",
+            date_col="upload_datetime",
+        ),
     )
     return {"message": f"{output}"}
 

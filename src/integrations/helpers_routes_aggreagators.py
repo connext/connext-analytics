@@ -1,54 +1,46 @@
-# [X] Pull data from transfers and create a pathways based on the amounts added to it.
-# [ ] Pull sockets routes via API call
-# [ ] Store the API calls status code for each pathway to better understand the data.
+import pandas_gbq
+from datetime import datetime
+import numpy as np
+from src.integrations.utilities import get_raw_from_bq, read_sql_from_file_add_template
 
-# from google.cloud import storage
+
+# 1. Greate than date from a big query table
+def get_greater_than_date_from_bq_table(table_id, date_col):
+    """
+    pass table name and date column name
+    -- EG:
+        -- SELECT max(upload_datetime) AS latest_upload_datetime FROM `mainnet-bigq.stage.source_lifi__routes`
+        -- SELECT max(upload_datetime) AS latest_upload_datetime FROM `mainnet-bigq.raw.source_socket__routes`
+    """
+    try:
+
+        sql = read_sql_from_file_add_template(
+            sql_file_name="get_latest_by_bq_table_and_date_col",
+            template_data={"date_col": date_col, "table_id": table_id},
+        )
+        df = pandas_gbq.read_gbq(sql)
+        return np.array(df[date_col].dt.to_pydatetime())[0].replace(tzinfo=None)
+
+    except pandas_gbq.exceptions.GenericGBQException as e:
+        if "Reason: 404" in str(e):
+            return datetime(2024, 1, 1, 1, 1, 1)
+        else:
+            raise
 
 
-# def get_upload_data_from_cs_bucket(greater_than_date, bucket_name, destination_table):
-#     """
-#     destination_table: BQ table where the data will be uplaoded
-#     """
-#     storage_client = storage.Client()
-#     bucket = storage_client.get_bucket(bucket_name)
-#     blobs = bucket.list_blobs()
-#     for blob in blobs:
-#         logging.info(f"Pulling data for: {blob.name}")
+if __name__ == "__main__":
+    print("LIFI")
+    print(
+        get_greater_than_date_from_bq_table(
+            table_id="mainnet-bigq.stage.source_lifi__routes",
+            date_col="upload_datetime",
+        )
+    )
 
-#         name = os.path.splitext(blob.name)[0]
-#         dt = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
-
-#         if dt > greater_than_date:
-#             data = json.loads(blob.download_as_text())
-#             print(f"data: {len(data)}")
-
-#             # convert the data to df
-#             df = convert_json_to_df(json_file=data)
-#             name = os.path.splitext(blob.name)[0]
-#             df["upload_datetime"] = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
-#             df.columns = df.columns.str.lower()
-#             df.columns = df.columns.str.replace(".", "_")
-#             for col in df.columns:
-#                 if df[col].apply(isinstance, args=(list,)).any():
-#                     df[col] = df[col].apply(
-#                         lambda x: ", ".join(map(str, x)) if isinstance(x, list) else x
-#                     )
-
-#                     df = df.astype(
-#                         {col: "int" for col in df.select_dtypes(include=[bool]).columns}
-#                     )
-
-#             # upload to bq
-#             pandas_gbq.to_gbq(
-#                 dataframe=df,
-#                 project_id=PROJECT_ID,
-#                 destination_table=destination_table,
-#                 if_exists="append",
-#                 chunksize=100000,
-#                 api_method="load_csv",
-#             )
-
-#         else:
-#             logging.info(
-#                 f"{dt} is not greater than {greater_than_date}, Data Already Added!"
-#             )
+    print("SOCKET")
+    print(
+        get_greater_than_date_from_bq_table(
+            table_id="mainnet-bigq.raw.source_socket__routes",
+            date_col="upload_datetime",
+        )
+    )

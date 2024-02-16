@@ -1,21 +1,20 @@
 import json
-from email import header
-from locale import normalize
 import os
 import nest_asyncio
 import asyncio
-from pprint import pprint
 import httpx
 import pandas as pd
 import logging
 import numpy as np
 import pandas_gbq
 from google.cloud import storage
-from dotenv import load_dotenv
 from datetime import datetime
 from asyncio import Semaphore
-from src.integrations.utilities import get_raw_from_bq
-from src.integrations.utilities import get_secret_gcp_secrete_manager
+from src.integrations.utilities import (
+    get_raw_from_bq,
+    convert_lists_and_booleans_to_strings,
+    get_secret_gcp_secrete_manager,
+)
 
 nest_asyncio.apply()
 
@@ -56,13 +55,13 @@ def get_chains(ext_url="/supported/chains"):
     if chains_data:
         chains_df = pd.json_normalize(chains_data["result"])
         pandas_gbq.to_gbq(
-            dataframe=chains_df,
+            dataframe=convert_lists_and_booleans_to_strings(chains_df),
             project_id=PROJECT_ID,
             destination_table="raw.source_socket__chains",
             if_exists="replace",
         )
         logging.info("Socket chain data loaded to BigQuery:raw.source_socket__chains")
-    return None
+    return {"message": "Socket chain data loaded to BigQuery:raw.source_socket__chains"}
 
 
 def get_bridges(ext_url="/supported/bridges"):
@@ -71,13 +70,15 @@ def get_bridges(ext_url="/supported/bridges"):
     if bridges_data:
         bridges_df = pd.json_normalize(bridges_data["result"])
         pandas_gbq.to_gbq(
-            dataframe=bridges_df,
+            dataframe=convert_lists_and_booleans_to_strings(bridges_df),
             project_id=PROJECT_ID,
             destination_table="raw.source_socket__bridges",
             if_exists="replace",
         )
         logging.info("Socket bridge data loaded to BigQuery:raw.source_socket__bridges")
-    return None
+    return {
+        "message": "Socket bridge data loaded to BigQuery:raw.source_socket__bridges"
+    }
 
 
 def get_tokens(ext_url="/token-lists/all"):
@@ -85,7 +86,6 @@ def get_tokens(ext_url="/token-lists/all"):
     headers.update({"isShortList": "true"})
 
     tokens_data = asyncio.run(get_data(ext_url=ext_url, headers=headers))
-    print(headers)
     if tokens_data:
 
         for item in tokens_data["result"].items():
@@ -100,16 +100,17 @@ def get_tokens(ext_url="/token-lists/all"):
         #     all_tokens.extend(tokens_data["tokens"][key])
         # tokens_df = pd.DataFrame(all_tokens)
 
-        pprint(tokens_df)
         pandas_gbq.to_gbq(
-            dataframe=tokens_df,
+            dataframe=convert_lists_and_booleans_to_strings(tokens_df),
             project_id=PROJECT_ID,
             destination_table="raw.source_socket__tokens",
             if_exists="replace",
         )
         logging.info("Socket Tokens data loaded to BigQuery:raw.source_socket__tokens")
 
-    return None
+    return {
+        "message": "Socket Tokens data loaded to BigQuery:raw.source_socket__tokens"
+    }
 
 
 def get_routes_pathways_from_bq():
@@ -134,10 +135,10 @@ def get_routes_pathways_from_bq():
     """
     try:
         df = get_raw_from_bq(sql_file_name="generate_routes_pathways")
-        pprint(df.columns)
+
         df["fromChainId"] = df["fromChainId"].astype(float).astype(int)
         df["toChainId"] = df["toChainId"].astype(float).astype(int)
-        df["fromAmount"] = df["fromAmount"].apply(lambda x: int(x))
+        df["fromAmount"] = df["fromAmount"].apply(lambda x: int(float(x)))
         df["uniqueRoutesPerBridge"] = "false"
         df["sort"] = "output"
         # del df["allowDestinationCall"]
@@ -175,7 +176,7 @@ async def get_routes(sem, url, payload):
         return None
 
 
-async def get_all_routes(max_concurrency=5, ext_url="/quote"):
+async def get_all_routes(max_concurrency=3, ext_url="/quote"):
     payloads = get_routes_pathways_from_bq()
     url = URL_SOCKET__BASE + ext_url
     sem = Semaphore(max_concurrency)
@@ -216,7 +217,7 @@ def get_upload_data_from_socket_cs_bucket(
 
         if dt > greater_than_date:
             data = json.loads(blob.download_as_text())
-            print(f"data: {len(data)}")
+            logging.info(f"data: {len(data)}")
 
             # convert the data to df
             df = convert_socket_routes_json_to_df(json_blob=data)
@@ -279,12 +280,3 @@ def convert_socket_routes_json_to_df(json_blob):
 
     normalized_data_df.columns = normalized_data_df.columns.str.replace(".", "_")
     return normalized_data_df
-
-
-# if __name__ == "__main__":
-
-#     logging.info("Starting the script")
-
-#     # with open("data/socket_routes.json", "r") as json_file:
-#     #     data = json.load(json_file)
-#     # convert_socket_routes_json_to_df(json_blob=data)

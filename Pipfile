@@ -17,6 +17,7 @@ google-cloud-secret-manager = "*"
 google-cloud-storage = "*"
 python-dotenv = "*"
 jinja2 = "*"
+grip = "*"
 
 [dev-packages]
 black="*"

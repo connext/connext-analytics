@@ -1,5 +1,6 @@
 import json
 import logging
+from pprint import pprint
 import nest_asyncio
 import asyncio
 import pandas_gbq
@@ -18,23 +19,28 @@ from src.integrations.lifi import (
     generate_alt_pathways_by_chain_key_inputs,
 )
 from src.integrations.socket import (
+    get_chains,
+    get_tokens,
+    get_bridges,
     get_all_routes,
     get_upload_data_from_socket_cs_bucket,
     get_greater_than_date_from_bq_socket_routes,
 )
+from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import (
     upload_json_to_gcs,
     get_raw_from_bq,
     read_sql_from_file_add_template,
     run_bigquery_query,
+    convert_lists_and_booleans_to_strings,
 )
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
 
 app = FastAPI(
-    title="LiFi Integration", description="Pipline that run LIFI integrations"
+    title="CONNEXT DATA Integration", description="Pipline that run data integrations"
 )
 
 
@@ -43,6 +49,34 @@ def start():
     return {"app is running"}
 
 
+# -----
+# CONNEXT METADATA
+# -----
+@app.get("/chaindata_connext_ninja/pipeline")
+def get_chaindata_connext_ninja_pipeline():
+    """This pipeline, pulls data from nija and upload it to bq table"""
+    chaindata_connext_df = asyncio.run(get_chaindata_connext_df())
+    if not chaindata_connext_df.empty:
+        chaindata_connext_df = convert_lists_and_booleans_to_strings(
+            chaindata_connext_df
+        )
+        pandas_gbq.to_gbq(
+            dataframe=chaindata_connext_df,
+            project_id=PROJECT_ID,
+            destination_table="raw.source_chaindata_nija__metadata",
+            if_exists="replace",
+        )
+        return {"message": "Chain Ninja metadata pipeline finished"}
+    else:
+        logging.info("No data pulled")
+        raise Exception(
+            "Chain Ninja metadata pipeline failed, TypeError: no data pulled"
+        )
+
+
+# -----
+# LIFI API
+# -----
 @app.get("/lifi/chains/pipeline")
 def lifi_chain_pipeline():
     print("start")
@@ -190,7 +224,7 @@ def lifi_routes_pipeline():
 
     df_pathways = get_raw_from_bq(sql_file_name="generate_routes_pathways")
     df_pathways["allowDestinationCall"] = True
-    df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
+    df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(float(x)))
     pathways = df_pathways.to_dict("records")
 
     routes = asyncio.run(main_routes(payloads=pathways))
@@ -220,6 +254,26 @@ def hop_explorer__transfers_pipeline():
 # -----
 # SOCKET
 # -----
+
+
+@app.get("/socket/chains/pipeline")
+def socket_chain_pipeline():
+    msg_output = get_chains()
+    return msg_output
+
+
+@app.get("/socket/tokens/pipeline")
+def socket_tokens_pipeline():
+    msg_output = get_tokens()
+    return msg_output
+
+
+@app.get("/socket/bridges/pipeline")
+def socket_tokens_pipeline():
+    msg_output = get_bridges()
+    return msg_output
+
+
 @app.get("/socket/routes/pipeline")
 def socket_routes_pipeline():
 

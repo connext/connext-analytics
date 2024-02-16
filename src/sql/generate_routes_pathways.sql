@@ -1,3 +1,12 @@
-SELECT * FROM `mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways`
+SELECT * 
 
--- SELECT * FROM `mainnet-bigq.stage.source_lifi__pathways`
+{% if not reset%}
+EXCEPT ({{except_col}})
+{% endif %}
+
+
+FROM `{{table_id}}`
+
+{% if not reset%}
+WHERE aggregator = "{{aggregator}}"
+{% endif %}

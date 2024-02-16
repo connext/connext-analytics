@@ -113,46 +113,6 @@ def get_tokens(ext_url="/token-lists/all"):
     }
 
 
-def get_routes_pathways_from_bq():
-    """
-    INPUT PULLED:
-        'allowDestinationCall': 'True',
-        'fromAddress': '0x32d222E1f6386B3dF7065d639870bE0ef76D3599',
-        'fromAmount': '1000150022503375424192512',
-        'fromChainId': '42161.0',
-        'fromTokenAddress': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
-        'toChainId': '59144.0',
-        'toTokenAddress': '0x4AF15ec2A0BD43Db75dd04E62FAA3B8EF36b00d5'
-    payload req:
-        - fromChainId=137
-        - fromTokenAddress=0x2791bca1f2de4661ed88a30c99a7a9449aa84174
-        - toChainId=56
-        - toTokenAddress=0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3
-        - fromAmount=100000000
-        - userAddress=0x3e8cB4bd04d81498aB4b94a392c334F5328b237b
-        - uniqueRoutesPerBridge=true
-        - sort=output
-    """
-    try:
-        df = get_raw_from_bq(sql_file_name="generate_routes_pathways")
-
-        df["fromChainId"] = df["fromChainId"].astype(float).astype(int)
-        df["toChainId"] = df["toChainId"].astype(float).astype(int)
-        df["fromAmount"] = df["fromAmount"].apply(lambda x: int(float(x)))
-        df["uniqueRoutesPerBridge"] = "false"
-        df["sort"] = "output"
-        # del df["allowDestinationCall"]
-        df.rename(
-            columns={"fromAddress": "userAddress"},
-            inplace=True,
-        )
-
-        return df.to_dict(orient="records")
-    except Exception as e:
-        logging.info(f"An unexpected error occurred: {e}")
-        raise
-
-
 async def get_routes(sem, url, payload):
 
     try:
@@ -176,8 +136,8 @@ async def get_routes(sem, url, payload):
         return None
 
 
-async def get_all_routes(max_concurrency=3, ext_url="/quote"):
-    payloads = get_routes_pathways_from_bq()
+async def get_all_routes(payloads, max_concurrency=3, ext_url="/quote"):
+
     url = URL_SOCKET__BASE + ext_url
     sem = Semaphore(max_concurrency)
     tasks = []

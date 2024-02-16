@@ -27,6 +27,7 @@ from src.integrations.socket import (
 )
 from src.integrations.helpers_routes_aggreagators import (
     get_greater_than_date_from_bq_table,
+    get_routes_pathways_from_bq,
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.hop_explorer import get_transfers_data
@@ -210,25 +211,27 @@ def alt_chain_route_pipeline():
 def lifi_routes_pipeline():
     """
     INPUT
-    [
-        {
-            "fromChainId": 1,
-            "fromTokenAddress": "0x0000000000000000000000000000000000000000",
-            "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
-            "toChainId": 10,
-            "toTokenAddress": "0x0000000000000000000000000000000000000000",
-            "fromAmount": 1e+21,
-            "allowDestinationCall": true
-        }
-    ]
+
+        reset:
+            If set as True, All possible pathways combinations will be pulled into GCP Cloud storage,
+            on Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways
+        paylaod sent:
+            [
+                {
+                    "fromChainId": 1,
+                    "fromTokenAddress": "0x0000000000000000000000000000000000000000",
+                    "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
+                    "toChainId": 10,
+                    "toTokenAddress": "0x0000000000000000000000000000000000000000",
+                    "fromAmount": 1e+21,
+                    "allowDestinationCall": true
+                }
+            ]
     """
-    print("start")
 
-    df_pathways = get_raw_from_bq(sql_file_name="generate_routes_pathways")
-    df_pathways["allowDestinationCall"] = True
-    df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(float(x)))
-    pathways = df_pathways.to_dict("records")
-
+    reset: bool = False
+    print(f"start,pathway reset: {reset}")
+    pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
     routes = asyncio.run(main_routes(payloads=pathways))
     upload_json_to_gcs(routes, "lifi_routes")
 
@@ -278,10 +281,22 @@ def socket_bridge_pipeline():
 
 @app.get("/socket/routes/pipeline")
 def socket_routes_pipeline():
+    """
+    INPUT
 
-    print("start")
+        reset:
+            If set as True, All possible pathways combinations will be pulled into GCP Cloud storage
+            On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
 
-    routes = asyncio.run(get_all_routes())
+    """
+    reset: bool = False
+    print(f"start,pathway reset: {reset}")
+
+    routes = asyncio.run(
+        get_all_routes(
+            payloads=get_routes_pathways_from_bq(aggregator="socket", reset=reset)
+        )
+    )
     upload_json_to_gcs(routes, "socket_routes")
 
     return {"message": "socket routes pipeline finished"}

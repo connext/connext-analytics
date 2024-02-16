@@ -21,6 +21,7 @@ WITH
       WHEN l.domain = '1634886255' THEN 'Arbitrum One'
       WHEN l.domain = '1818848877' THEN 'Linea'
       WHEN l.domain = '1835365481' THEN 'Metis'
+      WHEN l.domain = '1650553709' THEN "Base Mainnet"
       WHEN l.domain = '31338' THEN 'Local Optimism'
       WHEN l.domain = '31339' THEN 'Local Arbitrum One'
     ELSE
@@ -56,6 +57,7 @@ WITH
       WHEN domain = '31338' THEN 'Local Optimism'
       WHEN domain = '31339' THEN 'Local Arbitrum One'
       WHEN domain = '1835365481' THEN 'Metis'
+      WHEN domain = '1650553709' THEN "Base Mainnet"
     ELSE
     CONCAT("Add this domain to Google sheet, not found for:", domain)
   END

@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 import pandas as pd
 import pandas_gbq
 from google.cloud import secretmanager
@@ -7,7 +8,6 @@ from google.cloud import storage
 import json
 from datetime import datetime
 from jinja2 import Template
-from google.oauth2 import service_account
 from google.cloud import bigquery
 
 
@@ -52,7 +52,6 @@ def read_sql_from_file_add_template(sql_file_name, template_data: dict) -> str:
         with open(sql_dir, "r") as sql_file:
             file_content = sql_file.read()
             query = Template(file_content).render(template_data)
-            print(query)
             return query
 
     except FileNotFoundError:
@@ -106,9 +105,6 @@ def run_bigquery_query(sql_query: str):
         return {"message": f"An error occurred while running the query: {e}"}
 
 
-import numpy as np
-
-
 def nearest_power_of_ten(value):
 
     log_value = np.log10(float(value))
@@ -116,3 +112,17 @@ def nearest_power_of_ten(value):
     power_of_ten = np.power(10, rounded_log)
     # formatted_result = format(float(power_of_ten), ".15f")
     return power_of_ten
+
+
+def convert_lists_and_booleans_to_strings(df):
+    "Also convert to lower and . to _"
+    for col in df.columns:
+        # Check if the column contains lists
+        if df[col].apply(type).eq(list).any():
+            df[col] = df[col].astype(str)
+        # Check if the column contains booleans
+        elif df[col].apply(type).eq(bool).any():
+            df[col] = df[col].astype(str)
+
+    df.columns = [col.lower().replace(".", "_") for col in df.columns]
+    return df

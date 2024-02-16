@@ -1,5 +1,6 @@
 import json
 import logging
+from pprint import pprint
 import nest_asyncio
 import asyncio
 import pandas_gbq
@@ -9,8 +10,8 @@ from src.integrations.lifi import (
     PROJECT_ID,
     get_connections,
     all_chains,
-    get_tokens,
-    get_tools,
+    get_tokens as get_tokens_lifi,
+    get_tools as get_tools_lifi,
     generate_pathways,
     main_routes,
     get_upload_data_from_lifi_cs_bucket,
@@ -18,23 +19,31 @@ from src.integrations.lifi import (
     generate_alt_pathways_by_chain_key_inputs,
 )
 from src.integrations.socket import (
+    get_chains,
+    get_tokens as get_tokens_socket,
+    get_bridges,
     get_all_routes,
     get_upload_data_from_socket_cs_bucket,
-    get_greater_than_date_from_bq_socket_routes,
 )
+from src.integrations.helpers_routes_aggreagators import (
+    get_greater_than_date_from_bq_table,
+    get_routes_pathways_from_bq,
+)
+from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import (
     upload_json_to_gcs,
     get_raw_from_bq,
     read_sql_from_file_add_template,
     run_bigquery_query,
+    convert_lists_and_booleans_to_strings,
 )
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
 
 app = FastAPI(
-    title="LiFi Integration", description="Pipline that run LIFI integrations"
+    title="CONNEXT DATA Integration", description="Pipline that run data integrations"
 )
 
 
@@ -43,6 +52,34 @@ def start():
     return {"app is running"}
 
 
+# -----
+# CONNEXT METADATA
+# -----
+@app.get("/chaindata_connext_ninja/pipeline")
+def get_chaindata_connext_ninja_pipeline():
+    """This pipeline, pulls data from nija and upload it to bq table"""
+    chaindata_connext_df = asyncio.run(get_chaindata_connext_df())
+    if not chaindata_connext_df.empty:
+        chaindata_connext_df = convert_lists_and_booleans_to_strings(
+            chaindata_connext_df
+        )
+        pandas_gbq.to_gbq(
+            dataframe=chaindata_connext_df,
+            project_id=PROJECT_ID,
+            destination_table="raw.source_chaindata_nija__metadata",
+            if_exists="replace",
+        )
+        return {"message": "Chain Ninja metadata pipeline finished"}
+    else:
+        logging.info("No data pulled")
+        raise Exception(
+            "Chain Ninja metadata pipeline failed, TypeError: no data pulled"
+        )
+
+
+# -----
+# LIFI API
+# -----
 @app.get("/lifi/chains/pipeline")
 def lifi_chain_pipeline():
     print("start")
@@ -77,7 +114,7 @@ def lifi_connections_pipeline():
 @app.get("/lifi/tokens/pipeline")
 def lifi_tokens_pipeline():
     print("start")
-    tokens = asyncio.run(get_tokens())
+    tokens = asyncio.run(get_tokens_lifi())
     print("data pulled successfully")
     print(f"size of data: {tokens.shape} and head: {tokens.head()}")
     pandas_gbq.to_gbq(
@@ -93,7 +130,7 @@ def lifi_tokens_pipeline():
 @app.get("/lifi/tools/pipeline")
 def lifi_tools_pipeline():
     print("start")
-    tools, df_lifi__bridges_exchanges = asyncio.run(get_tools())
+    tools, df_lifi__bridges_exchanges = asyncio.run(get_tools_lifi())
     pandas_gbq.to_gbq(
         dataframe=tools,
         project_id=PROJECT_ID,
@@ -174,25 +211,27 @@ def alt_chain_route_pipeline():
 def lifi_routes_pipeline():
     """
     INPUT
-    [
-        {
-            "fromChainId": 1,
-            "fromTokenAddress": "0x0000000000000000000000000000000000000000",
-            "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
-            "toChainId": 10,
-            "toTokenAddress": "0x0000000000000000000000000000000000000000",
-            "fromAmount": 1e+21,
-            "allowDestinationCall": true
-        }
-    ]
+
+        reset:
+            If set as True, All possible pathways combinations will be pulled into GCP Cloud storage,
+            on Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways
+        paylaod sent:
+            [
+                {
+                    "fromChainId": 1,
+                    "fromTokenAddress": "0x0000000000000000000000000000000000000000",
+                    "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
+                    "toChainId": 10,
+                    "toTokenAddress": "0x0000000000000000000000000000000000000000",
+                    "fromAmount": 1e+21,
+                    "allowDestinationCall": true
+                }
+            ]
     """
-    print("start")
 
-    df_pathways = get_raw_from_bq(sql_file_name="generate_routes_pathways")
-    df_pathways["allowDestinationCall"] = True
-    df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
-    pathways = df_pathways.to_dict("records")
-
+    reset: bool = False
+    print(f"start,pathway reset: {reset}")
+    pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
     routes = asyncio.run(main_routes(payloads=pathways))
     upload_json_to_gcs(routes, "lifi_routes")
 
@@ -220,12 +259,44 @@ def hop_explorer__transfers_pipeline():
 # -----
 # SOCKET
 # -----
+
+
+@app.get("/socket/chains/pipeline")
+def socket_chain_pipeline():
+    msg_output = get_chains()
+    return msg_output
+
+
+@app.get("/socket/tokens/pipeline")
+def socket_tokens_pipeline():
+    msg_output = get_tokens_socket()
+    return msg_output
+
+
+@app.get("/socket/bridges/pipeline")
+def socket_bridge_pipeline():
+    msg_output = get_bridges()
+    return msg_output
+
+
 @app.get("/socket/routes/pipeline")
 def socket_routes_pipeline():
+    """
+    INPUT
 
-    print("start")
+        reset:
+            If set as True, All possible pathways combinations will be pulled into GCP Cloud storage
+            On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
 
-    routes = asyncio.run(get_all_routes())
+    """
+    reset: bool = False
+    print(f"start,pathway reset: {reset}")
+
+    routes = asyncio.run(
+        get_all_routes(
+            payloads=get_routes_pathways_from_bq(aggregator="socket", reset=reset)
+        )
+    )
     upload_json_to_gcs(routes, "socket_routes")
 
     return {"message": "socket routes pipeline finished"}
@@ -235,7 +306,14 @@ def socket_routes_pipeline():
 def socket_routes_upload_to_bq():
 
     output = get_upload_data_from_socket_cs_bucket(
-        greater_than_date=get_greater_than_date_from_bq_socket_routes()
+        greater_than_date_routes=get_greater_than_date_from_bq_table(
+            table_id="mainnet-bigq.raw.source_socket__routes",
+            date_col="upload_datetime",
+        ),
+        greater_than_date_steps=get_greater_than_date_from_bq_table(
+            table_id="mainnet-bigq.raw.source_socket__routes_steps",
+            date_col="upload_datetime",
+        ),
     )
     return {"message": f"{output}"}
 

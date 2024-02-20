@@ -1,5 +1,6 @@
 import json
 import os
+from pprint import pprint
 import nest_asyncio
 import asyncio
 import httpx
@@ -15,8 +16,15 @@ from src.integrations.utilities import (
     convert_lists_and_booleans_to_strings,
     get_secret_gcp_secrete_manager,
 )
+from src.integrations.helpers_routes_aggreagators import (
+    get_greater_than_date_from_bq_table,
+)
 
 nest_asyncio.apply()
+
+# Define the maximum number of retries and the initial delay
+MAX_RETRIES = 5
+INITIAL_DELAY = 5  # in seconds
 
 # Configure the logging settings
 logging.basicConfig(
@@ -113,27 +121,47 @@ def get_tokens(ext_url="/token-lists/all"):
     }
 
 
-async def get_routes(sem, url, payload):
+async def get_routes(sem, url, payload, retries=MAX_RETRIES, delay=INITIAL_DELAY):
 
-    try:
-        async with sem:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    url,
-                    params=payload,
-                    headers=HEADERS,
-                    timeout=httpx.Timeout(10.0, connect=10.0, read=10.0),
-                )
-                response.raise_for_status()
-                return response.json()
+    async with sem:
+        async with httpx.AsyncClient() as client:
+            for attempt in range(retries):
+                try:
+                    response = await client.get(
+                        url,
+                        params=payload,
+                        headers=HEADERS,
+                        timeout=httpx.Timeout(15.0, connect=15.0, read=15.0),
+                    )
+                    response.raise_for_status()
+                    output = response.json()
+                    output["payload"] = payload
+                    output["payload"]["status_code"] = response.status_code
+                    return output
 
-    except httpx.HTTPStatusError as exc:
-        logging.info(f"Request failed with status code {exc.response.status_code}")
-        logging.info(f"Error message: {exc}")
-        return None
-    except Exception as exc:
-        logging.info(f"An unexpected error occurred: {str(exc)}")
-        return None
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code == 429:
+                        print(f"Too Many Requests. Retrying in {delay} seconds...")
+                        await asyncio.sleep(delay)
+                        delay *= 2  # Exponential backoff
+
+                    else:
+                        logging.info(
+                            f"Request failed with status code {exc.response.status_code}"
+                        )
+                        logging.info(f"Error message: {exc}")
+                        output = {}
+                        output["payload"] = payload
+                        output["payload"]["status_code"] = exc.response.status_code
+
+                        return output
+
+                except Exception as exc:
+                    logging.info(f"An unexpected error occurred: {str(exc)}")
+                    output = {}
+                    output["payload"] = payload
+                    output["payload"]["status_code"] = 0
+                    return output
 
 
 async def get_all_routes(payloads, max_concurrency=3, ext_url="/quote"):
@@ -162,11 +190,11 @@ def get_upload_data_from_socket_cs_bucket(
         # seperate common parameters
         name = os.path.splitext(blob.name)[0]
         dt = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
-        data = json.loads(blob.download_as_text())
-        logging.info(f"data: {len(data)}")
 
         # Routes
         if dt > greater_than_date_routes:
+            data = json.loads(blob.download_as_text())
+            logging.info(f"data: {len(data)}")
             # 1. convert the routes data to df
             df = convert_socket_routes_json_to_df(json_blob=data)
             df["upload_datetime"] = dt
@@ -180,8 +208,21 @@ def get_upload_data_from_socket_cs_bucket(
                 chunksize=10000,
                 api_method="load_csv",
             )
-
             logging.info(f"Socket Routers, {df.shape} rows Added!")
+
+            # Also upload unsuported data to bq
+            df_unsupported_paths = convert_no_routes_success_calls_to_df(json_blob=data)
+            df_unsupported_paths["upload_datetime"] = dt
+            pandas_gbq.to_gbq(
+                dataframe=df_unsupported_paths,
+                project_id=PROJECT_ID,
+                destination_table="raw.source_socket__routes_unsupported_paths",
+                if_exists="replace",
+                chunksize=10000,
+                api_method="load_csv",
+            )
+
+            logging.info(f"Socket unsupported Routers, {df.shape} rows Added!")
 
         else:
             logging.info(
@@ -190,6 +231,7 @@ def get_upload_data_from_socket_cs_bucket(
 
         # Routes Steps
         if dt > greater_than_date_steps:
+            data = json.loads(blob.download_as_text())
             # 1. convert convert_socket_routes_steps_json_to_df
             df_socket_steps = convert_socket_routes_steps_json_to_df(json_blob=data)
             df_socket_steps["upload_datetime"] = dt
@@ -262,3 +304,63 @@ def convert_socket_routes_steps_json_to_df(json_blob):
 
     steps_df = pd.json_normalize(all_steps)
     return convert_lists_and_booleans_to_strings(steps_df)
+
+
+def convert_no_routes_success_calls_to_df(json_blob):
+
+    all_calls = []
+
+    # file_name = "data/ad_hoc_socket_routes.json"
+    # with open(file_name, "r") as f:
+    #     json_blob = json.load(f)
+
+    for r in json_blob:
+        if "routes" in r["result"]:
+            routes = r["result"]["routes"]
+            if len(routes) == 0:
+                del r["result"]["routes"]
+                r["route_length"] = len(routes)
+                all_calls.append(r)
+
+    df = pd.json_normalize(all_calls)
+    df = convert_lists_and_booleans_to_strings(df)
+    return df
+
+
+if __name__ == "__main__":
+
+    # output = get_upload_data_from_socket_cs_bucket(
+    #     greater_than_date_routes=get_greater_than_date_from_bq_table(
+    #         table_id="mainnet-bigq.raw.source_socket__routes",
+    #         date_col="upload_datetime",
+    #     ),
+    #     greater_than_date_steps=get_greater_than_date_from_bq_table(
+    #         table_id="mainnet-bigq.raw.source_socket__routes_steps",
+    #         date_col="upload_datetime",
+    #     ),
+    # )
+
+    # [X] download latest json data:
+    # storage_client = storage.Client()
+    # bucket = storage_client.get_bucket("socket_routes")
+    # blobs = bucket.list_blobs()
+    # for blob in blobs:
+    #     pprint(blob.name)
+    #     if blob.name == "2024-02-20_14-09-59.json":
+    #         data = json.loads(blob.download_as_text())
+    #         with open(f"data/ad_hoc_socket_routes_{blob.name}", "w") as f:
+    #             json.dump(data, f)
+    #         break
+
+    # 2. get file to dataframe
+    with open("data/new_socket_routes.json", "r") as f:
+        data = json.load(f)
+    df = convert_no_routes_success_calls_to_df(json_blob=data)
+    df.to_csv("data/new_socket_routes.csv")
+
+# 3. get df from csv
+# df = pd.read_csv("data/ad_hoc_socket_routes_2024-02-20_14-09-59.csv")
+
+# # pprint(df.columns)
+# # pprint(df.head())
+# pprint(df.nunique())

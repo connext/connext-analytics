@@ -18,8 +18,8 @@ from src.integrations.utilities import (
     nearest_power_of_ten,
     get_secret_gcp_secrete_manager,
     upload_json_to_gcs,
+    convert_lists_and_booleans_to_strings,
 )
-
 
 # Configure the logging settings
 logging.basicConfig(
@@ -285,7 +285,7 @@ def generate_pathways(
                 "fromChainId": p["fromChainId"],
                 "fromTokenAddress": p["fromTokenAddress"],
                 # "fromAddress": p["fromTokenAddress"],
-                "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
+                # "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
                 "toChainId": p["toChainId"],
                 "toTokenAddress": p["toTokenAddress"],
             }
@@ -315,15 +315,24 @@ async def get_routes(sem, url, payload):
                     timeout=httpx.Timeout(10.0, connect=10.0, read=10.0),
                 )
                 response.raise_for_status()
-                return response.json()
+                output = response.json()
+                output["payload"] = payload
+                output["payload"]["status_code"] = response.status_code
+                return output
 
     except httpx.HTTPStatusError as exc:
         logging.info(f"Request failed with status code {exc.response.status_code}")
         logging.info(f"Error message: {exc}")
-        return None
+        output = {}
+        output["payload"] = payload
+        output["payload"]["status_code"] = exc.response.status_code
+        return output
     except Exception as exc:
         logging.info(f"An unexpected error occurred: {str(exc)}")
-        return None
+        output = {}
+        output["payload"] = payload
+        output["payload"]["status_code"] = 0
+        return output
 
 
 async def main_routes(payloads, max_concurrency=10, ext_url="/advanced/routes"):
@@ -490,15 +499,45 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
             )
 
 
-# if __name__ == "__main__":
+def convert_no_routes_success_calls_to_df(json_blob):
 
-#     gp = generate_alt_pathways_by_chain_key_inputs(
-#         chain_keys=["era", "bas", "ava", "pze"],
-#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
-#     )
-#     logging.info(f"gp: {len(gp)}")
-#     df_pathways = pd.DataFrame(gp)
-#     df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
-#     pathways = df_pathways.to_dict("records")
-#     routes = asyncio.run(main_routes(payloads=pathways))
-#     upload_json_to_gcs(routes, "lifi_routes")
+    all_calls = []
+
+    for r in json_blob:
+        if len(r["routes"]) == 0:
+            if "unavailableRoutes" in r:
+                unav = r["unavailableRoutes"]
+                if "failed" in unav:
+                    if len(unav["failed"]) != 0:
+                        all_calls.extend(unav["failed"])
+                        break
+    pprint(all_calls)
+
+    df = pd.json_normalize(all_calls)
+    df = convert_lists_and_booleans_to_strings(df)
+    df.to_csv("data/eg_1_lifi_no_routes_success_calls.csv")
+    return df
+
+
+# if __name__ == "__main__":
+# get_upload_data_from_lifi_cs_bucket(get_greater_than_date_from_bq_lifi_routes())
+
+# convert_no_routes_success_calls_to_df
+
+# [X] download latest json data:
+# storage_client = storage.Client()
+# bucket = storage_client.get_bucket("lifi_routes")
+# blobs = bucket.list_blobs()
+# for blob in blobs:
+#     pprint(blob.name)
+#     if blob.name == "2024-02-20_14-24-39.json":
+#         data = json.loads(blob.download_as_text())
+#         with open(f"data/ad_hoc_lifi_routes_{blob.name}", "w") as f:
+#             json.dump(data, f)
+#         break
+
+# 2. get file to dataframe
+# with open("data/ad_hoc_lifi_routes_2024-02-20_14-24-39.json", "r") as f:
+#     data = json.load(f)
+
+# pprint(convert_no_routes_success_calls_to_df(data))

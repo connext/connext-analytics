@@ -1,6 +1,7 @@
 import json
 import logging
 from pprint import pprint
+import re
 import nest_asyncio
 import asyncio
 import pandas_gbq
@@ -156,30 +157,31 @@ def lifi_tools_pipeline():
     return {"message": "lifi tools pipeline finished"}
 
 
-@app.get("/lifi/generate_alt_pathways_by_chain_ids")
-def lifi_generate_alt_pathways_by_chain_key_inputs():
-    """
-    Adding hard coded chain ids for now
-    [ ] REPLACE ALL these generate Pathways with one SQL to rule all
-    anyway, all possible pathways are aviable in source_lifi__pathways.
-    [ ] Add a integration tag and to success and fail for each of these paths
-    """
+# @app.get("/lifi/generate_alt_pathways_by_chain_ids")
+# def lifi_generate_alt_pathways_by_chain_key_inputs():
+#     """
+#     Adding hard coded chain ids for now
+#     [ ] REPLACE ALL these generate Pathways with one SQL to rule all
+#     anyway, all possible pathways are aviable in source_lifi__pathways.
+#     [ ] Add a integration tag and to success and fail for each of these paths
+#     """
 
-    gp = generate_alt_pathways_by_chain_key_inputs(
-        chain_keys=["era", "bas", "ava", "pze"],
-        tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
-    )
+#     gp = generate_alt_pathways_by_chain_key_inputs(
+#         chain_keys=["era", "bas", "ava", "pze"],
+#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
+#     )
 
-    logging.info(f"gp: {len(gp)}")
-    df_gp = pd.DataFrame(gp)
-    pandas_gbq.to_gbq(
-        dataframe=df_gp.astype(str),
-        project_id=PROJECT_ID,
-        destination_table="mainnet-bigq.stage.source_lifi__pathways",
-        if_exists="append",
-        chunksize=100000,
-    )
-    return {"message": "lifi paths added to source_lifi__pathways. pipeline finished"}
+#     logging.info(f"gp: {len(gp)}")
+#     df_gp = pd.DataFrame(gp)
+
+#     pandas_gbq.to_gbq(
+#         dataframe=df_gp.astype(str),
+#         project_id=PROJECT_ID,
+#         destination_table="mainnet-bigq.stage.source_lifi__pathways",
+#         if_exists="append",
+#         chunksize=100000,
+#     )
+#     return {"message": "lifi paths added to source_lifi__pathways. pipeline finished"}
 
 
 # -----
@@ -187,19 +189,22 @@ def lifi_generate_alt_pathways_by_chain_key_inputs():
 # -----
 
 
-@app.get("/lifi/alt_chains_routes/pipeline")
-def alt_chain_route_pipeline():
-    """Pull Alt chains data and add them to Cloud storage"""
-    gp = generate_alt_pathways_by_chain_key_inputs(
-        chain_keys=["era", "bas", "ava", "pze"],
-        tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
-    )
-    logging.info(f"gp: {len(gp)}")
-    df_pathways = pd.DataFrame(gp)
-    df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
-    pathways = df_pathways.to_dict("records")
-    routes = asyncio.run(main_routes(payloads=pathways))
-    upload_json_to_gcs(routes, "lifi_routes")
+# @app.get("/lifi/alt_chains_routes/pipeline")
+# def alt_chain_route_pipeline():
+#     """Pull Alt chains data and add them to Cloud storage"""
+#     gp = generate_alt_pathways_by_chain_key_inputs(
+#         # chain_keys=["era", "bas", "ava", "pze"],
+#         chain_keys=["mam"],
+#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
+#     )
+#     logging.info(f"gp: {len(gp)}")
+#     df_pathways = pd.DataFrame(gp)
+#     df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
+#     pprint(df_pathways)
+#     pathways = df_pathways.to_dict("records")
+#     return pathways
+#     # routes = asyncio.run(main_routes(payloads=pathways))
+#     # upload_json_to_gcs(routes, "lifi_routes")
 
 
 # -----
@@ -229,9 +234,10 @@ def lifi_routes_pipeline():
             ]
     """
 
-    reset: bool = False
+    reset: bool = True
     print(f"start,pathway reset: {reset}")
     pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
+    logging.info(f"pathways: {len(pathways)}")
     routes = asyncio.run(main_routes(payloads=pathways))
     upload_json_to_gcs(routes, "lifi_routes")
 
@@ -289,14 +295,12 @@ def socket_routes_pipeline():
             On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
 
     """
-    reset: bool = False
+    reset: bool = True
     print(f"start,pathway reset: {reset}")
+    payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
+    logging.info(f"payloads pull, data length: {len(payloads)}")
 
-    routes = asyncio.run(
-        get_all_routes(
-            payloads=get_routes_pathways_from_bq(aggregator="socket", reset=reset)
-        )
-    )
+    routes = asyncio.run(get_all_routes(payloads=payloads))
     upload_json_to_gcs(routes, "socket_routes")
 
     return {"message": "socket routes pipeline finished"}

@@ -35,13 +35,14 @@ def get_routes_pathways_from_bq(aggregator, reset):
     reset: used to reset pathway to all possible paths using table selector
         -- OPTIONS:
             -- SELECT * FROM `mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways`
-            -- SELECT * FROM `mainnet-bigq.stage.source_lifi__pathways`
+            -- SELECT * FROM `mainnet-bigq.raw.stg_all_possible_pathways__routes__lifi_socket`
+                -- This is created based of LIFI pathway table, which is based of python code.
     aggregator: socket or lifi
     """
     table_id = "mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways"
     if reset:
         logging.info("Resetting routes to all possible paths")
-        table_id = "mainnet-bigq.stage.source_lifi__pathways"
+        table_id = "mainnet-bigq.raw.stg_all_possible_pathways__routes__lifi_socket"
 
     try:
 
@@ -72,6 +73,8 @@ def get_routes_pathways_from_bq(aggregator, reset):
         elif aggregator == "lifi":
             df["allowDestinationCall"] = True
 
+        df.drop(columns=["aggregator"], inplace=True)
+
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -80,9 +83,13 @@ def get_routes_pathways_from_bq(aggregator, reset):
 
 
 # if __name__ == "__main__":
+#     data = get_routes_pathways_from_bq(aggregator="lifi", reset=True)
+#     pprint(data[0])
+#     socket = len(data)
+#     logging.info(f"socket Done: {socket}")
 
-#     # socket = len(get_routes_pathways_from_bq(aggregator="socket", reset=False))
-#     # logging.info(f"socket Done: {socket}")
-
-#     lifi = len(get_routes_pathways_from_bq(aggregator="lifi", reset=False))
-#     logging.info(f"lifi Done: {lifi}")
+#     # lifi = len(get_routes_pathways_from_bq(aggregator="lifi", reset=True))
+#     # logging.info(f"lifi Done: {lifi}")
+# p = get_routes_pathways_from_bq(aggregator="socket", reset=True)
+# logging.info(f"socket Done: {len(p)}")
+# pprint(p[0])

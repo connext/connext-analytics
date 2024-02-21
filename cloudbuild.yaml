@@ -1,5 +1,5 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-args: ['build', '-t', '${us-central1}-docker.pkg.dev/${mainnet-bigq}/${elt-python}/${connext-lifi}', '.']
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs', '-f', 'Docker/Dockerfile.jobs', '.']
 images:
-  - '${us-central1}-docker.pkg.dev/${mainnet-bigq}/${elt-python}/${connext-lifi}'
+- 'us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs'

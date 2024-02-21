@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import nest_asyncio
 from src.integrations.lifi import (
     main_routes,
 )
@@ -17,7 +16,6 @@ from src.integrations.utilities import (
 )
 
 logging.basicConfig(level=logging.INFO)
-nest_asyncio.apply()
 
 
 async def lifi_pipeline():
@@ -60,5 +58,5 @@ async def run_lifi_socket_routes_jobs():
 
 
 if __name__ == "__main__":
-
+    logging.info("started Routes jobs")
     print(asyncio.run(run_lifi_socket_routes_jobs()))

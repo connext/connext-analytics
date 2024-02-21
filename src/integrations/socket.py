@@ -23,8 +23,8 @@ from src.integrations.helpers_routes_aggreagators import (
 nest_asyncio.apply()
 
 # Define the maximum number of retries and the initial delay
-MAX_RETRIES = 5
-INITIAL_DELAY = 5  # in seconds
+MAX_RETRIES = 500
+INITIAL_DELAY = 10  # in seconds
 
 # Configure the logging settings
 logging.basicConfig(
@@ -211,16 +211,16 @@ def get_upload_data_from_socket_cs_bucket(
             logging.info(f"Socket Routers, {df.shape} rows Added!")
 
             # Also upload unsuported data to bq
-            df_unsupported_paths = convert_no_routes_success_calls_to_df(json_blob=data)
-            df_unsupported_paths["upload_datetime"] = dt
-            pandas_gbq.to_gbq(
-                dataframe=df_unsupported_paths,
-                project_id=PROJECT_ID,
-                destination_table="raw.source_socket__routes_unsupported_paths",
-                if_exists="replace",
-                chunksize=10000,
-                api_method="load_csv",
-            )
+            # df_unsupported_paths = convert_no_routes_success_calls_to_df(json_blob=data)
+            # df_unsupported_paths["upload_datetime"] = dt
+            # pandas_gbq.to_gbq(
+            #     dataframe=df_unsupported_paths,
+            #     project_id=PROJECT_ID,
+            #     destination_table="raw.source_socket__routes_unsupported_paths",
+            #     if_exists="replace",
+            #     chunksize=10000,
+            #     api_method="load_csv",
+            # )
 
             logging.info(f"Socket unsupported Routers, {df.shape} rows Added!")
 
@@ -327,36 +327,36 @@ def convert_no_routes_success_calls_to_df(json_blob):
     return df
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    # output = get_upload_data_from_socket_cs_bucket(
-    #     greater_than_date_routes=get_greater_than_date_from_bq_table(
-    #         table_id="mainnet-bigq.raw.source_socket__routes",
-    #         date_col="upload_datetime",
-    #     ),
-    #     greater_than_date_steps=get_greater_than_date_from_bq_table(
-    #         table_id="mainnet-bigq.raw.source_socket__routes_steps",
-    #         date_col="upload_datetime",
-    #     ),
-    # )
+# output = get_upload_data_from_socket_cs_bucket(
+#     greater_than_date_routes=get_greater_than_date_from_bq_table(
+#         table_id="mainnet-bigq.raw.source_socket__routes",
+#         date_col="upload_datetime",
+#     ),
+#     greater_than_date_steps=get_greater_than_date_from_bq_table(
+#         table_id="mainnet-bigq.raw.source_socket__routes_steps",
+#         date_col="upload_datetime",
+#     ),
+# )
 
-    # [X] download latest json data:
-    # storage_client = storage.Client()
-    # bucket = storage_client.get_bucket("socket_routes")
-    # blobs = bucket.list_blobs()
-    # for blob in blobs:
-    #     pprint(blob.name)
-    #     if blob.name == "2024-02-20_14-09-59.json":
-    #         data = json.loads(blob.download_as_text())
-    #         with open(f"data/ad_hoc_socket_routes_{blob.name}", "w") as f:
-    #             json.dump(data, f)
-    #         break
+# [X] download latest json data:
+# storage_client = storage.Client()
+# bucket = storage_client.get_bucket("socket_routes")
+# blobs = bucket.list_blobs()
+# for blob in blobs:
+#     pprint(blob.name)
+#     if blob.name == "2024-02-20_14-09-59.json":
+#         data = json.loads(blob.download_as_text())
+#         with open(f"data/ad_hoc_socket_routes_{blob.name}", "w") as f:
+#             json.dump(data, f)
+#         break
 
-    # 2. get file to dataframe
-    with open("data/new_socket_routes.json", "r") as f:
-        data = json.load(f)
-    df = convert_no_routes_success_calls_to_df(json_blob=data)
-    df.to_csv("data/new_socket_routes.csv")
+# 2. get file to dataframe
+# with open("data/new_socket_routes.json", "r") as f:
+#     data = json.load(f)
+# df = convert_no_routes_success_calls_to_df(json_blob=data)
+# df.to_csv("data/new_socket_routes.csv")
 
 # 3. get df from csv
 # df = pd.read_csv("data/ad_hoc_socket_routes_2024-02-20_14-09-59.csv")

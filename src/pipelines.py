@@ -13,11 +13,9 @@ from src.integrations.lifi import (
     all_chains,
     get_tokens as get_tokens_lifi,
     get_tools as get_tools_lifi,
-    generate_pathways,
     main_routes,
     get_upload_data_from_lifi_cs_bucket,
     get_greater_than_date_from_bq_lifi_routes,
-    generate_alt_pathways_by_chain_key_inputs,
 )
 from src.integrations.socket import (
     get_chains,
@@ -34,7 +32,6 @@ from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import (
     upload_json_to_gcs,
-    get_raw_from_bq,
     read_sql_from_file_add_template,
     run_bigquery_query,
     convert_lists_and_booleans_to_strings,

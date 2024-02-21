@@ -353,89 +353,92 @@ def convert_json_to_df(json_file):
 
     # Loop through each route in the JSON file
     for r in json_file:
-        routes = r["routes"]
-        for route in routes:
-            # Normalize the steps for the current route
-            steps_df = pd.json_normalize(route, record_path="steps")
-            # pprint(f"steps_df: {steps_df.columns}")
+        if "routes" in r:
+            routes = r["routes"]
+            for route in routes:
+                # Normalize the steps for the current route
+                steps_df = pd.json_normalize(route, record_path="steps")
+                # pprint(f"steps_df: {steps_df.columns}")
 
-            # Initialize empty lists to store fees and gas costs data
-            fees_data = []
-            gas_costs_data = []
+                # Initialize empty lists to store fees and gas costs data
+                fees_data = []
+                gas_costs_data = []
 
-            # Loop through each step to extract and normalize fees and gas costs
-            for step in route["steps"]:
-                # Normalize fees and append to the fees_data list
-                if step["estimate"]["feeCosts"]:
-                    fees = pd.json_normalize(step["estimate"]["feeCosts"])
-                    fees_data.append(fees)
+                # Loop through each step to extract and normalize fees and gas costs
+                for step in route["steps"]:
+                    # Normalize fees and append to the fees_data list
+                    if step["estimate"]["feeCosts"]:
+                        fees = pd.json_normalize(step["estimate"]["feeCosts"])
+                        fees_data.append(fees)
 
-                # Normalize gas costs and append to the gas_costs_data list
-                if step["estimate"]["gasCosts"]:
-                    gas_costs = pd.json_normalize(step["estimate"]["gasCosts"])
-                    gas_costs_data.append(gas_costs)
+                    # Normalize gas costs and append to the gas_costs_data list
+                    if step["estimate"]["gasCosts"]:
+                        gas_costs = pd.json_normalize(step["estimate"]["gasCosts"])
+                        gas_costs_data.append(gas_costs)
 
-            if fees_data:
-                fees_df = pd.concat(fees_data, ignore_index=True)
-            else:
-                fees_df = pd.DataFrame()
-
-            # Add a prefix to each fee column name to prevent conflicts
-            fees_df.columns = ["fee_" + col for col in fees_df.columns]
-            # pprint(f"fees_df: {fees_df.columns}")
-
-            if gas_costs_data:
-                gas_costs_df = pd.concat(gas_costs_data, ignore_index=True)
-            else:
-                gas_costs_df = pd.DataFrame()
-            gas_costs_df.columns = ["gas_" + col for col in gas_costs_df.columns]
-            # pprint(f"gas_costs_df: {gas_costs_df.columns}")
-
-            # Extract the route metadata (excluding the 'steps')
-            metadata = {k: v for k, v in route.items() if k != "steps"}
-
-            # Normalize the metadata
-            metadata_df = pd.json_normalize(metadata)
-            # pprint(f"metadata_df: {metadata_df.columns}")
-
-            # Add a prefix to each metadata column name to prevent conflicts
-            metadata_df.columns = ["route_" + col for col in metadata_df.columns]
-
-            # Repeat the metadata for each step in the current route
-            repeated_metadata_df = pd.concat(
-                [metadata_df] * len(steps_df), ignore_index=True
-            )
-            # pprint(f"repeated_metadata_df: {repeated_metadata_df.columns}")
-
-            # Concatenate the steps DataFrame with the repeated metadata DataFrame
-            enriched_steps_df = pd.concat([steps_df, repeated_metadata_df], axis=1)
-            # pprint(f"enriched_steps_df: {enriched_steps_df.columns}")
-
-            # Concatenate the fees and gas costs DataFrames with the enriched steps DataFrame
-            enriched_df = pd.concat([enriched_steps_df, fees_df, gas_costs_df], axis=1)
-            # pprint(f"will all enriched_df: {enriched_df.columns}")
-
-            # Concatenate the enriched DataFrame with the normalized_data_df
-
-            try:
-                normalized_data_df = pd.concat(
-                    [normalized_data_df, enriched_df], ignore_index=True
-                )
-                # print(f"{normalized_data_df.shape} df size")
-            except pd.errors.InvalidIndexError:
-                # print("Error occurred during concatenation.")
-
-                if len(enriched_df.columns) == len(enriched_df.columns.unique()):
-                    print("All column names are unique.")
+                if fees_data:
+                    fees_df = pd.concat(fees_data, ignore_index=True)
                 else:
-                    print("There are duplicate column names.")
-                    # Assume df is your DataFrame
-                    duplicate_columns = enriched_df.columns[
-                        enriched_df.columns.duplicated()
-                    ]
+                    fees_df = pd.DataFrame()
 
-                    print("Duplicate column names: ", duplicate_columns.tolist())
-                    print(f"original cols: {enriched_df.columns}")
+                # Add a prefix to each fee column name to prevent conflicts
+                fees_df.columns = ["fee_" + col for col in fees_df.columns]
+                # pprint(f"fees_df: {fees_df.columns}")
+
+                if gas_costs_data:
+                    gas_costs_df = pd.concat(gas_costs_data, ignore_index=True)
+                else:
+                    gas_costs_df = pd.DataFrame()
+                gas_costs_df.columns = ["gas_" + col for col in gas_costs_df.columns]
+                # pprint(f"gas_costs_df: {gas_costs_df.columns}")
+
+                # Extract the route metadata (excluding the 'steps')
+                metadata = {k: v for k, v in route.items() if k != "steps"}
+
+                # Normalize the metadata
+                metadata_df = pd.json_normalize(metadata)
+                # pprint(f"metadata_df: {metadata_df.columns}")
+
+                # Add a prefix to each metadata column name to prevent conflicts
+                metadata_df.columns = ["route_" + col for col in metadata_df.columns]
+
+                # Repeat the metadata for each step in the current route
+                repeated_metadata_df = pd.concat(
+                    [metadata_df] * len(steps_df), ignore_index=True
+                )
+                # pprint(f"repeated_metadata_df: {repeated_metadata_df.columns}")
+
+                # Concatenate the steps DataFrame with the repeated metadata DataFrame
+                enriched_steps_df = pd.concat([steps_df, repeated_metadata_df], axis=1)
+                # pprint(f"enriched_steps_df: {enriched_steps_df.columns}")
+
+                # Concatenate the fees and gas costs DataFrames with the enriched steps DataFrame
+                enriched_df = pd.concat(
+                    [enriched_steps_df, fees_df, gas_costs_df], axis=1
+                )
+                # pprint(f"will all enriched_df: {enriched_df.columns}")
+
+                # Concatenate the enriched DataFrame with the normalized_data_df
+
+                try:
+                    normalized_data_df = pd.concat(
+                        [normalized_data_df, enriched_df], ignore_index=True
+                    )
+                    # print(f"{normalized_data_df.shape} df size")
+                except pd.errors.InvalidIndexError:
+                    # print("Error occurred during concatenation.")
+
+                    if len(enriched_df.columns) == len(enriched_df.columns.unique()):
+                        print("All column names are unique.")
+                    else:
+                        print("There are duplicate column names.")
+                        # Assume df is your DataFrame
+                        duplicate_columns = enriched_df.columns[
+                            enriched_df.columns.duplicated()
+                        ]
+
+                        print("Duplicate column names: ", duplicate_columns.tolist())
+                        print(f"original cols: {enriched_df.columns}")
 
     return normalized_data_df.dropna()
 
@@ -467,10 +470,10 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
             data = json.loads(blob.download_as_text())
             print(f"data: {len(data)}")
 
-            # convert the data to df
+            # 1. convert the data to df
             df = convert_json_to_df(json_file=data)
             name = os.path.splitext(blob.name)[0]
-            df["upload_datetime"] = datetime.strptime(name, "%Y-%m-%d_%H-%M-%S")
+            df["upload_datetime"] = dt
             df.columns = df.columns.str.lower()
             df.columns = df.columns.str.replace(".", "_")
             for col in df.columns:
@@ -492,6 +495,24 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
                 chunksize=100000,
                 api_method="load_csv",
             )
+            logging.info(f"Lifi Routers, {df.shape} rows Added!")
+
+            # 2. Upload payload data along with this
+            logging.info(f"Uploading payload data for:{name} ")
+            payload_df = convert_routes_payload_to_df(json_blob=data)
+            payload_df["aggregator"] = "lifi"
+            payload_df["upload_datetime"] = dt
+
+            # upload to bq
+            pandas_gbq.to_gbq(
+                dataframe=convert_lists_and_booleans_to_strings(payload_df),
+                project_id=PROJECT_ID,
+                destination_table="stage.source__lifi_routes__payloads_logs",
+                if_exists="append",
+                chunksize=100000,
+                api_method="load_csv",
+            )
+            logging.info(f"Lifi Payloads, {payload_df.shape} rows Added!")
 
         else:
             logging.info(
@@ -519,25 +540,49 @@ def convert_no_routes_success_calls_to_df(json_blob):
     return df
 
 
+def convert_routes_payload_to_df(json_blob):
+    """
+    To this add:
+        1. date of pull: update_datetime
+        2. type fo aggreagator
+    """
+    all_payloads = []
+    for r in json_blob:
+        if "payload" in r:
+            all_payloads.append(r["payload"])
+    df = pd.json_normalize(all_payloads)
+    return df
+
+
 # if __name__ == "__main__":
 # get_upload_data_from_lifi_cs_bucket(get_greater_than_date_from_bq_lifi_routes())
 
 # convert_no_routes_success_calls_to_df
 
-# [X] download latest json data:
+#    # [X] download latest json data:
 # storage_client = storage.Client()
 # bucket = storage_client.get_bucket("lifi_routes")
 # blobs = bucket.list_blobs()
 # for blob in blobs:
 #     pprint(blob.name)
-#     if blob.name == "2024-02-20_14-24-39.json":
+#     if blob.name == "2024-02-21_09-17-38.json":
 #         data = json.loads(blob.download_as_text())
 #         with open(f"data/ad_hoc_lifi_routes_{blob.name}", "w") as f:
 #             json.dump(data, f)
+#         with open(f"data/sample_ad_hoc_lifi_routes_{blob.name}", "w") as f:
+#             json.dump(data[0], f)
 #         break
 
 # 2. get file to dataframe
-# with open("data/ad_hoc_lifi_routes_2024-02-20_14-24-39.json", "r") as f:
-#     data = json.load(f)
+# with open("data/sample_ad_hoc_lifi_routes_2024-02-21_09-17-38.json", "r") as f:
+#     data = [json.load(f)]
+# # with open("data/ad_hoc_lifi_routes_2024-02-21_09-17-38.json", "r") as f:
+# #     data = json.load(f)
+# df = convert_json_to_df(data)
+# df_payload = convert_routes_payload_to_df(data)
+# pprint(df)
+# pprint(df_payload)
 
-# pprint(convert_no_routes_success_calls_to_df(data))
+# df = convert_json_to_df(data)
+# df.to_csv("data/ad_hoc_lifi_routes_2024-02-21_09-17-38.csv")
+# pprint(df)

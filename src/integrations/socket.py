@@ -199,7 +199,7 @@ def get_upload_data_from_socket_cs_bucket(
             df = convert_socket_routes_json_to_df(json_blob=data)
             df["upload_datetime"] = dt
 
-            # 2. upload to bq
+            # 1.2. upload to bq
             pandas_gbq.to_gbq(
                 dataframe=df,
                 project_id=PROJECT_ID,
@@ -210,7 +210,24 @@ def get_upload_data_from_socket_cs_bucket(
             )
             logging.info(f"Socket Routers, {df.shape} rows Added!")
 
-            # Also upload unsuported data to bq
+            # 2. Get payload data to df
+            logging.info(f"Uploading payload data for:{name} ")
+            payload_df = convert_routes_payload_to_df(json_blob=data)
+            payload_df["aggregator"] = "socket"
+            payload_df["upload_datetime"] = dt
+
+            # upload to bq
+            pandas_gbq.to_gbq(
+                dataframe=convert_lists_and_booleans_to_strings(payload_df),
+                project_id=PROJECT_ID,
+                destination_table="raw.source_socket_routes__payloads_logs",
+                if_exists="append",
+                chunksize=100000,
+                api_method="load_csv",
+            )
+            logging.info(f"Socket Payloads, {payload_df.shape} rows Added!")
+
+            # 3. Also upload unsuported data to bq
             # df_unsupported_paths = convert_no_routes_success_calls_to_df(json_blob=data)
             # df_unsupported_paths["upload_datetime"] = dt
             # pandas_gbq.to_gbq(
@@ -221,8 +238,6 @@ def get_upload_data_from_socket_cs_bucket(
             #     chunksize=10000,
             #     api_method="load_csv",
             # )
-
-            logging.info(f"Socket unsupported Routers, {df.shape} rows Added!")
 
         else:
             logging.info(
@@ -260,49 +275,53 @@ def convert_socket_routes_json_to_df(json_blob):
 
     normalized_data_df = pd.DataFrame()
     for r in json_blob:
-        route = r["result"]
-        metadata = {
-            k: v for k, v in route.items() if k not in ["routes", "bridgeRouteErrors"]
-        }
-        metadata_df = pd.json_normalize(metadata, sep="_")
-        routes_df = pd.DataFrame()
-        if route["routes"]:
-            for r in route["routes"]:
-                route_data = {
-                    k: v
-                    for k, v in r.items()
-                    if k not in ["chainGasBalances", "minimumGasBalances"]
-                }
-                route_df = pd.json_normalize(route_data, sep="_")
-                routes_df = pd.concat([routes_df, route_df], ignore_index=True)
+        if "result" in r:
+            route = r["result"]
+            metadata = {
+                k: v
+                for k, v in route.items()
+                if k not in ["routes", "bridgeRouteErrors"]
+            }
+            metadata_df = pd.json_normalize(metadata, sep="_")
+            routes_df = pd.DataFrame()
+            if route["routes"]:
+                for r in route["routes"]:
+                    route_data = {
+                        k: v
+                        for k, v in r.items()
+                        if k not in ["chainGasBalances", "minimumGasBalances"]
+                    }
+                    route_df = pd.json_normalize(route_data, sep="_")
+                    routes_df = pd.concat([routes_df, route_df], ignore_index=True)
 
-        flattened_df = pd.merge(routes_df, metadata_df, how="cross")
-        normalized_data_df = pd.concat(
-            [normalized_data_df, flattened_df], ignore_index=True
-        )
+            flattened_df = pd.merge(routes_df, metadata_df, how="cross")
+            normalized_data_df = pd.concat(
+                [normalized_data_df, flattened_df], ignore_index=True
+            )
     return convert_lists_and_booleans_to_strings(normalized_data_df)
 
 
 def convert_socket_routes_steps_json_to_df(json_blob):
     all_steps = []
     for r in json_blob:
-        if "routes" in r["result"]:
-            routes = r["result"]["routes"]
-            for r in routes:
-                if "userTxs" in r:
-                    for u in r["userTxs"]:
-                        if "steps" in u:
-                            steps = u["steps"]
-                            step_counter = 0
-                            for step in steps:
-                                step["step_id"] = step_counter
-                                step["route_id"] = r["routeId"]
-                                step["routePath"] = u["routePath"]
-                                step["userTxIndex"] = u["userTxIndex"]
-                                all_steps.append(step)
-                                step_counter += 1
+        if "result" in r:
+            if "routes" in r["result"]:
+                routes = r["result"]["routes"]
+                for r in routes:
+                    if "userTxs" in r:
+                        for u in r["userTxs"]:
+                            if "steps" in u:
+                                steps = u["steps"]
+                                step_counter = 0
+                                for step in steps:
+                                    step["step_id"] = step_counter
+                                    step["route_id"] = r["routeId"]
+                                    step["routePath"] = u["routePath"]
+                                    step["userTxIndex"] = u["userTxIndex"]
+                                    all_steps.append(step)
+                                    step_counter += 1
 
-    steps_df = pd.json_normalize(all_steps)
+        steps_df = pd.json_normalize(all_steps)
     return convert_lists_and_booleans_to_strings(steps_df)
 
 
@@ -327,6 +346,20 @@ def convert_no_routes_success_calls_to_df(json_blob):
     return df
 
 
+def convert_routes_payload_to_df(json_blob):
+    """
+    To this add:
+        1. date of pull: update_datetime
+        2. type fo aggreagator
+    """
+    all_payloads = []
+    for r in json_blob:
+        if "payload" in r:
+            all_payloads.append(r["payload"])
+    df = pd.json_normalize(all_payloads)
+    return df
+
+
 # if __name__ == "__main__":
 
 # output = get_upload_data_from_socket_cs_bucket(
@@ -346,11 +379,20 @@ def convert_no_routes_success_calls_to_df(json_blob):
 # blobs = bucket.list_blobs()
 # for blob in blobs:
 #     pprint(blob.name)
-#     if blob.name == "2024-02-20_14-09-59.json":
+#     if blob.name == "2024-02-21_13-27-49.json":
 #         data = json.loads(blob.download_as_text())
 #         with open(f"data/ad_hoc_socket_routes_{blob.name}", "w") as f:
 #             json.dump(data, f)
+#         with open(f"data/sample_ad_hoc_socket_routes_{blob.name}", "w") as f:
+#             json.dump(data[0], f)
 #         break
+
+# with open("data/sample_ad_hoc_socket_routes_2024-02-21_13-27-49.json", "r") as f:
+#     data = [json.load(f)]
+
+# df = convert_routes_payload_to_df(data)
+# print(df)
+# print(df.columns)
 
 # 2. get file to dataframe
 # with open("data/new_socket_routes.json", "r") as f:

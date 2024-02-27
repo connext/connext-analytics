@@ -28,12 +28,12 @@ logging.basicConfig(level=logging.INFO)
 PROJECT_ID = "mainnet-bigq"
 
 
-async def lifi_pipeline():
+async def lifi_pipeline(reset):
     """
     lifi pipeline
     """
     # LIFI
-    reset: bool = True
+
     logging.info(f"start,pathway reset: {reset}")
     pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
     logging.info(f" lifi pathways: {len(pathways)}")
@@ -43,12 +43,12 @@ async def lifi_pipeline():
     return {"lifi_routes_job": "completed"}
 
 
-async def socket_pipeline():
+async def socket_pipeline(reset):
     """
     socket pipeline
     """
     # Socket
-    reset: bool = True
+
     logging.info(f"start,pathway reset: {reset}")
     payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
     logging.info(f"socket pathways, data length: {len(payloads)}")
@@ -58,11 +58,11 @@ async def socket_pipeline():
     return {"socket_routes_job": "completed"}
 
 
-async def run_lifi_socket_routes_jobs():
+async def run_lifi_socket_routes_jobs(reset: bool = False):
 
     response1, response2 = await asyncio.gather(
-        lifi_pipeline(),
-        socket_pipeline(),
+        lifi_pipeline(reset=reset),
+        socket_pipeline(reset=reset),
     )
     return {"lifi_routes_job": response1, "socket_routes_job": response2}
 

@@ -70,21 +70,27 @@ def get_routes_pathways_from_bq(aggregator, reset):
                 inplace=True,
             )
 
+            df.drop(columns=["aggregator"], inplace=True)
+            return df.to_dict(orient="records")
+
         elif aggregator == "lifi":
             df["allowDestinationCall"] = True
-
-        df.drop(columns=["aggregator"], inplace=True)
-
-        return df.to_dict(orient="records")
+            df.drop(columns=["aggregator"], inplace=True)
+            payload = df.to_dict(orient="records")
+            # add integrator as connext
+            new_key_value = {"options": {"integrator": "connext.network"}}
+            for dict_item in payload:
+                dict_item.update(new_key_value)
+            return payload
 
     except Exception as e:
         logging.info(f"An unexpected error occurred: {e}")
         raise
 
 
-# if __name__ == "__main__":
-#     data = get_routes_pathways_from_bq(aggregator="lifi", reset=True)
-#     pprint(data[0])
+if __name__ == "__main__":
+    data = get_routes_pathways_from_bq(aggregator="lifi", reset=True)
+    pprint(data[0])
 #     socket = len(data)
 #     logging.info(f"socket Done: {socket}")
 

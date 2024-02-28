@@ -226,12 +226,15 @@ def lifi_routes_pipeline():
                     "toChainId": 10,
                     "toTokenAddress": "0x0000000000000000000000000000000000000000",
                     "fromAmount": 1e+21,
-                    "allowDestinationCall": true
+                    "allowDestinationCall": true,
+                    "options": {
+                      "integrator": "connext.network"
+                      },
                 }
             ]
     """
 
-    reset: bool = True
+    reset: bool = False
     print(f"start,pathway reset: {reset}")
     pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
     logging.info(f"pathways: {len(pathways)}")
@@ -292,7 +295,7 @@ def socket_routes_pipeline():
             On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
 
     """
-    reset: bool = True
+    reset: bool = False
     print(f"start,pathway reset: {reset}")
     payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
     logging.info(f"payloads pull, data length: {len(payloads)}")

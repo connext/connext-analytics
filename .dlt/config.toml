@@ -1,0 +1,21 @@
+[runtime]
+log_level="INFO"
+log_format="JSON"
+dlthub_telemetry = true
+
+[data_writer]
+max_buffer_items=100
+
+[providers]
+enable_google_secretes=true
+
+[schemas]
+export_schema_path="schemas/export"
+import_schema_path="schemas/import"
+
+[sources.defilamma]
+stablecoins_list_url="https://stablecoins.llama.fi/stablecoins?includePrices=true"
+stablecoin_url= "https://stablecoins.llama.fi/stablecoin/"
+bridge_url="https://bridges.llama.fi/bridges?includeChains=true"
+chains_url="https://api.llama.fi/v2/chains"
+bridgedaystats_url="https://bridges.llama.fi/bridgedaystats/"

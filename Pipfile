@@ -18,6 +18,9 @@ google-cloud-storage = "*"
 python-dotenv = "*"
 jinja2 = "*"
 grip = "*"
+defillama2 = "*"
+dlt = "*"
+pydantic = "*"
 
 [dev-packages]
 black="*"

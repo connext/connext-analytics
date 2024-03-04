@@ -1,5 +1,28 @@
 steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs', '-f', 'Docker/Dockerfile.jobs', '.']
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs",
+        "-f",
+        "Docker/Dockerfile.jobs",
+        ".",
+        "--build-arg",
+        'ENTRYPOINT_OVERRIDE=CMD ["python", "-m", "src.jobs"]',
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma",
+        "-f",
+        "Docker/Dockerfile.jobs",
+        ".",
+        "--build-arg",
+        'ENTRYPOINT_OVERRIDE=CMD ["python", "-m", "src.integrations.defilamma"]',
+      ]
 images:
-- 'us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs'
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma"

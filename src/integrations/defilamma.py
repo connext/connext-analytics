@@ -1,10 +1,12 @@
 import asyncio
+import json
 from datetime import datetime, timedelta
 from operator import le
 from os import times
 import time
 import pytz
 import dlt
+import logging
 import pandas as pd
 from defillama2 import DefiLlama
 from typing import Callable
@@ -23,8 +25,12 @@ from src.integrations.models.defilamma import (
     DefilammaBridgesHistoryWallets,
     DefilammaBridgesHistoryTokens,
 )
+from src.integrations.utilities import get_raw_from_bq
 from src.integrations.helpers_http import AsyncHTTPClient
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 # (EL)T: DLT- via Prefect
 dl = DefiLlama()
 
@@ -127,42 +133,44 @@ def defilamma_bridges(bridge_url=dlt.config.value) -> Iterator[TDataItems]:
 
 @staticmethod
 def convert_raw_bridgestats_to_df(res_data, upload_datetime):
-    output = []
-    for d in res_data:
-        output.append(d)
 
     # Flattening the data into two DataFrames
     df1_data = []
     df2_data = []
-    for data in output:
-        for key, value in data.items():
-            if key in ["totalTokensDeposited", "totalTokensWithdrawn"]:
-                for sub_key, sub_value in value.items():
-                    df1_data.append(
-                        {
-                            "date": data["date"],
-                            "bridge_id": data["payload"]["id"],
-                            "key": sub_key,
-                            **sub_value,
-                        }
-                    )
-            elif key in ["totalAddressDeposited", "totalAddressWithdrawn"]:
-                for sub_key, sub_value in value.items():
-                    df2_data.append(
-                        {
-                            "date": data["date"],
-                            "bridge_id": data["payload"]["id"],
-                            "key": sub_key,
-                            **sub_value,
-                        }
-                    )
+    for res in res_data:
+        print(res)
+        if "data" in res:
+            data = res["data"]
+            for key, value in data.items():
+                if key in ["totalTokensDeposited", "totalTokensWithdrawn"]:
+                    for sub_key, sub_value in value.items():
+                        df1_data.append(
+                            {
+                                "date": data["date"],
+                                "status_code": res["status_code"],
+                                "url": res["url"],
+                                "key": sub_key,
+                                **sub_value,
+                            }
+                        )
+                elif key in ["totalAddressDeposited", "totalAddressWithdrawn"]:
+                    for sub_key, sub_value in value.items():
+                        df2_data.append(
+                            {
+                                "date": data["date"],
+                                "status_code": res["status_code"],
+                                "url": res["url"],
+                                "key": sub_key,
+                                **sub_value,
+                            }
+                        )
 
     df1 = pd.DataFrame(df1_data)
-    df1[["chain_id", "token_address"]] = df1["key"].str.split(":", expand=True)
     df1["upload_timestamp"] = upload_datetime
+    print(df1)
     df2 = pd.DataFrame(df2_data)
-    df2[["chain_id", "wallet_address"]] = df2["key"].str.split(":", expand=True)
     df2["upload_timestamp"] = upload_datetime
+    print(df2)
     final = [
         {
             "type": "source_defilamma__bridges_history_wallets",
@@ -190,6 +198,9 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
 def generate_daily_unix_timestamps(
     start_date="2024-01-01", end_date=datetime.now(pytz.UTC)
 ):
+    # [ ] TODO: get  the lastest date from big query table and pull the data from that date.
+    # That will be the start date
+
     "Generate epoch timestamps in GMT, starting from the start of the day"
     # Convert the start_date to a datetime object with GMT timezone
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
@@ -216,7 +227,7 @@ def generate_daily_unix_timestamps(
 
 
 @dlt.resource(
-    write_disposition="replace",
+    write_disposition="append",
 )
 def defilamma_bridge_day_stats(
     bridgedaystats_url=dlt.config.value,
@@ -236,34 +247,34 @@ def defilamma_bridge_day_stats(
         defilamma_bridge_day_stats(timestamp=1659251200, chain="Arbitrum", id=12)
     """
 
-    data_defilamma_bridges = defilamma_bridges()
-    print(bridgedaystats_url)
+    df_defilamma_supported_bridge_chain_pair = get_raw_from_bq(
+        sql_file_name="defilamma_supported_bridge_chain_pair"
+    )
+    defilamma_supported_bridge_chain_pair = (
+        df_defilamma_supported_bridge_chain_pair.to_dict(orient="records")
+    )
     req_datetime = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
-    urls = []
-    timestamps = generate_daily_unix_timestamps(start_date="2022-02-28")
+
+    timestamps = generate_daily_unix_timestamps()
     len(f"timestamps length: {len(timestamps)}")
+
+    # Initialize and call API
+    bridgedaystats_client = AsyncHTTPClient(max_concurrency=5)
     for timestamp in timestamps:
-        for chain in data_defilamma_chains:
-            for bridge in data_defilamma_bridges:
-                additional_url = f"{timestamp}/{chain['name']}?id={bridge['id']}"
-                url = bridgedaystats_url + additional_url
-                print(url)
-                urls.append(url)
-    yield urls
+        urls = []
+        for pair in defilamma_supported_bridge_chain_pair:
+            additional_url = f"{timestamp}/{pair['name']}?id={pair['id']}"
+            url = bridgedaystats_url + additional_url
+            urls.append(url)
+        logging.info(f"Data to pull, urls length: {len(urls)}")
 
-    # additional_url = f"{timestamp}/{chain}"
-    # url = bridgedaystats_url + additional_url
-    # payload = [{"id": 12}]
-    # headers = {"accept": "*/*"}
+        data = asyncio.run(
+            bridgedaystats_client.get_all_responses(
+                method="GET", urls=urls, headers={"accept": "*/*"}
+            )
+        )
 
-    # bridgedaystats_client = AsyncHTTPClient(url_base=url)
-    # data = asyncio.run(
-    #     bridgedaystats_client.get_all_responses(
-    #         method="GET", urls=[url], payloads=payload, headers=headers
-    #     )
-    # )
-
-    # yield convert_raw_bridgestats_to_df(res_data=data, upload_datetime=req_datetime)
+        yield convert_raw_bridgestats_to_df(res_data=data, upload_datetime=req_datetime)
 
 
 # Sources
@@ -271,25 +282,23 @@ def defilamma_bridge_day_stats(
     max_table_nesting=0,
 )
 def defilamma_raw() -> Sequence[DltResource]:
-    # return [defilamma_protocols, defilamma_stables, defilamma_bridges, defilamma_chains]
-    # return [defilamma_bridge_day_stats]
-    return [defilamma_chains]
+    return [
+        defilamma_protocols,
+        defilamma_stables,
+        defilamma_bridges,
+        defilamma_chains,
+        defilamma_bridge_day_stats,
+    ]
 
 
 # Main
 
-
 if __name__ == "__main__":
-    "Running DLT defilamma"
 
+    "Running DLT defilamma"
     p = dlt.pipeline(
         pipeline_name="defilamma",
         destination="bigquery",
         dataset_name="raw",
     )
     p.run(defilamma_raw(), loader_file_format="parquet")
-
-    # all = []
-    # for i in defilamma_raw():
-    #     all.append(i)
-    # print(len(all))

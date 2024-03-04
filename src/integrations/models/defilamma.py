@@ -32,25 +32,23 @@ class DefilammaBridges(BaseModel):
 
 class DefilammaBridgesHistoryWallets(BaseModel):
     date: Optional[int]
-    bridge_id: Optional[int]
+    status_code: Optional[int]
+    url: Optional[HttpUrl]
     key: Optional[str]
     usdValue: Optional[float]
     txs: Optional[int]
-    chain_id: Optional[str]
-    wallet_address: Optional[str]
     upload_timestamp: Optional[datetime]
 
 
 class DefilammaBridgesHistoryTokens(BaseModel):
     date: Optional[int]
-    bridge_id: Optional[int]
+    status_code: Optional[int]
+    url: Optional[HttpUrl]
     key: Optional[str]
     usdValue: Optional[float]
     amount: Optional[str]
     symbol: Optional[str]
     decimals: Optional[int]
-    chain_id: Optional[str]
-    token_address: Optional[str]
     upload_timestamp: Optional[datetime]
 
 

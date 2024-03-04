@@ -1,22 +1,15 @@
 import asyncio
-import json
 from datetime import datetime, timedelta
-from operator import le
-from os import times
-import time
 import pytz
 import dlt
 import logging
 import pandas as pd
 from defillama2 import DefiLlama
-from typing import Callable
-from pprint import pprint
 from typing import Iterator, Sequence
 from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
 from dlt.common.typing import TDataItems
 from dlt.extract.source import DltResource
 from dlt.sources.helpers import requests
-from pendulum import today
 from src.integrations.models.defilamma import (
     DefilammaChains,
     DefilammaProtocols,
@@ -106,29 +99,6 @@ def defilamma_bridges(bridge_url=dlt.config.value) -> Iterator[TDataItems]:
     df = pd.DataFrame(lst_bridge)
     df["upload_timestamp"] = req_datetime
     yield df.to_dict(orient="records")
-
-
-# def alt_defilamma_bridge_day_stats(timestamp, chain, id):
-#     """
-#     INPUTS:
-#         timestamp: Unix timestamp. start of the day in UTC
-#         chain: chain name -> defilamma_chains -> name
-#         id: bridge id from defilamma_bridges -> id
-
-#     Working API call:
-#         1.CURL:
-#         curl -X 'GET' \
-#         'https://bridges.llama.fi/bridgedaystats/1709251200/Arbitrum?id=12' \
-#         -H 'accept: */*'
-#         2.Python:
-#         defilamma_bridge_day_stats(timestamp=1709251200, chain="Arbitrum", id=12)
-#     """
-#     base_url = "https://bridges.llama.fi/bridgedaystats/"
-#     additional_url = f"{timestamp}/{chain}?id={id}"
-#     url = base_url + additional_url
-#     headers = {"accept": "*/*"}
-#     response = requests.get(url, headers=headers)
-#     return response.json()
 
 
 @staticmethod
@@ -295,10 +265,11 @@ def defilamma_raw() -> Sequence[DltResource]:
 
 if __name__ == "__main__":
 
-    "Running DLT defilamma"
+    logging.info("Running DLT defilamma")
     p = dlt.pipeline(
         pipeline_name="defilamma",
         destination="bigquery",
         dataset_name="raw",
     )
-    p.run(defilamma_raw(), loader_file_format="parquet")
+    p.run(defilamma_raw(), loader_file_format="jsonl")
+    logging.info("Finished DLT defilamma")

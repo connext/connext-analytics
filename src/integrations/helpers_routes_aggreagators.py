@@ -78,7 +78,12 @@ def get_routes_pathways_from_bq(aggregator, reset):
             df.drop(columns=["aggregator"], inplace=True)
             payload = df.to_dict(orient="records")
             # add integrator as connext
-            new_key_value = {"options": {"integrator": "connext.network"}}
+            new_key_value = {
+                "options": {
+                    "integrator": "connext.network",
+                    "exchanges": {"deny": ["all"]},
+                }
+            }
             for dict_item in payload:
                 dict_item.update(new_key_value)
             return payload
@@ -89,7 +94,7 @@ def get_routes_pathways_from_bq(aggregator, reset):
 
 
 if __name__ == "__main__":
-    data = get_routes_pathways_from_bq(aggregator="lifi", reset=True)
+    data = get_routes_pathways_from_bq(aggregator="lifi", reset=False)
     pprint(data[0])
 #     socket = len(data)
 #     logging.info(f"socket Done: {socket}")

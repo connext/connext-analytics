@@ -76,9 +76,8 @@ class AsyncHTTPClient:
         urls,
         payloads: list[Dict[str, Any]],
         headers: Optional[Dict[str, str]] = None,
-        max_concurrency: int = MAX_CONCURRENCY,
     ):
-        sem = Semaphore(max_concurrency)
+        sem = Semaphore(self.MAX_CONCURRENCY)
         tasks = []
         for url in urls:
             for payload in payloads:

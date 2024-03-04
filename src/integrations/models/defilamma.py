@@ -4,12 +4,12 @@ from pydantic import BaseModel, HttpUrl
 
 
 class DefilammaChains(BaseModel):
-    gecko_id: str
-    tvl: float
-    tokenSymbol: str
-    cmcId: str
-    name: str
-    chainId: int
+    gecko_id: Optional[str]
+    tvl: Optional[float]
+    tokenSymbol: Optional[str]
+    cmcId: Optional[str]
+    name: Optional[str]
+    chainId: Optional[int]
 
 
 class DefilammaBridges(BaseModel):

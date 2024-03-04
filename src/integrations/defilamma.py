@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+from operator import le
 from os import times
 import time
 import pytz
@@ -234,17 +235,19 @@ def defilamma_bridge_day_stats(
         2.Python:
         defilamma_bridge_day_stats(timestamp=1659251200, chain="Arbitrum", id=12)
     """
-    data_defilamma_chains = defilamma_chains()
+
     data_defilamma_bridges = defilamma_bridges()
     print(bridgedaystats_url)
     req_datetime = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
     urls = []
     timestamps = generate_daily_unix_timestamps(start_date="2022-02-28")
+    len(f"timestamps length: {len(timestamps)}")
     for timestamp in timestamps:
         for chain in data_defilamma_chains:
             for bridge in data_defilamma_bridges:
                 additional_url = f"{timestamp}/{chain['name']}?id={bridge['id']}"
                 url = bridgedaystats_url + additional_url
+                print(url)
                 urls.append(url)
     yield urls
 
@@ -269,19 +272,24 @@ def defilamma_bridge_day_stats(
 )
 def defilamma_raw() -> Sequence[DltResource]:
     # return [defilamma_protocols, defilamma_stables, defilamma_bridges, defilamma_chains]
-    return [defilamma_bridge_day_stats]
+    # return [defilamma_bridge_day_stats]
+    return [defilamma_chains]
+
+
+# Main
 
 
 if __name__ == "__main__":
     "Running DLT defilamma"
 
-    # p = dlt.pipeline(
-    #     pipeline_name="defilamma",
-    #     destination="bigquery",
-    #     dataset_name="raw",
-    # )
-    # p.run(defilamma_raw(), loader_file_format="parquet")
-    all = []
-    for i in defilamma_raw():
-        all.append(i)
-    print(len(all))
+    p = dlt.pipeline(
+        pipeline_name="defilamma",
+        destination="bigquery",
+        dataset_name="raw",
+    )
+    p.run(defilamma_raw(), loader_file_format="parquet")
+
+    # all = []
+    # for i in defilamma_raw():
+    #     all.append(i)
+    # print(len(all))

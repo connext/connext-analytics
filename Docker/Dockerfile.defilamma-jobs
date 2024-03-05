@@ -13,8 +13,4 @@ RUN pipenv install --system --deploy
 
 COPY . .
 
-# Define the ENTRYPOINT_OVERRIDE build argument
-ARG ENTRYPOINT_OVERRIDE=CMD ["python", "-m", "src.jobs"]
-
-# Use the ENTRYPOINT_OVERRIDE build argument in the CMD instruction
-CMD ${ENTRYPOINT_OVERRIDE}
+CMD ["python", "-m", "src.integrations.defilamma"]

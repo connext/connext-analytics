@@ -119,6 +119,7 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
                                 "date": data["date"],
                                 "status_code": res["status_code"],
                                 "url": res["url"],
+                                "key_type": key,
                                 "key": sub_key,
                                 **sub_value,
                             }
@@ -130,6 +131,7 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
                                 "date": data["date"],
                                 "status_code": res["status_code"],
                                 "url": res["url"],
+                                "key_type": key,
                                 "key": sub_key,
                                 **sub_value,
                             }
@@ -137,10 +139,8 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
 
     df1 = pd.DataFrame(df1_data)
     df1["upload_timestamp"] = upload_datetime
-    print(df1)
     df2 = pd.DataFrame(df2_data)
     df2["upload_timestamp"] = upload_datetime
-    print(df2)
     final = [
         {
             "type": "source_defilamma__bridges_history_wallets",

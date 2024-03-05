@@ -18,7 +18,10 @@ from src.integrations.models.defilamma import (
     DefilammaBridgesHistoryWallets,
     DefilammaBridgesHistoryTokens,
 )
-from src.integrations.utilities import get_raw_from_bq
+from src.integrations.utilities import (
+    get_raw_from_bq,
+    get_latest_value_from_bq_table_by_col,
+)
 from src.integrations.helpers_http import AsyncHTTPClient
 
 logging.basicConfig(
@@ -165,25 +168,18 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
 
 
 @staticmethod
-def generate_daily_unix_timestamps(
-    start_date="2024-01-01", end_date=datetime.now(pytz.UTC)
-):
-    # [ ] TODO: get  the lastest date from big query table and pull the data from that date.
-    # That will be the start date
+def generate_daily_unix_timestamps(end_date=datetime.now(pytz.UTC)):
 
-    "Generate epoch timestamps in GMT, starting from the start of the day"
-    # Convert the start_date to a datetime object with GMT timezone
-    start_date = datetime.strptime(start_date, "%Y-%m-%d")
-    # Set the timezone to GMT and the time part to the start of the day (midnight)
-    start_date = start_date.replace(
-        hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC
+    # get latest upload date from Defilamma token history table
+    unix_start_date = get_latest_value_from_bq_table_by_col(
+        table_id="mainnet-bigq.raw.source_defilamma_bridges_history_tokens", col="date"
     )
-
-    # Ensure the end_date is at the start of the day in GMT
+    start_date = datetime.utcfromtimestamp(unix_start_date)
+    start_date = start_date.replace(tzinfo=pytz.UTC)
     end_date = end_date.replace(
         hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC
     )
-
+    end_date = end_date - timedelta(days=1)
     timestamps = []
     current_date = start_date
     while current_date < end_date:
@@ -227,24 +223,30 @@ def defilamma_bridge_day_stats(
 
     timestamps = generate_daily_unix_timestamps()
     len(f"timestamps length: {len(timestamps)}")
+    if timestamps:
+        # Initialize and call API
+        bridgedaystats_client = AsyncHTTPClient(max_concurrency=5)
+        for timestamp in timestamps:
+            urls = []
+            for pair in defilamma_supported_bridge_chain_pair:
+                additional_url = f"{timestamp}/{pair['name']}?id={pair['id']}"
+                url = bridgedaystats_url + additional_url
+                urls.append(url)
+            logging.info(f"Data to pull, urls length: {len(urls)}")
 
-    # Initialize and call API
-    bridgedaystats_client = AsyncHTTPClient(max_concurrency=5)
-    for timestamp in timestamps:
-        urls = []
-        for pair in defilamma_supported_bridge_chain_pair:
-            additional_url = f"{timestamp}/{pair['name']}?id={pair['id']}"
-            url = bridgedaystats_url + additional_url
-            urls.append(url)
-        logging.info(f"Data to pull, urls length: {len(urls)}")
-
-        data = asyncio.run(
-            bridgedaystats_client.get_all_responses(
-                method="GET", urls=urls, headers={"accept": "*/*"}
+            data = asyncio.run(
+                bridgedaystats_client.get_all_responses(
+                    method="GET", urls=urls, headers={"accept": "*/*"}
+                )
             )
-        )
 
-        yield convert_raw_bridgestats_to_df(res_data=data, upload_datetime=req_datetime)
+            yield convert_raw_bridgestats_to_df(
+                res_data=data, upload_datetime=req_datetime
+            )
+    else:
+        logging.info(
+            f"No data to pull, data up to date till {req_datetime}, we pull delta: 1 day data"
+        )
 
 
 # Sources

@@ -126,3 +126,27 @@ def convert_lists_and_booleans_to_strings(df):
 
     df.columns = [col.lower().replace(".", "_") for col in df.columns]
     return df
+
+
+def get_latest_value_from_bq_table_by_col(
+    table_id: str, col: int, base_val: int = 1704067200
+):
+    """
+    base_val: int = 1704067200
+        THis is start of 2024 in unix time
+    The sql used is same as routes Helper module: get_latest_by_bq_table_and_date_col
+    """
+    try:
+
+        sql = read_sql_from_file_add_template(
+            sql_file_name="get_latest_by_bq_table_and_date_col",
+            template_data={"date_col": col, "table_id": table_id},
+        )
+        df = pandas_gbq.read_gbq(sql)
+        return np.array(df[col])[0]
+
+    except pandas_gbq.exceptions.GenericGBQException as e:
+        if "Reason: 404" in str(e):
+            return base_val
+        else:
+            raise

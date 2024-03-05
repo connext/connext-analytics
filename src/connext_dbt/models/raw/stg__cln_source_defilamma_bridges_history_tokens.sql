@@ -6,6 +6,11 @@ SELECT
    REGEXP_EXTRACT(url, r'([^/]+)\?') AS chain,
   REGEXP_EXTRACT(ht.key, r'([^:]+)') AS chain_slug,
   REGEXP_EXTRACT(ht.key, r':(.+)') AS token_address,
+  CASE
+    WHEN key_type = "totalTokensDeposited" THEN "deposit"
+    WHEN key_type = "totalTokensWithdrawn" THEN "withdrawal"
+    ELSE "needs inspections!!!!"
+  END AS tx_type,
   ht.symbol,
   ht.decimals,
   ht.usd_value,

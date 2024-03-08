@@ -9,10 +9,10 @@ WITH
     `mainnet-bigq.stage.connext_tokens` ct )
 SELECT
   DISTINCT p.fromChainId,
-  ct_from.token_name,
+  ct_from.token_name AS from_token_name,
   p.fromTokenAddress,
   p.toChainId,
-  ct_to.token_name,
+  ct_to.token_name AS to_token_name,
   p.toTokenAddress
 FROM
   `mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways` wp

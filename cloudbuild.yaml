@@ -1,5 +1,25 @@
 steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs', '-f', 'Docker/Dockerfile.jobs', '.']
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs",
+        "-f",
+        "Docker/Dockerfile.routes-jobs",
+        "."
+      ]
+      
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma",
+        "-f",
+        "Docker/Dockerfile.defilamma-jobs",
+        "."
+      ]
 images:
-- 'us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs'
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma"

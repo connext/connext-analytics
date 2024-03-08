@@ -20,3 +20,6 @@ models:
     stage:
       +materialized: view
       +schema: stage
+    raw:
+      +materialized: view
+      +schema: raw

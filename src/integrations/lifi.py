@@ -507,7 +507,7 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
             pandas_gbq.to_gbq(
                 dataframe=convert_lists_and_booleans_to_strings(payload_df),
                 project_id=PROJECT_ID,
-                destination_table="stage.source__lifi_routes__payloads_logs",
+                destination_table="raw.source__lifi_routes__payloads_logs",
                 if_exists="append",
                 chunksize=100000,
                 api_method="load_csv",

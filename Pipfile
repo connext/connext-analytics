@@ -21,6 +21,7 @@ grip = "*"
 defillama2 = "*"
 dlt = "*"
 pydantic = "*"
+dune-client = "*"
 
 [dev-packages]
 black="*"

@@ -1,4 +1,5 @@
 import os
+import pytz
 import logging
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ import json
 from datetime import datetime
 from jinja2 import Template
 from google.cloud import bigquery
+from pendulum import date
 
 
 logging.basicConfig(level=logging.INFO)
@@ -130,7 +132,7 @@ def convert_lists_and_booleans_to_strings(df):
 
 def get_latest_value_from_bq_table_by_col(
     table_id: str, col: int, base_val: int = 1704067200
-):
+) -> datetime:
     """
     base_val: int = 1704067200
         THis is start of 2024 in unix time
@@ -147,6 +149,9 @@ def get_latest_value_from_bq_table_by_col(
 
     except pandas_gbq.exceptions.GenericGBQException as e:
         if "Reason: 404" in str(e):
-            return base_val
+            logging.info(f"The table {table_id} was not found.")
+            logging.info(f"The base value {base_val} was returned.")
+
+            return datetime.fromtimestamp(base_val).astimezone(pytz.UTC)
         else:
             raise

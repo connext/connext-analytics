@@ -25,25 +25,6 @@ logging.basicConfig(
 
 DUNE_START_DATE = 1709251200
 
-
-def try_dune_login():
-
-    dune_login = DuneAnalytics("jaynaik_19", "u!dwDrbP+dC_S&9")
-    dune_login.login()
-    dune_login.fetch_auth_token()
-
-    # Pull data for stargate: March 1st 2024
-    startgate_dune_query_id = 3520547
-    result_id = dune_login.query_result_id_v3(query_id=startgate_dune_query_id)
-    startgate_dune_query_data = dune_login.get_execution_result(result_id)
-    logging.info(f"Successfully pulled data for {startgate_dune_query_id}")
-
-    with open(f"data/dune_query_result_{startgate_dune_query_id}.json", "w") as f:
-        json.dump(startgate_dune_query_data, f, indent=4)
-    logging.info("Successfully logged from Dune!")
-    return {"success": True}
-
-
 # Dune Client
 dune = DuneClient(api_key=get_secret_gcp_secrete_manager("source_DUNE_API_KEY_2"))
 dune_query_id_native_evm_bridges_daily = 3541092

@@ -22,6 +22,7 @@ defillama2 = "*"
 dlt = "*"
 pydantic = "*"
 dune-client = "*"
+duneanalytics = "*"
 
 [dev-packages]
 black="*"

@@ -5,6 +5,7 @@ import pytz
 import json
 import pandas as pd
 import logging
+from duneanalytics import DuneAnalytics
 from typing import Iterator, Sequence
 from dlt.common.typing import TDataItems
 from dune_client.types import QueryParameter
@@ -21,7 +22,27 @@ from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
 DUNE_START_DATE = 1709251200
+
+
+def try_dune_login():
+
+    dune_login = DuneAnalytics("jaynaik_19", "u!dwDrbP+dC_S&9")
+    dune_login.login()
+    dune_login.fetch_auth_token()
+
+    # Pull data for stargate: March 1st 2024
+    startgate_dune_query_id = 3520547
+    result_id = dune_login.query_result_id_v3(query_id=startgate_dune_query_id)
+    startgate_dune_query_data = dune_login.get_execution_result(result_id)
+    logging.info(f"Successfully pulled data for {startgate_dune_query_id}")
+
+    with open(f"data/dune_query_result_{startgate_dune_query_id}.json", "w") as f:
+        json.dump(startgate_dune_query_data, f, indent=4)
+    logging.info("Successfully logged from Dune!")
+    return {"success": True}
+
 
 # Dune Client
 dune = DuneClient(api_key=get_secret_gcp_secrete_manager("source_DUNE_API_KEY_2"))
@@ -134,14 +155,16 @@ def dune_bridges() -> Sequence[DltResource]:
 
 if __name__ == "__main__":
 
-    logging.info("Running DLT Dune Bridges")
-    p = dlt.pipeline(
-        pipeline_name="dune",
-        destination="bigquery",
-        dataset_name="dune",
-    )
-    p.run(dune_bridges(), loader_file_format="jsonl")
-    logging.info("Finished DLT Dune Bridges!")
+    try_dune_login()
+
+    # logging.info("Running DLT Dune Bridges")
+    # p = dlt.pipeline(
+    #     pipeline_name="dune",
+    #     destination="bigquery",
+    #     dataset_name="dune",
+    # )
+    # p.run(dune_bridges(), loader_file_format="jsonl")
+    # logging.info("Finished DLT Dune Bridges!")
 
     # print(
     #     get_result_by_query_id(

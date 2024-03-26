@@ -21,4 +21,6 @@ chains_url="https://api.llama.fi/v2/chains"
 bridgedaystats_url="https://bridges.llama.fi/bridgedaystats/"
 
 [sources.dune]
-native_evm_eth__bridges_query_id=3541092
+native_evm_eth__bridges_query_id=3537139
+tokens_evm_eth__bridges_query_id=3539947
+stargate_daily_agg_query_id=3552798

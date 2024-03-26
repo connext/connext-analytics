@@ -27,6 +27,7 @@ def fetch_all_data(api_url):
             offset += limit
             if total is None:
                 total = data.get("total", 0)
+
         else:
             print(f"Failed to fetch data: {response.status_code}")
             break

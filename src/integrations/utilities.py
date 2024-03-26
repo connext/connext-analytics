@@ -1,3 +1,4 @@
+import email
 import os
 import pytz
 import logging
@@ -18,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 
 def get_secret_gcp_secrete_manager(secret_name: str):
     client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/mainnet-bigq/secrets/{secret_name}/versions/1"
+    name = f"projects/mainnet-bigq/secrets/{secret_name}/versions/latest"
     response = client.access_secret_version(request={"name": name})
     return response.payload.data.decode("UTF-8")
 
@@ -145,13 +146,19 @@ def get_latest_value_from_bq_table_by_col(
             template_data={"date_col": col, "table_id": table_id},
         )
         df = pandas_gbq.read_gbq(sql)
-        return np.array(df[col])[0]
+        final_start_date = np.array(df[col])[0]
+        return final_start_date.timestamp()
 
     except pandas_gbq.exceptions.GenericGBQException as e:
         if "Reason: 404" in str(e):
             logging.info(f"The table {table_id} was not found.")
             logging.info(f"The base value {base_val} was returned.")
 
-            return datetime.fromtimestamp(base_val).astimezone(pytz.UTC)
+            return datetime.fromtimestamp(base_val).astimezone(pytz.UTC).timestamp()
         else:
             raise
+
+    # ValueError: NaTType does not support timestamp
+    except ValueError as e:
+        logging.info(f"ValueError: {e}")
+        return datetime.fromtimestamp(base_val).astimezone(pytz.UTC).timestamp()

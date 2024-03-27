@@ -29,6 +29,7 @@ from src.integrations.helpers_routes_aggreagators import (
     get_routes_pathways_from_bq,
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
+from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata
 from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import (
     upload_json_to_gcs,
@@ -340,3 +341,12 @@ def drop_duplicate_rows_from_bq(bq_table_id: str):
         template_data={"id": bq_table_id},
     )
     return run_bigquery_query(sql_query=sql)
+
+
+# -----
+# PRODUCTION METADATA
+# -----
+@app.get("/prod_mainnet_metadata/pipeline")
+def prod_mainnet_metadata_pipeline():
+    get_prod_mainmet_config_metadata()
+    return {"message": "Pipeline completed"}

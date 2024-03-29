@@ -162,3 +162,7 @@ def get_latest_value_from_bq_table_by_col(
     except ValueError as e:
         logging.info(f"ValueError: {e}")
         return datetime.fromtimestamp(base_val).astimezone(pytz.UTC).timestamp()
+
+
+def to_snake_case(s):
+    return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")

@@ -51,3 +51,8 @@ across_aggregator_daily_query_id=3520486
 [sources.all_bridge_explorer]
 all_bridge_explorer_transfers_url="https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"
 all_bridge_explorer_token_info_url="https://core.api.allbridgecoreapi.net/token-info"
+
+
+[sources.symbiosis_bridge_explorer]
+symbiosis_bridge_explorer_transactions_url="https://api-v2.symbiosis.finance/explorer/v1/transactions"
+

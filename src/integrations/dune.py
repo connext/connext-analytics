@@ -16,6 +16,7 @@ from src.integrations.models.dune import (
     BridgesNativeEvmEth,
     BridgesTokensEvmEth,
     StargateBridgesDailyAgg,
+    AcrossAggregatorDaily,
 )
 from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
@@ -80,7 +81,7 @@ def get_result_by_query_id(
 
     else:
         results = dune.get_latest_result_dataframe(query, batch_size=1000)
-    results.to_csv(f"data/dune_query_result_{id}.csv", index=False)
+    # results.to_csv(f"data/dune_query_result_{id}.csv", index=False)
     yield results.to_dict("records")
 
 
@@ -133,7 +134,6 @@ def get_native_evm_eth__bridges(
     )
 
     if date_param["start_date"] < date_param["end_date"]:
-        print("adding data to bq from csv")
         yield get_result_by_query_id(
             native_evm_eth__bridges_query_id,
             new=True,
@@ -187,8 +187,38 @@ def get_stargate_bridges_daily_agg(
         start_date=DUNE_START_DATE,
     )
     if date_param["start_date"] < date_param["end_date"]:
+        while date_param["start_date"] < date_param["end_date"]:
+            start_date = date_param["start_date"]
+            end_date = start_date + 86400
+            print(f"pair of dates: {start_date}, {end_date}")
+            yield get_result_by_query_id(
+                stargate_daily_agg_query_id,
+                new=True,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            date_param["start_date"] = end_date
+    else:
+        logging.info("Data uptodate in the DB")
+
+
+# across_daily_agg_query_id
+@dlt.resource(
+    table_name="source_across_aggregator_daily",
+    write_disposition="append",
+    columns=pydantic_to_table_schema_columns(AcrossAggregatorDaily),
+)
+def get_across__aggregator_daily(
+    across_aggregator_daily_query_id=dlt.config.value,
+) -> Iterator[TDataItems]:
+
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_across_aggregator_daily",
+        start_date=DUNE_START_DATE,
+    )
+    if date_param["start_date"] < date_param["end_date"]:
         yield get_result_by_query_id(
-            stargate_daily_agg_query_id,
+            across_aggregator_daily_query_id,
             new=True,
             start_date=date_param["start_date"],
             end_date=date_param["end_date"],
@@ -206,6 +236,7 @@ def dune_bridges() -> Sequence[DltResource]:
         get_native_evm_eth__bridges,
         get_tokens_evm_eth__bridges,
         get_stargate_bridges_daily_agg,
+        get_across__aggregator_daily,
     ]
 
 

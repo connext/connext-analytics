@@ -4,7 +4,7 @@ import requests
 
 def fetch_all_data(api_url):
     # Initialize pagination variables
-    limit = 10
+    limit = 50
     offset = 0
     total = None
 
@@ -12,6 +12,13 @@ def fetch_all_data(api_url):
     while total is None or offset < total:
         # Construct the URL with the current offset
         paginated_url = f"{api_url}&limit={limit}&offset={offset}"
+        param = {
+            "status": "filled",
+            "skipOldUnprofitable": True,
+            "limit": limit,
+            "offset": offset,
+            "depositTime"
+        }
 
         # Make the request
         response = requests.get(paginated_url)
@@ -34,5 +41,6 @@ def fetch_all_data(api_url):
 
 
 # Example usage
-api_url = "https://public.api.across.to/deposits/tx-page?status=filled&skipOldUnprofitable=true&limit=10&offset=0&orderBy=status"
-fetch_all_data(api_url)
+# api_url = "https://public.api.across.to/deposits/tx-page?status=filled&skipOldUnprofitable=true&limit=10&offset=0&orderBy=status"
+# api_url = "https://public.api.across.to/deposits/tx-page?status=filled&skipOldUnprofitable=true&limit=10&offset=0&orderBy=status"
+# fetch_all_data(api_url)

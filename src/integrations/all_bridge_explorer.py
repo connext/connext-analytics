@@ -68,3 +68,7 @@ print(all_records_df)
 all_records_df.to_csv("allbridge_transfers.csv", index=False)
 
 print("Data fetched and saved to allbridge_transfers.csv")
+
+
+# historiacal data -> skip data if date is higher than today in UTC
+# latest data -> fetch data from highest date in bq till yesterday in UTC

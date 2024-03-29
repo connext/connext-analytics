@@ -146,7 +146,7 @@ def get_native_evm_eth__bridges(
 
 @dlt.resource(
     table_name="source_tokens_evm_eth_bridges",
-    write_disposition="replace",
+    write_disposition="append",
     columns=pydantic_to_table_schema_columns(BridgesTokensEvmEth),
 )
 def get_tokens_evm_eth__bridges(
@@ -203,26 +203,19 @@ def get_stargate_bridges_daily_agg(
 )
 def dune_bridges() -> Sequence[DltResource]:
     return [
-        # get_native_evm_eth__bridges,
+        get_native_evm_eth__bridges,
         get_tokens_evm_eth__bridges,
-        # get_stargate_bridges_daily_agg,
+        get_stargate_bridges_daily_agg,
     ]
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    logging.info("Running DLT Dune Bridges")
-    p = dlt.pipeline(
-        pipeline_name="dune",
-        destination="bigquery",
-        dataset_name="dune",
-    )
-    p.run(dune_bridges(), loader_file_format="jsonl")
-    logging.info("Finished DLT Dune Bridges!")
-
-    # print(
-    #     get_start_end_date(
-    #         table_id="mainnet-bigq.dune.source_native_evm_eth_bridges",
-    #         start_date=DUNE_START_DATE,
-    #     )
-    # )
+#     logging.info("Running DLT Dune Bridges")
+#     p = dlt.pipeline(
+#         pipeline_name="dune",
+#         destination="bigquery",
+#         dataset_name="dune",
+#     )
+#     p.run(dune_bridges(), loader_file_format="jsonl")
+#     logging.info("Finished DLT Dune Bridges!")

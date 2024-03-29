@@ -23,6 +23,7 @@ dlt = "*"
 pydantic = "*"
 dune-client = "*"
 duneanalytics = "*"
+backoff = "*"
 
 [dev-packages]
 black="*"

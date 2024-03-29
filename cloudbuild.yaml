@@ -20,6 +20,18 @@ steps:
         "Docker/Dockerfile.defilamma-jobs",
         "."
       ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-all-bridge-explorer-jobs",
+        "-f",
+        "Docker/Dockerfile.all-bridge-explorer-jobs",
+        "."
+      ]
 images:
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-all-bridge-explorer-jobs"
+

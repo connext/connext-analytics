@@ -507,7 +507,7 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
             pandas_gbq.to_gbq(
                 dataframe=convert_lists_and_booleans_to_strings(payload_df),
                 project_id=PROJECT_ID,
-                destination_table="stage.source__lifi_routes__payloads_logs",
+                destination_table="raw.source__lifi_routes__payloads_logs",
                 if_exists="append",
                 chunksize=100000,
                 api_method="load_csv",
@@ -536,7 +536,7 @@ def convert_no_routes_success_calls_to_df(json_blob):
 
     df = pd.json_normalize(all_calls)
     df = convert_lists_and_booleans_to_strings(df)
-    df.to_csv("data/eg_1_lifi_no_routes_success_calls.csv")
+    # df.to_csv("data/eg_1_lifi_no_routes_success_calls.csv")
     return df
 
 
@@ -550,6 +550,8 @@ def convert_routes_payload_to_df(json_blob):
     for r in json_blob:
         if "payload" in r:
             all_payloads.append(r["payload"])
+    for item in all_payloads:
+        item.pop("options", None)
     df = pd.json_normalize(all_payloads)
     return df
 

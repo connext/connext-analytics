@@ -2,6 +2,7 @@ import json
 import logging
 from pprint import pprint
 import re
+import dlt
 import nest_asyncio
 import asyncio
 import pandas_gbq
@@ -29,6 +30,7 @@ from src.integrations.helpers_routes_aggreagators import (
     get_routes_pathways_from_bq,
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
+from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata
 from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import (
     upload_json_to_gcs,
@@ -36,6 +38,7 @@ from src.integrations.utilities import (
     run_bigquery_query,
     convert_lists_and_booleans_to_strings,
 )
+from src.integrations.dune import dune_bridges
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
@@ -209,39 +212,39 @@ def lifi_tools_pipeline():
 # -----
 
 
-@app.get("/lifi/routes/pipeline")
-def lifi_routes_pipeline():
-    """
-    INPUT
+# @app.get("/lifi/routes/pipeline")
+# def lifi_routes_pipeline():
+#     """
+#     INPUT
 
-        reset:
-            If set as True, All possible pathways combinations will be pulled into GCP Cloud storage,
-            on Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways
-        paylaod sent:
-            [
-                {
-                    "fromChainId": 1,
-                    "fromTokenAddress": "0x0000000000000000000000000000000000000000",
-                    "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
-                    "toChainId": 10,
-                    "toTokenAddress": "0x0000000000000000000000000000000000000000",
-                    "fromAmount": 1e+21,
-                    "allowDestinationCall": true,
-                    "options": {
-                      "integrator": "connext.network"
-                      },
-                }
-            ]
-    """
+#         reset:
+#             If set as True, All possible pathways combinations will be pulled into GCP Cloud storage,
+#             on Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways
+#         paylaod sent:
+#             [
+#                 {
+#                     "fromChainId": 1,
+#                     "fromTokenAddress": "0x0000000000000000000000000000000000000000",
+#                     "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
+#                     "toChainId": 10,
+#                     "toTokenAddress": "0x0000000000000000000000000000000000000000",
+#                     "fromAmount": 1e+21,
+#                     "allowDestinationCall": true,
+#                     "options": {
+#                       "integrator": "connext.network"
+#                       },
+#                 }
+#             ]
+#     """
 
-    reset: bool = False
-    print(f"start,pathway reset: {reset}")
-    pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
-    logging.info(f"pathways: {len(pathways)}")
-    routes = asyncio.run(main_routes(payloads=pathways))
-    upload_json_to_gcs(routes, "lifi_routes")
+#     reset: bool = False
+#     print(f"start,pathway reset: {reset}")
+#     pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
+#     logging.info(f"pathways: {len(pathways)}")
+#     routes = asyncio.run(main_routes(payloads=pathways))
+#     upload_json_to_gcs(routes, "lifi_routes")
 
-    return {"message": "lifi routes pipeline finished"}
+#     return {"message": "lifi routes pipeline finished"}
 
 
 @app.get("/lifi/routes/upload_to_bq/")
@@ -285,25 +288,25 @@ def socket_bridge_pipeline():
     return msg_output
 
 
-@app.get("/socket/routes/pipeline")
-def socket_routes_pipeline():
-    """
-    INPUT
+# @app.get("/socket/routes/pipeline")
+# def socket_routes_pipeline():
+#     """
+#     INPUT
 
-        reset:
-            If set as True, All possible pathways combinations will be pulled into GCP Cloud storage
-            On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
+#         reset:
+#             If set as True, All possible pathways combinations will be pulled into GCP Cloud storage
+#             On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
 
-    """
-    reset: bool = False
-    print(f"start,pathway reset: {reset}")
-    payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
-    logging.info(f"payloads pull, data length: {len(payloads)}")
+#     """
+#     reset: bool = False
+#     print(f"start,pathway reset: {reset}")
+#     payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
+#     logging.info(f"payloads pull, data length: {len(payloads)}")
 
-    routes = asyncio.run(get_all_routes(payloads=payloads))
-    upload_json_to_gcs(routes, "socket_routes")
+#     routes = asyncio.run(get_all_routes(payloads=payloads))
+#     upload_json_to_gcs(routes, "socket_routes")
 
-    return {"message": "socket routes pipeline finished"}
+#     return {"message": "socket routes pipeline finished"}
 
 
 @app.get("/socket/routes/upload_to_bq/")
@@ -340,3 +343,30 @@ def drop_duplicate_rows_from_bq(bq_table_id: str):
         template_data={"id": bq_table_id},
     )
     return run_bigquery_query(sql_query=sql)
+
+
+# -----
+# PRODUCTION METADATA
+# -----
+@app.get("/prod_mainnet_metadata/pipeline")
+def prod_mainnet_metadata_pipeline():
+    get_prod_mainmet_config_metadata()
+    return {"message": "Pipeline completed"}
+
+
+# -----
+# DUNE
+# -----
+
+
+@app.get("/dune/pipeline")
+def dune_pipeline():
+    logging.info("Running DLT Dune Bridges")
+    p = dlt.pipeline(
+        pipeline_name="dune",
+        destination="bigquery",
+        dataset_name="dune",
+    )
+    p.run(dune_bridges(), loader_file_format="jsonl")
+    logging.info("Finished DLT Dune Bridges!")
+    return {"message": "Pipeline completed"}

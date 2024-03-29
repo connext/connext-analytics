@@ -174,7 +174,7 @@ def generate_daily_unix_timestamps(end_date=datetime.now(pytz.UTC)):
     unix_start_date = get_latest_value_from_bq_table_by_col(
         table_id="mainnet-bigq.raw.source_defilamma_bridges_history_tokens", col="date"
     )
-    start_date = datetime.utcfromtimestamp(unix_start_date)
+    start_date = datetime.fromtimestamp(unix_start_date)
     start_date = start_date.replace(tzinfo=pytz.UTC)
     end_date = end_date.replace(
         hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC

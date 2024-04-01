@@ -93,5 +93,7 @@ variables = {"pending": False, "page": 2000, "useMv": True}
 try:
     response = send_graphql_get_request(query, variables)
     print(response)
+    with open("data/synapseprotocol_explorer.json", "w") as f:
+        json.dump(response, f)
 except Exception as e:
     print(e)

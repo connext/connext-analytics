@@ -1,20 +1,29 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import dlt
 import json
-import pytz
 import logging
-from datetime import datetime
-from typing import Iterator, Sequence
+from typing import Sequence
 from dlt.sources.helpers import requests
-from dlt.common.typing import TDataItems
 from dlt.extract.source import DltResource
 from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
 from .models.symbiosis_bridge_explorer import SymbiosisBridgeExplorerTransaction
+from src.integrations.utilities import get_raw_from_bq
 
 # LOGIC: response gives out last: false loop untill true
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+
+# Utility
+def get_latest_id_from_bq_table() -> int:
+    """
+    Get the latest id from a BigQuery table
+    """
+    id = get_raw_from_bq("get_min_id_source_symbiosis_bridge_explorer_transactions")[
+        "id"
+    ][0]
+    return int(id)
 
 
 def normalize_transaction_data(tx: dict) -> dict:
@@ -33,13 +42,30 @@ def normalize_transaction_data(tx: dict) -> dict:
                 )
         return None
 
-    if tx.get("tokens", []):
+    def normalize_token_data(tx: dict) -> dict:
+        """
+        Extracts and normalizes token data from a transaction.
+        """
+        if tx.get("tokens", []):
+            try:
+                token = tx["tokens"][0]
+                return {
+                    "token_symbol": token.get("symbol"),
+                    "token_name": token.get("name"),
+                    "token_address": token.get("address"),
+                    "token_decimals": token.get("decimals"),
+                }
+            except (KeyError, IndexError):
+                pass
+        # Return defaults if tokens are not present or in case of an error
+        return {
+            "token_symbol": None,
+            "token_name": None,
+            "token_address": None,
+            "token_decimals": None,
+        }
 
-        token = tx["tokens"][0]
-        token_symbol = token.get("symbol", "")
-        token_name = token.get("name", "")
-        token_address = token.get("address", "")
-        token_decimals = token.get("decimals", 0)
+    token_data = normalize_token_data(tx)
 
     normalized_data = {
         "id": tx.get("id"),
@@ -64,10 +90,7 @@ def normalize_transaction_data(tx: dict) -> dict:
         "to_sender": tx.get("to_sender"),
         "amounts": json.dumps(tx.get("amounts", [])),
         "tokens": json.dumps(tx.get("tokens", [])),
-        "token_symbol": token_symbol,
-        "token_name": token_name,
-        "token_address": token_address,
-        "token_decimals": token_decimals,
+        **token_data,
         "from_route": json.dumps(tx.get("from_route", [])),
         "to_route": json.dumps(tx.get("to_route", [])),
         "transit_token": json.dumps(tx.get("transit_token", {})),
@@ -81,11 +104,12 @@ def normalize_transaction_data(tx: dict) -> dict:
 
 @dlt.resource(
     table_name="source_symbiosis_bridge_explorer_transactions",
-    write_disposition="replace",
+    write_disposition="append",
     columns=pydantic_to_table_schema_columns(SymbiosisBridgeExplorerTransaction),
 )
 def get_symbiosis_bridge_transactions(
     symbiosis_bridge_explorer_transactions_url: str = dlt.config.value,
+    before: int = get_latest_id_from_bq_table(),
 ):
     """
     LOGIC:
@@ -94,7 +118,7 @@ def get_symbiosis_bridge_transactions(
         - Loop until last is false
     """
     # Initialzie the API parameters
-    before = None
+
     all_txs = []
 
     while True:
@@ -116,8 +140,8 @@ def get_symbiosis_bridge_transactions(
 
         if last:
             break
-        # if len(all_txs) > 1000:
-        #     logging.info("Yielding 1000 transactions")
+        # if len(all_txs) > 100000:
+        #     logging.info("Yielding 100000 transactions")
         #     break
 
     yield all_txs

@@ -78,6 +78,8 @@ def get_all_bridge_explorer_transfers(
 
         page_remains = meta["totalPages"] - page
         page += 1
+        if page > 10000:
+            break
 
     yield page_txs
 

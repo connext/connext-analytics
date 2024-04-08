@@ -11,6 +11,7 @@ from src.integrations.models.all_bridge_explorer import (
     AllBridgeExplorerTokenInfo,
 )
 
+from src.integrations.utilities import get_raw_from_bq
 
 # Base URL for the API
 # base_url = "https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"
@@ -21,21 +22,36 @@ logging.basicConfig(
 )
 
 
+# Utility
+def get_min_max_timestamp_from_bq_table() -> int:
+    """
+    Get the latest id from a BigQuery table
+    """
+    data = get_raw_from_bq("get_min_max_timestamp_source_all_bridge_explorer_transfers")
+    return {
+        "min_timestamp": int(data.iloc[0]["min_timestamp"]),
+        "max_timestamp": int(data.iloc[0]["max_timestamp"]),
+    }
+
+
 @dlt.resource(
     table_name="source_all_bridge_explorer_transfers",
-    write_disposition="replace",
+    write_disposition="append",
     columns=pydantic_to_table_schema_columns(AllBridgeExplorerTransfer),
 )
 def get_all_bridge_explorer_transfers(
     all_bridge_explorer_transfers_url=dlt.config.value,
 ) -> Iterator[AllBridgeExplorerTransfer]:
 
-    page = 1
+    page = 11000
     page_size = 20
     page_remains = 1
     status = "Complete"
 
     page_txs = []
+
+    time_metadata = get_min_max_timestamp_from_bq_table()
+    min_timestamp = time_metadata["min_timestamp"]
 
     while page_remains > 0:
 
@@ -74,11 +90,17 @@ def get_all_bridge_explorer_transfers(
                 "api_url": url,
             }
 
-            page_txs.append(AllBridgeExplorerTransfer(**record))
+            if record["timestamp"] < min_timestamp:
+                logging.info("Adding record if timestamp > min_timestamp")
+                page_txs.append(AllBridgeExplorerTransfer(**record))
+            else:
+                logging.info(
+                    f"Not adding record if timestamp: {record['timestamp']} > min_timestamp: {min_timestamp}"
+                )
 
         page_remains = meta["totalPages"] - page
         page += 1
-        if page > 10000:
+        if page > 20000:
             break
 
     yield page_txs

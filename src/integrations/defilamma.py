@@ -171,23 +171,45 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
 def generate_daily_unix_timestamps(end_date=datetime.now(pytz.UTC)):
 
     # get latest upload date from Defilamma token history table
+
+    # TODO: changes this on weekend
+
+    # 1st jan 23
+    # unix_start_date = 1672531200
+
     unix_start_date = get_latest_value_from_bq_table_by_col(
         table_id="mainnet-bigq.raw.source_defilamma_bridges_history_tokens", col="date"
     )
-    start_date = datetime.fromtimestamp(unix_start_date)
-    start_date = start_date.replace(tzinfo=pytz.UTC)
+
     end_date = end_date.replace(
         hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC
     )
-    end_date = end_date - timedelta(days=1)
-    timestamps = []
-    current_date = start_date
-    while current_date < end_date:
-        timestamp = int(current_date.timestamp())
-        timestamps.append(timestamp)
+    end_date = int((end_date - timedelta(days=1)).timestamp())
 
-        # Move to the next day
-        current_date += timedelta(days=1)
+    timestamps = []
+    current_date = unix_start_date + 86400
+
+    logging.info(
+        f"""
+            ALL dates in UTC
+                 latest date in bq: {unix_start_date}
+                 current_date( 1 day added to latest date): {current_date}
+                 pull data till date: {end_date}
+        """
+    )
+    if current_date > end_date:
+        logging.info(
+            f"Data upto-date! current_date: {current_date} > end_date: {end_date}"
+        )
+
+    else:
+        while current_date <= end_date:
+            timestamp = int(current_date)
+            timestamps.append(timestamp)
+
+            # Move to the next day
+            # add a day in secs
+            current_date += 86400
 
     return timestamps
 
@@ -262,8 +284,6 @@ def defilamma_raw() -> Sequence[DltResource]:
         defilamma_bridge_day_stats,
     ]
 
-
-# Main
 
 if __name__ == "__main__":
 

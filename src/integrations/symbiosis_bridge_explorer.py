@@ -3,7 +3,7 @@ import dlt
 import json
 import logging
 from typing import Sequence
-from dlt.sources.helpers import requests
+import requests
 from dlt.extract.source import DltResource
 from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
 from .models.symbiosis_bridge_explorer import SymbiosisBridgeExplorerTransaction
@@ -125,10 +125,17 @@ def get_symbiosis_bridge_transactions(
         logging.info(f"Getting transactions before {before}")
         response = requests.get(
             symbiosis_bridge_explorer_transactions_url, params={"before": before}
-        ).json()
+        )
+        logging.info(f"Response status code: {response.status_code}")
 
-        transactions = response["records"]
-        last = response["last"]
+        if response.status_code == 500:
+            logging.error(
+                "Received status code 500 from the server. Breaking the loop."
+            )
+            break
+
+        transactions = response.json()["records"]
+        last = response.json()["last"]
 
         if transactions:
             for tx in transactions:
@@ -140,9 +147,8 @@ def get_symbiosis_bridge_transactions(
 
         if last:
             break
-        # if len(all_txs) > 100000:
-        #     logging.info("Yielding 100000 transactions")
-        #     break
+
+        # if response status code 500 break
 
     yield all_txs
 

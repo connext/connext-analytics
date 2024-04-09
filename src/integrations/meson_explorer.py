@@ -87,3 +87,6 @@ print(all_records_df)
 all_records_df.to_csv("meson.csv", index=False)
 
 print("Data fetched and saved to meson.csv")
+
+
+# TODO: Wrute a headless browser to fetch the data from the website and save it to a CSV file

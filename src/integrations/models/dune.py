@@ -45,3 +45,16 @@ class StargateBridgesDailyAgg(BaseModel):
     amount_usd: Optional[float] = None
     tx_fee_usd: Optional[float] = None
     tx_count: Optional[int] = None
+
+
+class AcrossAggregatorDaily(BaseModel):
+    date: Optional[datetime] = None
+    user: Optional[str] = None
+    src_chain: Optional[str] = None
+    dst_chain: Optional[str] = None
+    token_symbol: Optional[str] = None
+    tx_count: Optional[int] = None
+    avg_token_price: Optional[float] = None
+    value_usd: Optional[float] = None
+    relay_fee_in_usd: Optional[float] = None
+    lp_fee_in_usd: Optional[float] = None

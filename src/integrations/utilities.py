@@ -147,7 +147,12 @@ def get_latest_value_from_bq_table_by_col(
         )
         df = pandas_gbq.read_gbq(sql)
         final_start_date = np.array(df[col])[0]
-        return final_start_date.timestamp()
+
+        # if value is int then return, if date convert to int and return
+        if isinstance(final_start_date, np.int64):
+            return final_start_date
+        else:
+            return int(final_start_date.timestamp())
 
     except pandas_gbq.exceptions.GenericGBQException as e:
         if "Reason: 404" in str(e):
@@ -162,3 +167,51 @@ def get_latest_value_from_bq_table_by_col(
     except ValueError as e:
         logging.info(f"ValueError: {e}")
         return datetime.fromtimestamp(base_val).astimezone(pytz.UTC).timestamp()
+
+
+def to_snake_case(s):
+    return "".join(["_" + c.lower() if c.isupper() else c for c in s]).lstrip("_")
+
+
+def remove_duplicate_rows_by_col(table_id: str, col: list):
+    """
+    Remove duplicate rows from a dataframe by a specific column.
+    """
+
+    columns_str = ", ".join(col)
+    data = {"table_id": table_id, "columns": columns_str}
+    sql = f"SELECT DISTINCT {columns_str} FROM `{table_id}`"
+    query = Template(sql).render(data)
+    df = pandas_gbq.read_gbq(query)
+    pandas_gbq.to_gbq(df, table_id, project_id="mainnet-bigq", if_exists="replace")
+    logging.info(f"{df.shape} rows adjusted in {table_id}")
+
+
+# if __name__ == "__main__":
+#     print(
+#         remove_duplicate_rows_by_col(
+#             table_id="mainnet-bigq.raw.source_all_bridge_explorer_transfers",
+#             col=[
+#                 "id",
+#                 "status",
+#                 "timestamp",
+#                 "from_chain_symbol",
+#                 "to_chain_symbol",
+#                 "from_amount",
+#                 "stable_fee",
+#                 "from_token_address",
+#                 "to_token_address",
+#                 "from_address",
+#                 "to_address",
+#                 "messaging_type",
+#                 "partner_id",
+#                 "from_gas",
+#                 "to_gas",
+#                 "relayer_fee_in_native",
+#                 "relayer_fee_in_tokens",
+#                 "send_transaction_hash",
+#                 "receive_transaction_hash",
+#                 "api_url",
+#             ],
+#         )
+#     )

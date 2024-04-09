@@ -23,3 +23,6 @@ models:
     raw:
       +materialized: view
       +schema: raw
+    dune:
+      +materialized: view
+      +schema: dune

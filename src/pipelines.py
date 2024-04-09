@@ -39,6 +39,8 @@ from src.integrations.utilities import (
     convert_lists_and_booleans_to_strings,
 )
 from src.integrations.dune import dune_bridges
+from src.integrations.defilamma import defilamma_raw
+
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
@@ -157,96 +159,6 @@ def lifi_tools_pipeline():
     return {"message": "lifi tools pipeline finished"}
 
 
-# @app.get("/lifi/generate_alt_pathways_by_chain_ids")
-# def lifi_generate_alt_pathways_by_chain_key_inputs():
-#     """
-#     Adding hard coded chain ids for now
-#     [ ] REPLACE ALL these generate Pathways with one SQL to rule all
-#     anyway, all possible pathways are aviable in source_lifi__pathways.
-#     [ ] Add a integration tag and to success and fail for each of these paths
-#     """
-
-#     gp = generate_alt_pathways_by_chain_key_inputs(
-#         chain_keys=["era", "bas", "ava", "pze"],
-#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
-#     )
-
-#     logging.info(f"gp: {len(gp)}")
-#     df_gp = pd.DataFrame(gp)
-
-#     pandas_gbq.to_gbq(
-#         dataframe=df_gp.astype(str),
-#         project_id=PROJECT_ID,
-#         destination_table="mainnet-bigq.stage.source_lifi__pathways",
-#         if_exists="append",
-#         chunksize=100000,
-#     )
-#     return {"message": "lifi paths added to source_lifi__pathways. pipeline finished"}
-
-
-# -----
-# ALTernative chains Routes: "era", "bas", "ava", "pze"
-# -----
-
-
-# @app.get("/lifi/alt_chains_routes/pipeline")
-# def alt_chain_route_pipeline():
-#     """Pull Alt chains data and add them to Cloud storage"""
-#     gp = generate_alt_pathways_by_chain_key_inputs(
-#         # chain_keys=["era", "bas", "ava", "pze"],
-#         chain_keys=["mam"],
-#         tokens=["ETH", "USDT", "DAI", "USDC", "WETH"],
-#     )
-#     logging.info(f"gp: {len(gp)}")
-#     df_pathways = pd.DataFrame(gp)
-#     df_pathways["fromAmount"] = df_pathways["fromAmount"].apply(lambda x: int(x))
-#     pprint(df_pathways)
-#     pathways = df_pathways.to_dict("records")
-#     return pathways
-#     # routes = asyncio.run(main_routes(payloads=pathways))
-#     # upload_json_to_gcs(routes, "lifi_routes")
-
-
-# -----
-# Routes
-# -----
-
-
-# @app.get("/lifi/routes/pipeline")
-# def lifi_routes_pipeline():
-#     """
-#     INPUT
-
-#         reset:
-#             If set as True, All possible pathways combinations will be pulled into GCP Cloud storage,
-#             on Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways
-#         paylaod sent:
-#             [
-#                 {
-#                     "fromChainId": 1,
-#                     "fromTokenAddress": "0x0000000000000000000000000000000000000000",
-#                     "fromAddress": "0x32d222E1f6386B3dF7065d639870bE0ef76D3599",
-#                     "toChainId": 10,
-#                     "toTokenAddress": "0x0000000000000000000000000000000000000000",
-#                     "fromAmount": 1e+21,
-#                     "allowDestinationCall": true,
-#                     "options": {
-#                       "integrator": "connext.network"
-#                       },
-#                 }
-#             ]
-#     """
-
-#     reset: bool = False
-#     print(f"start,pathway reset: {reset}")
-#     pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
-#     logging.info(f"pathways: {len(pathways)}")
-#     routes = asyncio.run(main_routes(payloads=pathways))
-#     upload_json_to_gcs(routes, "lifi_routes")
-
-#     return {"message": "lifi routes pipeline finished"}
-
-
 @app.get("/lifi/routes/upload_to_bq/")
 def lifi_routes_upload_to_bq():
 
@@ -286,27 +198,6 @@ def socket_tokens_pipeline():
 def socket_bridge_pipeline():
     msg_output = get_bridges()
     return msg_output
-
-
-# @app.get("/socket/routes/pipeline")
-# def socket_routes_pipeline():
-#     """
-#     INPUT
-
-#         reset:
-#             If set as True, All possible pathways combinations will be pulled into GCP Cloud storage
-#             On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
-
-#     """
-#     reset: bool = False
-#     print(f"start,pathway reset: {reset}")
-#     payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
-#     logging.info(f"payloads pull, data length: {len(payloads)}")
-
-#     routes = asyncio.run(get_all_routes(payloads=payloads))
-#     upload_json_to_gcs(routes, "socket_routes")
-
-#     return {"message": "socket routes pipeline finished"}
 
 
 @app.get("/socket/routes/upload_to_bq/")
@@ -369,4 +260,23 @@ def dune_pipeline():
     )
     p.run(dune_bridges(), loader_file_format="jsonl")
     logging.info("Finished DLT Dune Bridges!")
+    return {"message": "Pipeline completed"}
+
+
+# -----
+# DEFI LAMMA
+# -----
+
+
+@app.get("/defilamma/pipeline")
+def defilamma_pipeline():
+
+    logging.info("Running DLT defilamma")
+    p = dlt.pipeline(
+        pipeline_name="defilamma",
+        destination="bigquery",
+        dataset_name="raw",
+    )
+    p.run(defilamma_raw(), loader_file_format="jsonl")
+    logging.info("Finished DLT defilamma")
     return {"message": "Pipeline completed"}

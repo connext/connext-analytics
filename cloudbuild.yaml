@@ -20,6 +20,52 @@ steps:
         "Docker/Dockerfile.defilamma-jobs",
         "."
       ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-all-bridge-explorer-jobs",
+        "-f",
+        "Docker/Dockerfile.all-bridge-explorer-jobs",
+        "."
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-symbiosis-bridge-explorer-jobs",
+        "-f",
+        "Docker/Dockerfile.symbiosis-bridge-explorer-jobs",
+        "."
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-pipeline-service",
+        "-f",
+        "Docker/Dockerfile.pipeline-service",
+        "."
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-synapseprotocol-explorer-jobs",
+        "-f",
+        "Docker/Dockerfile.synapseprotocol-explorer-jobs",
+        "."
+      ]
 images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-pipeline-service"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-all-bridge-explorer-jobs"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-symbiosis-bridge-explorer-jobs"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-synapseprotocol-explorer-jobs"
+
+

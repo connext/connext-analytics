@@ -144,7 +144,7 @@ all_records_df = pd.DataFrame()
 skip = 0
 
 # Total number of transactions for March 2024
-total_transactions_march_2024 = 83940
+total_transactions_march_2024 = 1000
 
 # Loop to fetch all records
 while True:
@@ -167,6 +167,5 @@ print("All records fetched for March 2024.")
 print(all_records_df)
 
 # Save the filtered DataFrame to a CSV file
-
-# all_records_df.to_csv("march_2024.csv", index=False)
-# print("symbiosis data for March 2024 saved to march_2024.csv")
+all_records_df.to_csv("data/symbiosis_march_2024.csv", index=False)
+print("symbiosis data for March 2024 saved to march_2024.csv")

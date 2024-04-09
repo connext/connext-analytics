@@ -2,9 +2,30 @@
 log_level="INFO"
 log_format="JSON"
 dlthub_telemetry = true
+request_max_attempts = 100  # Stop after 10 retry attempts instead of 5
+request_backoff_factor = 2  # Multiplier applied to the exponential delays. Default is 1
+request_timeout = 120  # Timeout in seconds
+request_max_retry_delay = 300  # Cap exponential delay to 30 seconds
 
+# extract and normalize stages
 [data_writer]
-max_buffer_items=100
+file_max_items=100000
+file_max_bytes=1000000
+
+# only for the extract stage - for all sources
+[sources.data_writer]
+file_max_items=100000
+file_max_bytes=1000000
+
+# only for the extract stage of a source with name zendesk_support
+[sources.zendesk_support.data_writer]
+file_max_items=100000
+file_max_bytes=1000000
+
+# only for the normalize stage
+[normalize.data_writer]
+file_max_items=100000
+file_max_bytes=1000000
 
 [providers]
 enable_google_secretes=true
@@ -24,3 +45,14 @@ bridgedaystats_url="https://bridges.llama.fi/bridgedaystats/"
 native_evm_eth__bridges_query_id=3537139
 tokens_evm_eth__bridges_query_id=3539947
 stargate_daily_agg_query_id=3552798
+across_aggregator_daily_query_id=3520486
+
+
+[sources.all_bridge_explorer]
+all_bridge_explorer_transfers_url="https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"
+all_bridge_explorer_token_info_url="https://core.api.allbridgecoreapi.net/token-info"
+
+
+[sources.symbiosis_bridge_explorer]
+symbiosis_bridge_explorer_transactions_url="https://api-v2.symbiosis.finance/explorer/v1/transactions"
+

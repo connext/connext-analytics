@@ -162,8 +162,12 @@ def get_mainnet_production_init_config():
 def get_supported_domains():
 
     supported_domains = fetch_and_transform_supported_domains(url)
+    # if length of id is lessthan 6 remove it
+
     if supported_domains is not None:
-        return json.loads(supported_domains)
+        sd = json.loads(supported_domains)
+        sd = [domain for domain in sd if len(domain["id"]) >= 6]
+        return sd
 
 
 def get_prod_mainmet_config_metadata():
@@ -183,7 +187,7 @@ def get_prod_mainmet_config_metadata():
         dataframe=df_prod_mainnet_routes_config,
         project_id=PROJECT_ID,
         destination_table="raw.source_monorepo__prod_mainnet_routes_config",
-        if_exists="append",
+        if_exists="replace",
         chunksize=100000,
         api_method="load_csv",
     )
@@ -198,7 +202,7 @@ def get_prod_mainmet_config_metadata():
         dataframe=df_supported_domains,
         project_id=PROJECT_ID,
         destination_table="raw.source_monorepo__prod_mainnet_supported_domains",
-        if_exists="append",
+        if_exists="replace",
         chunksize=100000,
         api_method="load_csv",
     )
@@ -232,10 +236,14 @@ def get_prod_mainmet_config_metadata():
         dataframe=df,
         project_id=PROJECT_ID,
         destination_table="raw.source_monorepo__prod_mainnet_assets",
-        if_exists="append",
+        if_exists="replace",
         chunksize=100000,
         api_method="load_csv",
     )
     logging.info("Data loaded to BigQuery for prod_mainnet_assets")
 
     logging.info("Pipeline completed")
+
+
+if __name__ == "__main__":
+    get_prod_mainmet_config_metadata()

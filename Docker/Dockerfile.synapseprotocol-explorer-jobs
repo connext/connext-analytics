@@ -1,0 +1,16 @@
+FROM python:3.11.4
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONFAULTHANDLER 1
+
+WORKDIR /app
+COPY Pipfile.lock Pipfile ./
+
+# Building deps
+RUN pip install pipenv
+RUN pipenv install --system --deploy
+
+COPY . .
+
+CMD ["python", "-m", "src.integrations.synapseprotocol_explorer"]

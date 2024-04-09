@@ -285,13 +285,13 @@ def defilamma_raw() -> Sequence[DltResource]:
     ]
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    logging.info("Running DLT defilamma")
-    p = dlt.pipeline(
-        pipeline_name="defilamma",
-        destination="bigquery",
-        dataset_name="raw",
-    )
-    p.run(defilamma_raw(), loader_file_format="jsonl")
-    logging.info("Finished DLT defilamma")
+#     logging.info("Running DLT defilamma")
+#     p = dlt.pipeline(
+#         pipeline_name="defilamma",
+#         destination="bigquery",
+#         dataset_name="raw",
+#     )
+#     p.run(defilamma_raw(), loader_file_format="jsonl")
+#     logging.info("Finished DLT defilamma")

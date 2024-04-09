@@ -39,6 +39,8 @@ from src.integrations.utilities import (
     convert_lists_and_booleans_to_strings,
 )
 from src.integrations.dune import dune_bridges
+from src.integrations.defilamma import defilamma_raw
+
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
@@ -198,27 +200,6 @@ def socket_bridge_pipeline():
     return msg_output
 
 
-# @app.get("/socket/routes/pipeline")
-# def socket_routes_pipeline():
-#     """
-#     INPUT
-
-#         reset:
-#             If set as True, All possible pathways combinations will be pulled into GCP Cloud storage
-#             On Default, pathways used: mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways.
-
-#     """
-#     reset: bool = False
-#     print(f"start,pathway reset: {reset}")
-#     payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
-#     logging.info(f"payloads pull, data length: {len(payloads)}")
-
-#     routes = asyncio.run(get_all_routes(payloads=payloads))
-#     upload_json_to_gcs(routes, "socket_routes")
-
-#     return {"message": "socket routes pipeline finished"}
-
-
 @app.get("/socket/routes/upload_to_bq/")
 def socket_routes_upload_to_bq():
 
@@ -279,4 +260,23 @@ def dune_pipeline():
     )
     p.run(dune_bridges(), loader_file_format="jsonl")
     logging.info("Finished DLT Dune Bridges!")
+    return {"message": "Pipeline completed"}
+
+
+# -----
+# DEFI LAMMA
+# -----
+
+
+@app.get("/defilamma/pipeline")
+def defilamma_pipeline():
+
+    logging.info("Running DLT defilamma")
+    p = dlt.pipeline(
+        pipeline_name="defilamma",
+        destination="bigquery",
+        dataset_name="raw",
+    )
+    p.run(defilamma_raw(), loader_file_format="jsonl")
+    logging.info("Finished DLT defilamma")
     return {"message": "Pipeline completed"}

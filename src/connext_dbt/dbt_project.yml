@@ -26,3 +26,6 @@ models:
     dune:
       +materialized: view
       +schema: dune
+    legacy:
+      +materialized: view
+      +schema: legacy

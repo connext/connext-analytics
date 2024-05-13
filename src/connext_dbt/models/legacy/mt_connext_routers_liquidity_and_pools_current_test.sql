@@ -72,8 +72,8 @@ sp AS (
     JSON_EXTRACT_STRING_ARRAY(pooled_tokens)[1] AS token_2,
     CAST(JSON_EXTRACT_STRING_ARRAY(pool_token_decimals)[0] AS NUMERIC) AS pool_token_decimals_1,
     CAST(JSON_EXTRACT_STRING_ARRAY(pool_token_decimals)[1] AS NUMERIC) AS pool_token_decimals_2,
-    CAST(JSON_EXTRACT_STRING_ARRAY(balances)[0] AS NUMERIC) AS balances_1,
-    CAST(JSON_EXTRACT_STRING_ARRAY(balances)[1] AS NUMERIC) AS balances_2
+    CAST(JSON_EXTRACT_STRING_ARRAY(balances)[0] AS FLOAT64) AS balances_1,
+    CAST(JSON_EXTRACT_STRING_ARRAY(balances)[1] AS FLOAT64) AS balances_2
   FROM
     `public.stableswap_pools`
   WHERE

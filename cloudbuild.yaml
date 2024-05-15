@@ -35,6 +35,16 @@ steps:
       [
         "build",
         "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-debridge-explorer-jobs",
+        "-f",
+        "Docker/Dockerfile.debridge-explorer-jobs",
+        "."
+      ]
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
         "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-symbiosis-bridge-explorer-jobs",
         "-f",
         "Docker/Dockerfile.symbiosis-bridge-explorer-jobs",

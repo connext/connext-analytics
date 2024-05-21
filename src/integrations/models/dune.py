@@ -58,3 +58,60 @@ class AcrossAggregatorDaily(BaseModel):
     value_usd: Optional[float] = None
     relay_fee_in_usd: Optional[float] = None
     lp_fee_in_usd: Optional[float] = None
+
+
+class HourlyTokenPricingBlockchainEth(BaseModel):
+    symbol: Optional[str] = None
+    date: Optional[str] = None
+    average_price: Optional[float] = None
+    max_price: Optional[float] = None
+
+
+class CannonicalBridgesFlowsTokensHourly(BaseModel):
+    """
+    sample data:
+        {
+            "date": "2024-01-19 12:00:00.000 UTC",
+            "fs_bridge": null,
+            "ts_bridge": "Arbitrum Bridge",
+            "symbol": "wstETH",
+            "usd_token_value": "206569.16322411445",
+            "gas_used": "3.42112e-13",
+            "fee_usd": "20.096766404637268",
+            "tx_count": "2"
+        }
+    """
+
+    date: Optional[str] = None
+    fs_bridge: Optional[str] = None
+    ts_bridge: Optional[str] = None
+    symbol: Optional[str] = None
+    usd_token_value: Optional[float] = None
+    gas_used: Optional[float] = None
+    fee_usd: Optional[float] = None
+    tx_count: Optional[int] = None
+
+
+class CannonicalBridgesFlowsNativeHourly(BaseModel):
+    """
+    sample data:
+        {
+            "date": "2024-01-19 12:00:00.000 UTC",
+            "fs_bridge": null,
+            "ts_bridge": "Arbitrum Bridge",
+            "symbol": "wstETH",
+            "usd_token_value": "206569.16322411445",
+            "gas_used": "3.42112e-13",
+            "fee_usd": "20.096766404637268",
+            "tx_count": "2"
+        }
+    """
+
+    date: Optional[str] = None
+    fs_bridge: Optional[str] = None
+    ts_bridge: Optional[str] = None
+    symbol: Optional[str] = None
+    usd_token_value: Optional[float] = None
+    gas_used: Optional[float] = None
+    fee_usd: Optional[float] = None
+    tx_count: Optional[int] = None

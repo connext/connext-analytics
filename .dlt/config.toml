@@ -46,6 +46,9 @@ native_evm_eth__bridges_query_id=3537139
 tokens_evm_eth__bridges_query_id=3539947
 stargate_daily_agg_query_id=3552798
 across_aggregator_daily_query_id=3520486
+hourly_token_pricing_query_id= 3752571
+cannonical_bridges_hourly_flows_tokens_query_id=3753088
+cannonical_bridges_hourly_flows_native_query_id=3753520
 
 
 [sources.all_bridge_explorer]

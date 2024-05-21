@@ -7,7 +7,7 @@ SELECT
   tf.destination_domain AS destination_chain,
   tf.router,
   tf.origin_asset AS asset,
-  SUM(CAST(tf.origin_transacting_amount AS NUMERIC)) AS volume,
+  SUM(CAST(tf.origin_transacting_amount AS FLOAT64)) AS volume,
   AVG(tf.price) AS avg_price,
   SUM(tf.usd_bridged_amount) AS usd_volume,
   ROW_NUMBER() OVER () AS id

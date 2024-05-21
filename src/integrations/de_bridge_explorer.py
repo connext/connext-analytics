@@ -1,7 +1,7 @@
+import asyncio
+import aiohttp
 import logging
 import pandas_gbq as gbq
-import requests
-import json
 import pandas as pd
 from requests.structures import CaseInsensitiveDict
 
@@ -9,7 +9,7 @@ url = "https://stats-api.dln.trade/api/Orders/filteredList"
 headers = CaseInsensitiveDict()
 headers["Content-Type"] = "application/json"
 PROJECT_ID = "mainnet-bigq"
-
+TABLE_ID = "mainnet-bigq.raw.source_de_bridge_explorer__transactions"
 logging.basicConfig(level=logging.INFO)
 
 necessary = [
@@ -55,96 +55,86 @@ necessary = [
 ]
 
 
-def post_deexplorer_data_call(skip=0):
-    """
-    Pyload:
-        {
+async def fetch_data(data):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=data) as response:
+            response_json = await response.json()
+        return response_json.get("orders", [])
+
+
+async def post_deexplorer_data_call(skip=0):
+    try:
+        data = {
             "giveChainIds": [],
             "takeChainIds": [],
-            "orderStates": [],
-            "externalCallStates": [
-                "Completed"
-            ],
-            "skip": 19100,
-            "take": 100
+            "orderStates": ["Fulfilled", "SentUnlock", "ClaimedUnlock"],
+            "skip": skip,
+            "take": 100,
         }
-
-    _extended_summary_
-
-    Args:
-        skip (int, optional): _description_. Defaults to 0.
-
-    Returns:
-        _type_: _description_
-    """
-    data = {
-        "giveChainIds": [],
-        "takeChainIds": [],
-        "orderStates": [],
-        "externalCallStates": ["Completed"],
-        "skip": skip,
-        "take": 100,
-    }
-    deexplorer = requests.post(url, headers=headers, data=json.dumps(data))
-    deexplorer = json.loads(deexplorer.text)
-    if "orders" in deexplorer:
-        actual = deexplorer["orders"]
-    else:
-        print(f"No 'orders' key found in the response for skip={skip}.")
-        actual = []
-
-    deexplorer_data = pd.json_normalize(actual)
-    deexplorer_data = deexplorer_data.filter(items=necessary)
-    return deexplorer_data
+        orders = await fetch_data(data)
+        deexplorer_data = pd.json_normalize(orders)
+        deexplorer_data = deexplorer_data.filter(items=necessary)
+        deexplorer_data["creationTimestamp"] = deexplorer_data[
+            "creationTimestamp"
+        ].astype(int)
+        return deexplorer_data.drop_duplicates()
+    except Exception as e:
+        logging.error(f"Error fetching data: {e}")
+        return pd.DataFrame()
 
 
-# convert the below into a function
-def get_deexplorer_transactions(skip=0):
+def get_skip_count_from_bq():
 
-    all_orders_df = pd.DataFrame()
+    query = "SELECT COUNT(1) AS max FROM `mainnet-bigq.raw.source_de_bridge_explorer__transactions` "
+    skip = gbq.read_gbq(query, project_id=PROJECT_ID).iloc[0]["max"]
+    return skip
 
-    # Initialize skip value
+
+async def de_bridge_explorer_pipeline():
+
+    final_df = pd.DataFrame()
     skip = 0
 
-    # Loop to fetch all orders
     while True:
-        print(f"Fetching orders with skip={skip}...")
-        df_deexplorer = post_deexplorer_data_call(skip=skip)
+        df_deexplorer = await post_deexplorer_data_call(skip=skip)
         if df_deexplorer.empty:
-            print("No more orders to fetch.")
+            await asyncio.sleep(60)
+            skip += 100
+            logging.info(
+                "No more orders to fetch. Sleeping for 60 seconds before next call"
+            )
+            continue
+
+        min_timestamp = df_deexplorer["creationTimestamp"].min()
+        logging.info(
+            f"Fetched orders: skip={skip}, shape={df_deexplorer.shape}, Min timestamp from pulled data: {min_timestamp}"
+        )
+
+        if min_timestamp < 1704067200:
+            logging.info("This year's data is pulled. Stopping...")
             break
-        all_orders_df = pd.concat([all_orders_df, df_deexplorer], ignore_index=True)
+
+        df_deexplorer.columns = [
+            col.lower().replace(".", "_") for col in df_deexplorer.columns
+        ]
+        df_deexplorer = df_deexplorer.astype(str)
+        final_df = pd.concat([final_df, df_deexplorer])
+
+        if len(final_df) > 10000:
+            gbq.to_gbq(
+                final_df,
+                TABLE_ID,
+                project_id=PROJECT_ID,
+                if_exists="append",
+                chunksize=10000,
+            )
+            logging.info(
+                f"Uploaded {len(final_df)} rows for time: {min_timestamp} to bigquery"
+            )
+            final_df = pd.DataFrame()
+
         skip += 100
-
-    # CLean before upload
-
-    # convert the column names from camelCase to snake_case
-    all_orders_df.columns = [
-        col.lower().replace(".", "_") for col in all_orders_df.columns
-    ]
-
-    # Force string type for all columns
-    all_orders_df = all_orders_df.astype(str)
-    # all_orders_df.to_csv("data/de_bridge_explorer_all_orders.csv", index=False)
-    return all_orders_df
-
-
-def de_bridge_explorer_pipeline():
-
-    df = get_deexplorer_transactions()
-    gbq.to_gbq(
-        dataframe=df,
-        project_id=PROJECT_ID,
-        destination_table="raw.source_de_bridge_explorer__transactions",
-        if_exists="append",
-        chunksize=10000,
-        api_method="load_csv",
-    )
 
 
 if __name__ == "__main__":
-
-    # TODO: Adding a schedule to run this pipeline
-    # TODO: Uploading data that is new to the raw table
-    # de_bridge_explorer_pipeline()
-    print("Check TODO")
+    asyncio.run(de_bridge_explorer_pipeline())

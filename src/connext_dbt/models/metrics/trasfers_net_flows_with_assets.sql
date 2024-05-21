@@ -45,15 +45,7 @@ flow_{{ hours }}hr AS (
             i.chain,
             i.asset,
             AVG(COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) AS avg_net_amount_{{ hours }}hr,
-            STDDEV(COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) AS stddev_net_amount_{{ hours }}hr,
-            MIN(COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) AS min_net_amount_{{ hours }}hr,
-            MAX(COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) AS max_net_amount_{{ hours }}hr,
-            -- PERCENTILE_CONT(COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0), 0.5) OVER (PARTITION BY TIMESTAMP_TRUNC(i.date, DAY), i.chain, i.asset) AS median_net_amount_{{ hours }}hr,
-            AVG(100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)) * 100) AS avg_percent_netted_{{ hours }}hr,
-            STDDEV(100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)) * 100) AS stddev_percent_netted_{{ hours }}hr,
-            MIN(100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)) * 100) AS min_percent_netted_{{ hours }}hr,
-            MAX(100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)) * 100) AS max_percent_netted_{{ hours }}hr,
-            -- PERCENTILE_CONT(100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / (COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0))) * 100, 0.5) OVER (PARTITION BY TIMESTAMP_TRUNC(i.date, DAY), i.chain, i.asset) AS median_percent_netted_{{ hours }}hr
+            AVG(100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)) * 100) AS avg_percent_netted_{{ hours }}hr
 
         FROM inflow i
         FULL OUTER JOIN outflow o ON i.date = o.date AND i.chain = o.chain AND i.asset = o.asset

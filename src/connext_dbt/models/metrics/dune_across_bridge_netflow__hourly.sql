@@ -3,7 +3,7 @@ WITH inflow AS (
     SELECT
         ah.date AS date,
         ah.token_symbol AS asset,
-        ah.dst_chain AS chain,
+        ah.src_chain AS chain,
         SUM(ah.value_usd) AS inflow
     FROM `mainnet-bigq.dune.ad_hoc_ across_bridge_hourly_agg` AS ah
     WHERE token_symbol IS NOT NULL AND value_usd > 0
@@ -13,7 +13,7 @@ outflow AS (
     SELECT
         ah.date AS date,
         ah.token_symbol AS asset,
-        ah.src_chain AS chain,
+        ah.dst_chain AS chain,
         SUM(ah.value_usd) AS outflow
     FROM `mainnet-bigq.dune.ad_hoc_ across_bridge_hourly_agg` AS ah
     WHERE token_symbol IS NOT NULL AND value_usd > 0

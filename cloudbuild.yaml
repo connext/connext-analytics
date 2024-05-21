@@ -75,7 +75,6 @@ images:
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-lifi-jobs"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-defilamma"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-all-bridge-explorer-jobs"
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-debridge-explorer-jobs"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-symbiosis-bridge-explorer-jobs"
   - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-synapseprotocol-explorer-jobs"
-
-

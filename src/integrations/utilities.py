@@ -151,6 +151,10 @@ def get_latest_value_from_bq_table_by_col(
         # if value is int then return, if date convert to int and return
         if isinstance(final_start_date, np.int64):
             return final_start_date
+        elif isinstance(final_start_date, str):
+            dt = datetime.strptime(final_start_date, "%Y-%m-%d %H:%M:%S.%f UTC")
+            logging.info(dt)
+            return int(dt.timestamp())
         else:
             return int(final_start_date.timestamp())
 

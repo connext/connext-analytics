@@ -17,6 +17,9 @@ from src.integrations.models.dune import (
     BridgesTokensEvmEth,
     StargateBridgesDailyAgg,
     AcrossAggregatorDaily,
+    HourlyTokenPricingBlockchainEth,
+    CannonicalBridgesFlowsTokensHourly,
+    CannonicalBridgesFlowsNativeHourly,
 )
 from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
@@ -227,26 +230,115 @@ def get_across__aggregator_daily(
         logging.info("Data uptodate in the DB")
 
 
+# hourly_token_pricing_query_id
+@dlt.resource(
+    table_name="source_hourly_token_pricing_blockchain_eth",
+    write_disposition="append",
+    columns=pydantic_to_table_schema_columns(HourlyTokenPricingBlockchainEth),
+)
+def get_hourly_token_pricing_blockchain_eth(
+    hourly_token_pricing_query_id=dlt.config.value,
+) -> Iterator[TDataItems]:
+
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth",
+        start_date=1609459200,  # 2021-01-01
+    )
+    if date_param["start_date"] < date_param["end_date"]:
+        for result in get_result_by_query_id(
+            hourly_token_pricing_query_id,
+            new=True,
+            start_date=date_param["start_date"],
+        ):
+            for record in result:  # Iterate over each dictionary in the list
+                yield HourlyTokenPricingBlockchainEth(
+                    **record
+                )  # Unpack each dictionary
+    else:
+        logging.info("Data uptodate in the DB")
+
+
+# TOKENS
+@dlt.resource(
+    table_name="source_cannonical_bridges_flows_tokens_hourly",
+    write_disposition="append",
+    columns=pydantic_to_table_schema_columns(CannonicalBridgesFlowsTokensHourly),
+)
+def get_hourly_cannonical_bridges_hourly_flows_tokens(
+    cannonical_bridges_hourly_flows_tokens_query_id=dlt.config.value,
+) -> Iterator[TDataItems]:
+
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_cannonical_bridges_flows_tokens_hourly",
+        start_date=DUNE_START_DATE,
+    )
+    if date_param["start_date"] < date_param["end_date"]:
+        for result in get_result_by_query_id(
+            cannonical_bridges_hourly_flows_tokens_query_id,
+            new=True,
+            start_date=date_param["start_date"],
+        ):
+            for record in result:  # Iterate over each dictionary in the list
+                yield CannonicalBridgesFlowsTokensHourly(
+                    **record
+                )  # Unpack each dictionary
+    else:
+        logging.info("Data uptodate in the DB")
+
+
+# NATIVE
+@dlt.resource(
+    table_name="source_cannonical_bridges_flows_native_hourly",
+    write_disposition="append",
+    columns=pydantic_to_table_schema_columns(CannonicalBridgesFlowsNativeHourly),
+)
+def get_hourly_cannonical_bridges_hourly_flows_native(
+    cannonical_bridges_hourly_flows_native_query_id=dlt.config.value,
+) -> Iterator[TDataItems]:
+
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_cannonical_bridges_flows_native_hourly",
+        start_date=DUNE_START_DATE,
+    )
+    if date_param["start_date"] < date_param["end_date"]:
+        for result in get_result_by_query_id(
+            cannonical_bridges_hourly_flows_native_query_id,
+            new=True,
+            start_date=date_param["start_date"],
+        ):
+            for record in result:  # Iterate over each dictionary in the list
+                yield CannonicalBridgesFlowsNativeHourly(
+                    **record
+                )  # Unpack each dictionary
+    else:
+        logging.info("Data uptodate in the DB")
+
+
 # Sources
 @dlt.source(
     max_table_nesting=0,
 )
 def dune_bridges() -> Sequence[DltResource]:
     return [
-        get_native_evm_eth__bridges,
-        get_tokens_evm_eth__bridges,
-        get_stargate_bridges_daily_agg,
-        get_across__aggregator_daily,
+        # new:
+        get_hourly_token_pricing_blockchain_eth,
+        get_hourly_cannonical_bridges_hourly_flows_tokens,
+        get_hourly_cannonical_bridges_hourly_flows_native,
+        # old:
+        # get_native_evm_eth__bridges,
+        # get_tokens_evm_eth__bridges,
+        # get_stargate_bridges_daily_agg,
+        # get_across__aggregator_daily,
     ]
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     logging.info("Running DLT Dune Bridges")
-#     p = dlt.pipeline(
-#         pipeline_name="dune",
-#         destination="bigquery",
-#         dataset_name="dune",
-#     )
-#     p.run(dune_bridges(), loader_file_format="jsonl")
-#     logging.info("Finished DLT Dune Bridges!")
+    logging.info("Running DLT Dune Bridges")
+    p = dlt.pipeline(
+        pipeline_name="dune",
+        destination="bigquery",
+        dataset_name="dune",
+    )
+    p.run(dune_bridges(), loader_file_format="jsonl")
+    logging.info("Finished DLT Dune Bridges!")

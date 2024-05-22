@@ -1,5 +1,3 @@
-
--- create flow in and out based on raw data
 WITH raw AS (
 -- TOKEN FLOW
 SELECT
@@ -12,9 +10,9 @@ SELECT
     CASE 
         WHEN fs_bridge = "Base Bridge" THEN "Base"
         WHEN fs_bridge = "Metis Bridge" THEN "Metis"
-        WHEN fs_bridge = "zkEVM Bridge" THEN "zkEVM"
+        WHEN fs_bridge = "zkEVM Bridge" THEN "Polygon zkEVM"
         WHEN fs_bridge = "Mantle Bridge" THEN "Mantle"
-        WHEN fs_bridge = "zkSync Bridge" THEN "zkSync"
+        WHEN fs_bridge = "zkSync Bridge" THEN "zkSync Era"
         WHEN fs_bridge = "Polygon Bridge" THEN "Polygon"
         WHEN fs_bridge = "Arbitrum Bridge" THEN "Arbitrum"
         WHEN fs_bridge = "StarkNet Bridge" THEN "StarkNet"
@@ -26,9 +24,9 @@ SELECT
     CASE 
         WHEN ts_bridge = "Base Bridge" THEN "Base"
         WHEN ts_bridge = "Metis Bridge" THEN "Metis"
-        WHEN ts_bridge = "zkEVM Bridge" THEN "zkEVM"
+        WHEN ts_bridge = "zkEVM Bridge" THEN "Polygon zkEVM"
         WHEN ts_bridge = "Mantle Bridge" THEN "Mantle"
-        WHEN ts_bridge = "zkSync Bridge" THEN "zkSync"
+        WHEN ts_bridge = "zkSync Bridge" THEN "zkSync Era"
         WHEN ts_bridge = "Polygon Bridge" THEN "Polygon"
         WHEN ts_bridge = "Arbitrum Bridge" THEN "Arbitrum"
         WHEN ts_bridge = "StarkNet Bridge" THEN "StarkNet"
@@ -47,7 +45,6 @@ SELECT
     fs_bridge,
     ts_bridge,
     COALESCE(fs_bridge, ts_bridge) AS bridge,
-    
     -- if bridge sc address is in the from column, then it is a flow out
     CASE 
         WHEN fs_bridge = "Base Bridge" THEN "Base"
@@ -86,7 +83,15 @@ FROM `mainnet-bigq.dune.source_cannonical_bridges_flows_native_hourly`
 
 SELECT
     date,
-    bridge,
+    -- bridge name change: Optimism Main Bridge, mode Bridge, metis Bridge, Polygon zkEVM Bridge
+    CASE 
+        WHEN bridge = "Optimism Main Bridge" THEN "Optimisum Bridge"
+        WHEN bridge = "mode Bridge" THEN "Mode Bridge"
+        WHEN bridge = "metis Bridge" THEN "Metis Bridge"
+        WHEN bridge = "zkEVM Bridge" THEN "Polygon zkEVM Bridge"
+        WHEN bridge = "zkSync Bridge" THEN "zkSync Era Bridge"
+        ELSE bridge
+    END AS bridge,
     src_chain,
     dst_chain,
     token_symbol,

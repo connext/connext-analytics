@@ -24,6 +24,8 @@ pydantic = "*"
 dune-client = "*"
 duneanalytics = "*"
 backoff = "*"
+streamlit = "*"
+plotly = "*"
 
 [dev-packages]
 black="*"

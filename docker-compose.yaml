@@ -6,3 +6,12 @@ services:
     ports:
       - 1001:1000
     command: uvicorn src.main:app --host 0.0.0.0 --port 1000 --reload --loop asyncio
+
+  connext-modelling-streamlit-app:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.streamlit-connext-modelling-service
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app

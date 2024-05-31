@@ -29,3 +29,7 @@ models:
     legacy:
       +materialized: view
       +schema: legacy
+    metrics_routers_lp_pools:
+      +materialized: view
+      +schema: metrics_routers_lp_pools
+

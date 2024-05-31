@@ -37,14 +37,14 @@ dune = DuneClient(api_key=get_secret_gcp_secrete_manager("source_DUNE_API_KEY_1"
 
 def epoch_date_before_today_utc() -> int:
     end_date = datetime.now(pytz.UTC) - timedelta(days=1)
-    return (
-        end_date.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC)
-    ).timestamp()
+    return int(
+        (
+            end_date.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=pytz.UTC)
+        ).timestamp()
+    )
 
 
-def get_result_by_query_id(
-    id: int, start_date: int, end_date: int = None, new: bool = False
-):
+def get_result_by_query_id(id: int, start_date: int, end_date: int = None):
     """
     get_result_by_query_id _summary_
 
@@ -62,6 +62,7 @@ def get_result_by_query_id(
     """
     #
     if end_date is None:
+        logging.info(f"No end_date provided, using start_date: {start_date}")
         query = QueryBase(
             name="DUNE PIPELINE QUERY",
             query_id=id,
@@ -70,6 +71,9 @@ def get_result_by_query_id(
             ],
         )
     else:
+        logging.info(
+            f"end_date provided: {end_date}, query date parameters: {start_date} to {end_date}"
+        )
         query = QueryBase(
             name="DUNE PIPELINE QUERY",
             query_id=id,
@@ -78,14 +82,12 @@ def get_result_by_query_id(
                 QueryParameter.number_type(name="end_date", value=end_date),
             ],
         )
+    results = dune.get_latest_result(query, max_age_hours=1)
+    results_resp = results.result
+    with open("data/dune_results.json", "w") as f:
+        f.write(results_resp)
 
-    if new:
-        results = dune.run_query_dataframe(query, batch_size=1000)
-
-    else:
-        results = dune.get_latest_result_dataframe(query, batch_size=1000)
-    # results.to_csv(f"data/dune_query_result_{id}.csv", index=False)
-    yield results.to_dict("records")
+    yield results_resp
 
 
 def get_start_end_date(
@@ -139,7 +141,6 @@ def get_native_evm_eth__bridges(
     if date_param["start_date"] < date_param["end_date"]:
         yield get_result_by_query_id(
             native_evm_eth__bridges_query_id,
-            new=True,
             start_date=date_param["start_date"],
             end_date=date_param["end_date"],
         )
@@ -168,7 +169,6 @@ def get_tokens_evm_eth__bridges(
     if date_param["start_date"] < date_param["end_date"]:
         yield get_result_by_query_id(
             tokens_evm_eth__bridges_query_id,
-            new=True,
             start_date=date_param["start_date"],
             end_date=date_param["end_date"],
         )
@@ -196,7 +196,6 @@ def get_stargate_bridges_daily_agg(
             print(f"pair of dates: {start_date}, {end_date}")
             yield get_result_by_query_id(
                 stargate_daily_agg_query_id,
-                new=True,
                 start_date=start_date,
                 end_date=end_date,
             )
@@ -222,7 +221,6 @@ def get_across__aggregator_daily(
     if date_param["start_date"] < date_param["end_date"]:
         yield get_result_by_query_id(
             across_aggregator_daily_query_id,
-            new=True,
             start_date=date_param["start_date"],
             end_date=date_param["end_date"],
         )
@@ -233,7 +231,7 @@ def get_across__aggregator_daily(
 # hourly_token_pricing_query_id
 @dlt.resource(
     table_name="source_hourly_token_pricing_blockchain_eth",
-    write_disposition="append",
+    write_disposition="replace",
     columns=pydantic_to_table_schema_columns(HourlyTokenPricingBlockchainEth),
 )
 def get_hourly_token_pricing_blockchain_eth(
@@ -244,11 +242,17 @@ def get_hourly_token_pricing_blockchain_eth(
         table_id="mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth",
         start_date=1609459200,  # 2021-01-01
     )
+
+    # [ ] TODO Just for replace- remove later
+
+    date_param["start_date"] = 1609459200
+    date_param["end_date"] = epoch_date_before_today_utc()
+
     if date_param["start_date"] < date_param["end_date"]:
         for result in get_result_by_query_id(
             hourly_token_pricing_query_id,
-            new=True,
             start_date=date_param["start_date"],
+            end_date=date_param["end_date"],
         ):
             for record in result:  # Iterate over each dictionary in the list
                 yield HourlyTokenPricingBlockchainEth(
@@ -275,7 +279,6 @@ def get_hourly_cannonical_bridges_hourly_flows_tokens(
     if date_param["start_date"] < date_param["end_date"]:
         for result in get_result_by_query_id(
             cannonical_bridges_hourly_flows_tokens_query_id,
-            new=True,
             start_date=date_param["start_date"],
         ):
             for record in result:  # Iterate over each dictionary in the list
@@ -303,7 +306,6 @@ def get_hourly_cannonical_bridges_hourly_flows_native(
     if date_param["start_date"] < date_param["end_date"]:
         for result in get_result_by_query_id(
             cannonical_bridges_hourly_flows_native_query_id,
-            new=True,
             start_date=date_param["start_date"],
         ):
             for record in result:  # Iterate over each dictionary in the list
@@ -322,8 +324,8 @@ def dune_bridges() -> Sequence[DltResource]:
     return [
         # new:
         get_hourly_token_pricing_blockchain_eth,
-        get_hourly_cannonical_bridges_hourly_flows_tokens,
-        get_hourly_cannonical_bridges_hourly_flows_native,
+        # get_hourly_cannonical_bridges_hourly_flows_tokens,
+        # get_hourly_cannonical_bridges_hourly_flows_native,
         # old:
         # get_native_evm_eth__bridges,
         # get_tokens_evm_eth__bridges,
@@ -335,6 +337,7 @@ def dune_bridges() -> Sequence[DltResource]:
 if __name__ == "__main__":
 
     logging.info("Running DLT Dune Bridges")
+
     p = dlt.pipeline(
         pipeline_name="dune",
         destination="bigquery",

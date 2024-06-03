@@ -1,50 +1,70 @@
 WITH MaxAssetPrices AS (
-  SELECT canonical_id, MAX(timestamp) AS max_timestamp
-  FROM `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_prices` asset_prices
-  GROUP BY canonical_id
+    SELECT
+        Canonical_Id,
+        MAX(Timestamp) AS Max_Timestamp
+    FROM
+        `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_prices`
+            Asset_Prices
+    GROUP BY Canonical_Id
 )
 
 SELECT
-  routers.address,
-  asset_balances.asset_canonical_id,
-  asset_balances.asset_domain,
-  asset_balances.router_address,
-  asset_balances.balance,
-  assets.local,
-  assets.adopted,
-  assets.canonical_id,
-  assets.canonical_domain,
-  assets.domain,
-  assets.key,
-  assets.id,
-  asset_balances.fees_earned,
-  asset_balances.locked,
-  asset_balances.supplied,
-  asset_balances.removed,
-  assets.decimal,
-  assets.adopted_decimal,
-  COALESCE(asset_prices.price, 0) AS asset_usd_price,
-  asset_prices.price * (asset_balances.balance / POW(10, CAST(assets.decimal AS INT64))) AS balance_usd,
-  asset_prices.price * (asset_balances.fees_earned / POW(10, CAST(assets.decimal AS INT64))) AS fee_earned_usd,
-  asset_prices.price * (asset_balances.locked / POW(10, CAST(assets.decimal AS INT64))) AS locked_usd,
-  asset_prices.price * (asset_balances.supplied / POW(10, CAST(assets.decimal AS INT64))) AS supplied_usd,
-  asset_prices.price * (asset_balances.removed / POW(10, CAST(assets.decimal AS INT64))) AS removed_usd
+    Routers.Address,
+    Asset_Balances.Asset_Canonical_Id,
+    Asset_Balances.Asset_Domain,
+    Asset_Balances.Router_Address,
+    Asset_Balances.Balance,
+    Assets.Local,
+    Assets.Adopted,
+    Assets.Canonical_Id,
+    Assets.Canonical_Domain,
+    Assets.Domain,
+    Assets.Key,
+    Assets.Id,
+    Asset_Balances.Fees_Earned,
+    Asset_Balances.Locked,
+    Asset_Balances.Supplied,
+    Asset_Balances.Removed,
+    Assets.Decimal,
+    Assets.Adopted_Decimal,
+    COALESCE(Asset_Prices.Price, 0) AS Asset_Usd_Price,
+    Asset_Prices.Price
+    * (Asset_Balances.Balance / POW(10, CAST(Assets.Decimal AS INT64)))
+        AS Balance_Usd,
+    Asset_Prices.Price
+    * (Asset_Balances.Fees_Earned / POW(10, CAST(Assets.Decimal AS INT64)))
+        AS Fee_Earned_Usd,
+    Asset_Prices.Price
+    * (Asset_Balances.Locked / POW(10, CAST(Assets.Decimal AS INT64)))
+        AS Locked_Usd,
+    Asset_Prices.Price
+    * (Asset_Balances.Supplied / POW(10, CAST(Assets.Decimal AS INT64)))
+        AS Supplied_Usd,
+    Asset_Prices.Price
+    * (Asset_Balances.Removed / POW(10, CAST(Assets.Decimal AS INT64)))
+        AS Removed_Usd
 FROM
-  `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_routers` routers
+    `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_routers`
+        Routers
 LEFT JOIN
-  `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_balances` asset_balances
-ON
-  routers.address = asset_balances.router_address
+    `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_balances`
+        Asset_Balances
+    ON
+        Routers.Address = Asset_Balances.Router_Address
 LEFT JOIN
-  `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_assets` assets
-ON
-  asset_balances.asset_canonical_id = assets.canonical_id
-  AND asset_balances.asset_domain = assets.domain
+    `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_assets`
+        Assets
+    ON
+        Asset_Balances.Asset_Canonical_Id = Assets.Canonical_Id
+        AND Asset_Balances.Asset_Domain = Assets.Domain
 LEFT JOIN
-  `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_prices` asset_prices
-ON
-  assets.canonical_id = asset_prices.canonical_id
+    `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_prices`
+        Asset_Prices
+    ON
+        Assets.Canonical_Id = Asset_Prices.Canonical_Id
 -- [ ] TODO BY Adding a inner join here, we are effectively removing any token data where price is not avaiable
 INNER JOIN
-  MaxAssetPrices
-ON asset_prices.canonical_id = MaxAssetPrices.canonical_id AND asset_prices.timestamp = MaxAssetPrices.max_timestamp
+    MaxAssetPrices
+    ON
+        Asset_Prices.Canonical_Id = MaxAssetPrices.Canonical_Id
+        AND Asset_Prices.Timestamp = MaxAssetPrices.Max_Timestamp

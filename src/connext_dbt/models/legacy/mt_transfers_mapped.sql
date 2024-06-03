@@ -1,40 +1,46 @@
 WITH transfers_mapping AS (
-SELECT *
-FROM `mainnet-bigq.stage.stg_transfers_raw_usd`
-LIMIT 10
+    SELECT *
+    FROM `mainnet-bigq.stage.stg_transfers_raw_usd`
+    LIMIT 10
 ),
 
 transfers_amounts AS (
-    Select 
-    CAST(origin_transacting_amount AS NUMERIC) / POWER(10, origin_asset_decimals) as origin_amount,
-    CAST(destination_transacting_amount AS NUMERIC) * POWER(10, 18 - destination_asset_decimals) as normalized_out,
-    CAST(destination_transacting_amount AS NUMERIC) / POWER(10, destination_asset_decimals) as destination_amount,
-    CAST(bridged_amt AS NUMERIC) / POWER(10, origin_asset_decimals) as bridged_amount,
-    * 
-    from transfers_mapping
+    SELECT
+        CAST(origin_transacting_amount AS NUMERIC)
+        / POWER(10, origin_asset_decimals) AS origin_amount,
+        CAST(destination_transacting_amount AS NUMERIC)
+        * POWER(10, 18 - destination_asset_decimals) AS normalized_out,
+        CAST(destination_transacting_amount AS NUMERIC)
+        / POWER(10, destination_asset_decimals) AS destination_amount,
+        CAST(bridged_amt AS NUMERIC)
+        / POWER(10, origin_asset_decimals) AS bridged_amount,
+        *
+    FROM transfers_mapping
 ),
 
 --  relayerfees AS (
-  router_regexp AS (
-  SELECT 
-  
-    t.*,
-    null AS relayerfee_address1,
-    null AS relayerfee_amount1,
-    null AS relayerfee_address2,
-    null AS relayerfee_amount2,
-    price AS asset_usd_price,
-    usd_destination_amount AS usd_amount
- FROM transfers_amounts t
+router_regexp AS (
+    SELECT
+
+        t.*,
+        null AS relayerfee_address1,
+        null AS relayerfee_amount1,
+        null AS relayerfee_address2,
+        null AS relayerfee_amount2,
+        price AS asset_usd_price,
+        usd_destination_amount AS usd_amount
+    FROM transfers_amounts t
 ),
 
 -- adding relay fee data later
 router_mapping AS (
-  SELECT
-    t.*,
-    COALESCE(rm.`name`, t.`router`)  AS router_name
-  FROM router_regexp AS t
-  LEFT JOIN `mainnet-bigq`.`raw`.`dim_connext_routers_name` AS rm ON LOWER(t.`router`) = LOWER(rm.`router`)
+    SELECT
+        t.*,
+        COALESCE(rm.`name`, t.`router`) AS router_name
+    FROM router_regexp AS t
+    LEFT JOIN
+        `mainnet-bigq`.`raw`.`dim_connext_routers_name` AS rm
+        ON LOWER(t.`router`) = LOWER(rm.`router`)
 )
 
 SELECT * FROM router_mapping
@@ -60,4 +66,3 @@ SELECT * FROM router_mapping
 -- )
 
 -- SELECT * FROM domain_name_fix
-

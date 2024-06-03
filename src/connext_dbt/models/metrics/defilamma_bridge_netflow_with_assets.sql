@@ -11,10 +11,12 @@ WITH inflow AS (
         d.chain AS chain,
         d.name AS bridge,
         SUM(d.usd_value) AS inflow
-    FROM `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
-    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type= "deposit"
-    GROUP BY 1, 2, 3,4
+    FROM
+        `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
+    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type = "deposit"
+    GROUP BY 1, 2, 3, 4
 ),
+
 outflow AS (
     SELECT
         TIMESTAMP_SECONDS(d.date) AS date,
@@ -22,10 +24,12 @@ outflow AS (
         d.chain AS chain,
         d.name AS bridge,
         SUM(d.usd_value) AS outflow
-    FROM `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
-    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type= "withdrawal"
-    GROUP BY 1, 2, 3,4
+    FROM
+        `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
+    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type = "withdrawal"
+    GROUP BY 1, 2, 3, 4
 ),
+
 net_flow AS (
     SELECT
         COALESCE(i.date, o.date) AS date,
@@ -35,9 +39,16 @@ net_flow AS (
         i.inflow,
         o.outflow,
         COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0) AS net_amount,
-        100 - ABS((COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0)) / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)) * 100 AS percent_netted
+        100
+        - ABS(
+            (COALESCE(i.inflow, 0) - COALESCE(o.outflow, 0))
+            / NULLIF((COALESCE(i.inflow, 0) + COALESCE(o.outflow, 0)), 0)
+        )
+        * 100 AS percent_netted
     FROM inflow i
-    FULL OUTER JOIN outflow o ON i.date = o.date AND i.chain = o.chain AND i.bridge = o.bridge
+    FULL OUTER JOIN
+        outflow o
+        ON i.date = o.date AND i.chain = o.chain AND i.bridge = o.bridge
 )
 
 SELECT * FROM net_flow

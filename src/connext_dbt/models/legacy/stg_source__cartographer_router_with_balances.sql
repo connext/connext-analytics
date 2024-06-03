@@ -1,69 +1,100 @@
 -- mainnet-bigq.raw.source__cartographer_router_with_balances
 
 WITH MaxAssetPricesTimestamp AS (
-  SELECT canonical_id, MAX(timestamp) AS max_timestamp
-  FROM `mainnet-bigq.public.asset_prices` asset_prices
-  GROUP BY canonical_id
+    SELECT
+        Canonical_Id,
+        MAX(Timestamp) AS Max_Timestamp
+    FROM `mainnet-bigq.public.asset_prices` Asset_Prices
+    GROUP BY Canonical_Id
 ),
+
 MaxAssetPrices AS (
-  SELECT 
-    asset_prices.canonical_domain,
-    asset_prices.canonical_id,
-    asset_prices.id,
-    CAST(asset_prices.price AS FLOAT64) AS price,
-    asset_prices.timestamp,
-    FROM `mainnet-bigq.public.asset_prices` asset_prices
-  JOIN MaxAssetPricesTimestamp ON asset_prices.canonical_id = MaxAssetPricesTimestamp.canonical_id AND asset_prices.timestamp = MaxAssetPricesTimestamp.max_timestamp
+    SELECT
+        Asset_Prices.Canonical_Domain,
+        Asset_Prices.Canonical_Id,
+        Asset_Prices.Id,
+        CAST(Asset_Prices.Price AS FLOAT64) AS Price,
+        Asset_Prices.Timestamp
+    FROM `mainnet-bigq.public.asset_prices` Asset_Prices
+    JOIN
+        MaxAssetPricesTimestamp
+        ON
+            Asset_Prices.Canonical_Id = MaxAssetPricesTimestamp.Canonical_Id
+            AND Asset_Prices.Timestamp = MaxAssetPricesTimestamp.Max_Timestamp
 ),
 
 --JOIN `mainnet-bigq.public.asset_prices` asset_prices ON assets.canonical_id = asset_prices.canonical_id
 --LEFT JOIN MaxAssetPrices ON asset_prices.canonical_id = MaxAssetPrices.canonical_id AND asset_prices.timestamp = MaxAssetPrices.max_timestamp
 --LEFT JOIN MaxAssetPrices asset_prices ON assets.canonical_id = asset_prices.canonical_id--MaxAssetPrices.canonical_id --AND asset_prices.timestamp = MaxAssetPrices.max_timestamp
 RWB AS (
-SELECT
-DISTINCT
-  routers.address,
-  asset_balances.asset_canonical_id,
-  asset_balances.asset_domain,
-  asset_balances.router_address,
-  asset_balances.balance,
-  assets.local,
-  assets.adopted,
-  assets.canonical_id,
-  assets.canonical_domain,
-  assets.domain,
-  assets.key,
-  assets.id,
-  asset_balances.fees_earned,
-  asset_balances.locked,
-  asset_balances.supplied,
-  asset_balances.removed,
-  assets.decimal,
-  assets.adopted_decimal,
-  COALESCE(asset_prices.price, 0) AS asset_usd_price,
-  asset_prices.price * (CAST(asset_balances.balance AS FLOAT64) / POW(10, CAST(assets.decimal AS INT64))) AS balance_usd,
-  asset_prices.price * (CAST(asset_balances.fees_earned AS FLOAT64) / POW(10, CAST(assets.decimal AS INT64))) AS fee_earned_usd,
-  asset_prices.price * ( CAST(asset_balances.locked AS FLOAT64) / POW(10, CAST(assets.decimal AS INT64))) AS locked_usd,
-  asset_prices.price * (CAST(asset_balances.supplied AS FLOAT64)  / POW(10, CAST(assets.decimal AS INT64))) AS supplied_usd,
-  asset_prices.price * (CAST(asset_balances.removed AS FLOAT64) / POW(10, CAST(assets.decimal AS INT64))) AS removed_usd
-FROM
-  (`mainnet-bigq.public.routers` routers
-LEFT JOIN
-  `mainnet-bigq.public.asset_balances` asset_balances
-ON
-  routers.address = asset_balances.router_address
-LEFT JOIN
-  `mainnet-bigq.public.assets` assets
-ON
-  asset_balances.asset_canonical_id = assets.canonical_id
-  AND asset_balances.asset_domain = assets.domain)
-LEFT JOIN MaxAssetPrices asset_prices ON assets.canonical_id = asset_prices.canonical_id
+    SELECT DISTINCT
+        Routers.Address,
+        Asset_Balances.Asset_Canonical_Id,
+        Asset_Balances.Asset_Domain,
+        Asset_Balances.Router_Address,
+        Asset_Balances.Balance,
+        Assets.Local,
+        Assets.Adopted,
+        Assets.Canonical_Id,
+        Assets.Canonical_Domain,
+        Assets.Domain,
+        Assets.Key,
+        Assets.Id,
+        Asset_Balances.Fees_Earned,
+        Asset_Balances.Locked,
+        Asset_Balances.Supplied,
+        Asset_Balances.Removed,
+        Assets.Decimal,
+        Assets.Adopted_Decimal,
+        COALESCE(Asset_Prices.Price, 0) AS Asset_Usd_Price,
+        Asset_Prices.Price
+        * (
+            CAST(Asset_Balances.Balance AS FLOAT64)
+            / POW(10, CAST(Assets.Decimal AS INT64))
+        ) AS Balance_Usd,
+        Asset_Prices.Price
+        * (
+            CAST(Asset_Balances.Fees_Earned AS FLOAT64)
+            / POW(10, CAST(Assets.Decimal AS INT64))
+        ) AS Fee_Earned_Usd,
+        Asset_Prices.Price
+        * (
+            CAST(Asset_Balances.Locked AS FLOAT64)
+            / POW(10, CAST(Assets.Decimal AS INT64))
+        ) AS Locked_Usd,
+        Asset_Prices.Price
+        * (
+            CAST(Asset_Balances.Supplied AS FLOAT64)
+            / POW(10, CAST(Assets.Decimal AS INT64))
+        ) AS Supplied_Usd,
+        Asset_Prices.Price
+        * (
+            CAST(Asset_Balances.Removed AS FLOAT64)
+            / POW(10, CAST(Assets.Decimal AS INT64))
+        ) AS Removed_Usd
+    FROM
+        (
+            `mainnet-bigq.public.routers` Routers
+            LEFT JOIN
+                `mainnet-bigq.public.asset_balances` Asset_Balances
+                ON
+                    Routers.Address = Asset_Balances.Router_Address
+            LEFT JOIN
+                `mainnet-bigq.public.assets` Assets
+                ON
+                    Asset_Balances.Asset_Canonical_Id = Assets.Canonical_Id
+                    AND Asset_Balances.Asset_Domain = Assets.Domain
+        )
+    LEFT JOIN
+        MaxAssetPrices Asset_Prices
+        ON Assets.Canonical_Id = Asset_Prices.Canonical_Id
 --JOIN `mainnet-bigq.public.asset_prices` asset_prices ON assets.canonical_id = asset_prices.canonical_id
 --LEFT JOIN MaxAssetPrices ON asset_prices.canonical_id = MaxAssetPrices.canonical_id AND asset_prices.timestamp = MaxAssetPrices.max_timestamp
 --LEFT JOIN MaxAssetPrices asset_prices ON assets.canonical_id = asset_prices.canonical_id--MaxAssetPrices.canonical_id --AND asset_prices.timestamp = MaxAssetPrices.max_timestamp
 )
 
-SELECT DISTINCT * FROM RWB --WHERE address is not null and asset_domain = '1836016741'
+--WHERE address is not null and asset_domain = '1836016741'
+SELECT DISTINCT * FROM RWB
 --SELECT * FROM MaxAssetPrices
 --SELECT * FROM `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_assets` WHERE domain = '1836016741'
 --SELECT * FROM `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_asset_balances` WHERE asset_domain = '1836016741'

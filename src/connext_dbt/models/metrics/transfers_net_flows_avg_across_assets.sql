@@ -1,9 +1,31 @@
 WITH time_buckets AS (
-    SELECT * FROM UNNEST([STRUCT(1 AS hours), STRUCT(3 AS hours), STRUCT(6 AS hours), STRUCT(12 AS hours), STRUCT(24 AS hours)])
+    SELECT *
+    FROM
+        UNNEST(
+            [
+                STRUCT(1 AS hours),
+                STRUCT(3 AS hours),
+                STRUCT(6 AS hours),
+                STRUCT(12 AS hours),
+                STRUCT(24 AS hours)
+            ]
+        )
 ),
+
 interval_days AS (
-    SELECT * FROM UNNEST([STRUCT(7 AS interval_days), STRUCT(15 AS interval_days), STRUCT(30 AS interval_days), STRUCT(60 AS interval_days), STRUCT(90 AS interval_days)])
+    SELECT *
+    FROM
+        UNNEST(
+            [
+                STRUCT(7 AS interval_days),
+                STRUCT(15 AS interval_days),
+                STRUCT(30 AS interval_days),
+                STRUCT(60 AS interval_days),
+                STRUCT(90 AS interval_days)
+            ]
+        )
 ),
+
 inflow AS (
     SELECT
         rf.to AS chain,
@@ -18,7 +40,9 @@ inflow AS (
     FROM `mainnet-bigq`.`metrics`.`raw_transfer_flows` AS rf
     CROSS JOIN time_buckets AS tb
     CROSS JOIN interval_days AS i
-    WHERE TIMESTAMP_TRUNC(rf.date, DAY) >= TIMESTAMP(DATE_SUB(CURRENT_DATE(), INTERVAL i.interval_days DAY))
+    WHERE
+        TIMESTAMP_TRUNC(rf.date, DAY)
+        >= TIMESTAMP(DATE_SUB(CURRENT_DATE(), INTERVAL i.interval_days DAY))
     GROUP BY chain, asset, date, time_bucket, interval_days
 )
 
@@ -37,10 +61,12 @@ outflow AS (
     FROM `mainnet-bigq`.`metrics`.`raw_transfer_flows` AS rf
     CROSS JOIN time_buckets AS tb
     CROSS JOIN interval_days AS i
-    WHERE 
-      TIMESTAMP_TRUNC(rf.date, DAY) >= TIMESTAMP(DATE_SUB(CURRENT_DATE(), INTERVAL i.interval_days DAY))
+    WHERE
+        TIMESTAMP_TRUNC(rf.date, DAY)
+        >= TIMESTAMP(DATE_SUB(CURRENT_DATE(), INTERVAL i.interval_days DAY))
     GROUP BY chain, asset, date, time_bucket, interval_days
 ),
+
 combined_flows AS (
     SELECT
         i.chain,
@@ -52,11 +78,12 @@ combined_flows AS (
         COALESCE(o.outflow, 0) AS outflow
     FROM inflow i
     FULL OUTER JOIN outflow o
-        ON i.chain = o.chain
-        AND i.asset = o.asset
-        AND i.date = o.date
-        AND i.time_bucket = o.time_bucket
-        AND i.interval_days = o.interval_days
+        ON
+            i.chain = o.chain
+            AND i.asset = o.asset
+            AND i.date = o.date
+            AND i.time_bucket = o.time_bucket
+            AND i.interval_days = o.interval_days
 )
 
 SELECT
@@ -64,7 +91,8 @@ SELECT
     interval_days,
     time_bucket,
     AVG(inflow - outflow) AS avg_net_amount,
-    AVG(100 - ABS((inflow - outflow) / NULLIF((inflow + outflow), 0)) * 100) AS avg_percent_netted
+    AVG(100 - ABS((inflow - outflow) / NULLIF((inflow + outflow), 0)) * 100)
+        AS avg_percent_netted
 FROM combined_flows
 WHERE chain IS NOT NULL
 GROUP BY chain, interval_days, time_bucket

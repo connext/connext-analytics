@@ -12,11 +12,13 @@ WITH inflow AS (
         d.symbol AS asset,
         d.chain AS chain,
         SUM(d.usd_value) AS inflow
-    FROM `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
-    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type= "deposit"
+    FROM
+        `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
+    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type = "deposit"
     -- date from start of the year
     GROUP BY 1, 2, 3, 4
 ),
+
 outflow AS (
     SELECT
         TIMESTAMP_SECONDS(d.date) AS date,
@@ -24,23 +26,34 @@ outflow AS (
         d.symbol AS asset,
         d.chain AS chain,
         SUM(d.usd_value) AS outflow
-    FROM `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
-    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type= "withdrawal"
+    FROM
+        `mainnet-bigq.raw.stg__cln_source_defilamma_bridges_history_tokens` AS d
+    WHERE symbol IS NOT NULL AND usd_value > 0 AND tx_type = "withdrawal"
     GROUP BY 1, 2, 3, 4
 ),
+
 daily_net_flow AS (
     SELECT
         -- [X] 1. metric by asset -> EOD netting - aggregate cross tab-> chains | assets | metrics(avg)
-        
+
         DATE_TRUNC(COALESCE(i.date, o.date), DAY) AS date,
         COALESCE(i.chain, o.chain) AS chain,
         COALESCE(i.asset, o.asset) AS asset,
         COALESCE(i.bridge, o.bridge) AS bridge,
         SUM(COALESCE(i.inflow, 0)) - SUM(COALESCE(o.outflow, 0)) AS net_amount,
-        100 - ABS((SUM(COALESCE(i.inflow, 0)) - SUM(COALESCE(o.outflow, 0))) / NULLIF((SUM(COALESCE(i.inflow, 0)) + SUM(COALESCE(o.outflow, 0))), 0)) * 100 AS percent_netted
+        100
+        - ABS(
+            (SUM(COALESCE(i.inflow, 0)) - SUM(COALESCE(o.outflow, 0)))
+            / NULLIF(
+                (SUM(COALESCE(i.inflow, 0)) + SUM(COALESCE(o.outflow, 0))), 0
+            )
+        )
+        * 100 AS percent_netted
     FROM inflow i
-    FULL OUTER JOIN outflow o ON i.date = o.date AND i.chain = o.chain AND i.asset = o.asset
-    GROUP BY 1, 2, 3,4
+    FULL OUTER JOIN
+        outflow o
+        ON i.date = o.date AND i.chain = o.chain AND i.asset = o.asset
+    GROUP BY 1, 2, 3, 4
 )
 
 SELECT
@@ -51,6 +64,5 @@ SELECT
     AVG(percent_netted) AS avg_percent_netted
 FROM daily_net_flow dnf
 INNER JOIN `mainnet-bigq.stage.connext_tokens` AS t
-ON LOWER(dnf.asset) = LOWER(t.token_name)
+    ON LOWER(dnf.asset) = LOWER(t.token_name)
 GROUP BY 1, 2, 3
-

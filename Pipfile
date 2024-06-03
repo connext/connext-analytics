@@ -27,6 +27,7 @@ backoff = "*"
 streamlit = "*"
 plotly = "*"
 sqlfluff = "*"
+streamlit-date-picker = "*"
 
 [dev-packages]
 black="*"

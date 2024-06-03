@@ -13,7 +13,7 @@ WITH stg_daily_transfer_volume AS (
         AVG(tf.asset_usd_price) AS avg_price,
         SUM(tf.usd_amount) AS usd_volume,
         ROW_NUMBER() OVER () AS id
-    FROM `mainnet-bigq.y42_connext_y42_dev.transfers_mapped` tf
+    FROM `mainnet-bigq.y42_connext_y42_dev.transfers_mapped` AS tf
     GROUP BY 1, 2, 3, 4, 5, 6
 ),
 
@@ -43,7 +43,7 @@ completedfastoriginvolume AS (
         SUM(usd_volume) AS origin_fast_volume_1_day,
         SUM(usd_volume) AS origin_fast_volume_7_days,
         SUM(usd_volume) AS origin_fast_volume_30_days
-    FROM volumemetrics vm
+    FROM volumemetrics
     WHERE status = 'CompletedFast'
     GROUP BY 1, 2, 3
 ),
@@ -56,7 +56,7 @@ completedfastdestvolume AS (
         SUM(usd_volume_last_1_day) AS destination_fast_volume_1_day,
         SUM(usd_volume_last_7_days) AS destination_fast_volume_7_days,
         SUM(usd_volume_last_30_days) AS destination_fast_volume_30_days
-    FROM volumemetrics vm
+    FROM volumemetrics
     WHERE status = 'CompletedFast'
     GROUP BY 1, 2, 3
 ),
@@ -73,7 +73,7 @@ originvolume AS (
         SUM(volume_last_7_days) AS origin_volume_7_days,
         SUM(volume_last_30_days) AS origin_volume_30_days
     FROM
-        volumemetrics vm
+        volumemetrics AS vm
     --JOIN CompletedFastVolume cfv ON vm.router = cfv.router AND vm.asset = cfv.asset AND vm.origin_chain = cfv.origin_chain AND vm.destination_chain = cfv.destination_chain
     GROUP BY 1, 2, 3
 ),
@@ -91,7 +91,7 @@ destinationvolume AS (
         SUM(volume_last_30_days) AS destination_volume_30_days,
         MAX(last_transfer_date) AS destination_last_transfer_date
     FROM
-        volumemetrics vm
+        volumemetrics AS vm
     --JOIN CompletedFastVolume cfv ON vm.router = cfv.router AND vm.asset = cfv.asset AND vm.origin_chain = cfv.origin_chain AND vm.destination_chain = cfv.destination_chain
     GROUP BY 1, 2, 3
 ),
@@ -112,7 +112,7 @@ metrics AS (
         origin_chain AS chain,
         MAX(vm.last_transfer_date) AS last_txn_date,
         SUM(vm.slow_txns) AS slow_tns
-    FROM volumemetrics vm
+    FROM volumemetrics AS vm
     GROUP BY 1, 2, 3
 ),
 
@@ -142,33 +142,33 @@ groupedmetrics AS (
         last_txn_date,
         slow_tns
     FROM
-        combinations cmbns
+        combinations AS cmbns
     LEFT JOIN
-        metrics mtr
+        metrics AS mtr
         ON
             cmbns.chain = mtr.chain
             AND cmbns.asset = mtr.asset
             AND cmbns.router = mtr.router
     LEFT JOIN
-        originvolume ov
+        originvolume AS ov
         ON
             cmbns.chain = ov.chain
             AND cmbns.asset = ov.asset
             AND cmbns.router = ov.router
     LEFT JOIN
-        destinationvolume dv
+        destinationvolume AS dv
         ON
             cmbns.chain = dv.chain
             AND cmbns.asset = dv.asset
             AND cmbns.router = dv.router
     LEFT JOIN
-        completedfastoriginvolume cfov
+        completedfastoriginvolume AS cfov
         ON
             cmbns.chain = cfov.chain
             AND cmbns.asset = cfov.asset
             AND cmbns.router = cfov.router
     LEFT JOIN
-        completedfastdestvolume cfdv
+        completedfastdestvolume AS cfdv
         ON
             cmbns.chain = cfdv.chain
             AND cmbns.asset = cfdv.asset
@@ -182,7 +182,7 @@ latestassetprices AS (
         ap.canonical_id,
         ap.price,
         ap.timestamp
-    FROM `mainnet-bigq.public.asset_prices` ap
+    FROM `mainnet-bigq.public.asset_prices` AS ap
     INNER JOIN (
         SELECT
             canonical_domain,
@@ -201,50 +201,50 @@ latestassetprices AS (
 
 routerliquidity AS (
     SELECT
+        gv.*,
+        lap.*,
+        rwb.canonical_domain AS asset_canonical_domain,
+        rwb.address,
+
+        rwb.adopted,
+        rwb.adopted_decimal,
+        rwb.asset_canonical_id,
+        rwb.asset_domain AS asset_domain_rwb,
+        rwb.asset_usd_price,
+        rwb.balance,
+        rwb.balance_usd,
+        rwb.decimal,
+        rwb.domain,
+        rwb.fees_earned,
+        rwb.id,
+        rwb.key,
+        rwb.local,
+        rwb.locked,
+        rwb.locked_usd,
+        rwb.removed,
+        rwb.removed_usd,
+        rwb.router_address AS router_address_rwb,
+        rwb.supplied,
+        rwb.supplied_usd,
         COALESCE(rwb.domain, gv.chain_domain) AS chain_domain_coalesced,
         COALESCE(rwb.adopted, gv.asset_address) AS asset_address_coalesced,
         COALESCE(rwb.router_address, gv.router_address)
             AS router_address_coalesced,
         COALESCE(
             DATE(gv.last_txn_date), DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
-        ) AS last_txn_date_coalesced,
-
-        rwb.canonical_domain AS asset_canonical_domain,
-        rwb.address AS address,
-        rwb.adopted AS adopted,
-        rwb.adopted_decimal AS adopted_decimal,
-        rwb.asset_canonical_id AS asset_canonical_id,
-        rwb.asset_domain AS asset_domain_rwb,
-        rwb.asset_usd_price AS asset_usd_price,
-        rwb.balance AS balance,
-        rwb.balance_usd AS balance_usd,
-        rwb.decimal AS decimal,
-        rwb.domain AS domain,
-        rwb.fees_earned AS fees_earned,
-        rwb.id AS id,
-        rwb.key AS key,
-        rwb.local AS local,
-        rwb.locked AS locked,
-        rwb.locked_usd AS locked_usd,
-        rwb.removed AS removed,
-        rwb.removed_usd AS removed_usd,
-        rwb.router_address AS router_address_rwb,
-        rwb.supplied AS supplied,
-        rwb.supplied_usd AS supplied_usd,
-        gv.*,
-        lap.*
+        ) AS last_txn_date_coalesced
 
     FROM
-        {{ ref('stg_source__cartographer_router_with_balances') }} rwb
+        {{ ref('stg_source__cartographer_router_with_balances') }} AS rwb
     --    `mainnet-bigq.y42_connext_y42_dev.source__Cartographer__public_routers_with_balances` rwb
     FULL OUTER JOIN
-        groupedmetrics gv
+        groupedmetrics AS gv
         ON
             rwb.address = gv.router_address
             AND rwb.adopted = gv.asset_address
             AND rwb.domain = gv.chain_domain
     LEFT JOIN
-        latestassetprices lap
+        latestassetprices AS lap
         ON
             rwb.asset_canonical_id = lap.canonical_id
             AND rwb.canonical_domain = lap.canonical_domain
@@ -260,13 +260,14 @@ connext_tokens AS (
         ct.token_name,
         ct.is_xerc20
     FROM
-        `mainnet-bigq.stage.connext_tokens` ct
+        `mainnet-bigq.stage.connext_tokens` AS ct
 ),
 
 routermapping AS (
     SELECT
-        COALESCE(ct.token_name, asset_address_coalesced) AS asset,
+        pr.*,
         --    cav.domain_name,
+        COALESCE(ct.token_name, asset_address_coalesced) AS asset,
         CASE
             WHEN
                 router_address_coalesced
@@ -357,13 +358,14 @@ routermapping AS (
             WHEN pr.chain_domain_coalesced = '31338' THEN 'Local Optimism'
             WHEN pr.chain_domain_coalesced = '31339' THEN 'Local Arbitrum One'
             WHEN pr.chain_domain_coalesced = '1835365481' THEN 'Metis'
-            WHEN pr.chain_domain_coalesced = '1650553709' THEN "Base Mainnet"
+            WHEN pr.chain_domain_coalesced = '1650553709' THEN 'Base Mainnet'
             ELSE pr.chain_domain_coalesced
-        END AS domain_name,
-        pr.*
+        END AS domain_name
     FROM
-        routerliquidity pr
-    LEFT JOIN connext_tokens ct ON pr.asset_address_coalesced = ct.token_address
+        routerliquidity AS pr
+    LEFT JOIN
+        connext_tokens AS ct
+        ON pr.asset_address_coalesced = ct.token_address
 ),
 
 SELECT * FROM routermapping ORDER BY destination_usd_volume_last_1_day DESC

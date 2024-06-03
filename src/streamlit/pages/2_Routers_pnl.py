@@ -1,37 +1,22 @@
+# Things to implement on this page:
+"""
+    using the data pulled in home for router_daily_metrics__raw
+    1. create router single select filter in side bar, keep othe fiilters same
+    2. create multi line plot in plotly for tvl, apy and others
+    3. create a aggreagrte daily line plot of balance, tvl apr and others
+"""
+
 import pytz
-import streamlit as st
 import pandas as pd
-import pandas_gbq as gbq
+import streamlit as st
 from datetime import datetime, timedelta
+import plotly.express as px
 
-st.set_page_config(layout="wide")
-st.title("Connext Routers")
-
-
-@st.cache_data(ttl=3600)
-def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
-    """
-    Get raw data from BigQuery
-    Cols included are
-    - date
-    - router_address
-    - chain
-    - asset
-    - tvl
-    - daily_fee_earned
-    - total_fee_earned
-    - daily_liquidity_added
-    - router_locked_total
-    - calculated_router_locked_total
-    - total_balance
-    - daily_apr
-    """
-    with open(f"src/streamlit/sql/{sql_file_name}.sql", "r") as file:
-        sql = file.read()
-    return gbq.read_gbq(sql)
+# Raw Data
+from utility import display_data, ROUTER_DAILY_METRICS_RAW
 
 
-def apply_sidebar_filters(df):
+def apply_router_metrics_sidebar_filters(df):
     st.sidebar.header("Filters")
 
     st.sidebar.subheader("Time Range Picker")
@@ -45,6 +30,7 @@ def apply_sidebar_filters(df):
     from_date = st.sidebar.date_input(
         "Start Date",
         value=default_start,
+        min_value=default_start,
         max_value=default_end,
     )
     to_date = st.sidebar.date_input(
@@ -82,26 +68,21 @@ def apply_sidebar_filters(df):
     return df
 
 
-def display_data(filtered_data):
-    st.markdown("## Raw data:")
-    st.data_editor(
-        filtered_data,
-        hide_index=True,
-        column_config={
-            "date": "Date",
-            "router_address": "Router Address",
-            "chain": "Chain",
-            "asset": "Asset",
-            "tvl": "TVL",
-            "daily_fee_earned": "Daily Fee Earned",
-            "total_fee_earned": "Total Fee Earned",
-            "daily_liquidity_added": "Daily Liquidity movement(+/-)",
-            "router_locked_total": "Router Locked Total",
-            "calculated_router_locked_total": "Calculated-Router Locked Total",
-            "balance": "Balance",
-        },
-    )
+def main():
+    df = display_data(ROUTER_DAILY_METRICS_RAW)
+    filtered_data = apply_router_metrics_sidebar_filters(df)
 
 
-# Define data variable here for global access across the app
-ROUTER_DAILY_METRICS_RAW = get_raw_data_from_bq_df("router_daily_metrics__raw")
+# Example DataFrame
+# df = pd.DataFrame(...)
+
+fig = px.line(df, x="date", y=["tvl", "apy"], title="TVL and APY Over Time")
+st.plotly_chart(fig, use_container_width=True)
+
+
+# Assuming df is time-indexed
+daily_df = df.resample("D").sum()  # or any other aggregation
+fig = px.line(
+    daily_df, x=daily_df.index, y=["balance", "tvl", "apr"], title="Daily Metrics"
+)
+st.plotly_chart(fig, use_container_width=True)

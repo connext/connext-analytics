@@ -132,7 +132,7 @@ def convert_lists_and_booleans_to_strings(df):
 
 
 def get_latest_value_from_bq_table_by_col(
-    table_id: str, col: int, base_val: int = 1704067200
+    table_id: str, col: int, base_val: int
 ) -> datetime:
     """
     base_val: int = 1704067200
@@ -145,25 +145,27 @@ def get_latest_value_from_bq_table_by_col(
             sql_file_name="get_latest_by_bq_table_and_date_col",
             template_data={"date_col": col, "table_id": table_id},
         )
+        logging.info(f"Running query: {sql}")
         df = pandas_gbq.read_gbq(sql)
         final_start_date = np.array(df[col])[0]
 
         # if value is int then return, if date convert to int and return
         if isinstance(final_start_date, np.int64):
+            logging.info(f"Instace is int, {final_start_date}")
             return final_start_date
         elif isinstance(final_start_date, str):
             dt = datetime.strptime(final_start_date, "%Y-%m-%d %H:%M:%S.%f UTC")
-            logging.info(dt)
-            return int(dt.timestamp())
+            utc_dt = pytz.utc.localize(dt)  # Explicitly localize the datetime to UTC
+            logging.info(f"Instance is string, {utc_dt}, {int(utc_dt.timestamp())}")
+            return int(utc_dt.timestamp())
         else:
-            return int(final_start_date.timestamp())
+            raise ValueError(f"Invalid type: {type(final_start_date)}")
 
     except pandas_gbq.exceptions.GenericGBQException as e:
         if "Reason: 404" in str(e):
             logging.info(f"The table {table_id} was not found.")
             logging.info(f"The base value {base_val} was returned.")
-
-            return datetime.fromtimestamp(base_val).astimezone(pytz.UTC).timestamp()
+            raise
         else:
             raise
 

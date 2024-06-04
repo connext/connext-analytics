@@ -1,5 +1,7 @@
+import json
 from ast import Dict
 from datetime import datetime, timedelta
+import pprint
 import dlt
 import pytz
 import pandas as pd
@@ -61,37 +63,35 @@ def get_result_by_query_id(id: int, start_date: int, end_date: int = None):
         _type_: _description_
     """
     #
-    if end_date is None:
-        logging.info(f"No end_date provided, using start_date: {start_date}")
-        query = QueryBase(
-            name="DUNE PIPELINE QUERY",
-            query_id=id,
-            params=[
-                QueryParameter.number_type(name="start_date", value=start_date),
-            ],
-        )
-    else:
-        logging.info(
-            f"end_date provided: {end_date}, query date parameters: {start_date} to {end_date}"
-        )
-        query = QueryBase(
-            name="DUNE PIPELINE QUERY",
-            query_id=id,
-            params=[
-                QueryParameter.number_type(name="start_date", value=start_date),
-                QueryParameter.number_type(name="end_date", value=end_date),
-            ],
-        )
-    results = dune.get_latest_result(query, max_age_hours=1)
-    results_resp = results.result
-    with open("data/dune_results.json", "w") as f:
-        f.write(results_resp)
+
+    logging.info(
+        f""" Query ID: {id}, \n 
+        start_date: {start_date}, \n 
+        end_date: {end_date}
+        """
+    )
+    query = QueryBase(
+        name="DUNE PIPELINE QUERY",
+        query_id=id,
+        params=[
+            QueryParameter.number_type(name="start_date", value=start_date),
+            QueryParameter.number_type(name="end_date", value=end_date),
+        ],
+    )
+    results = dune.run_query(query, ping_frequency=10, batch_size=1000)
+    results_resp = results.result.rows
+
+    # # write dict of list results_resp to file
+    # with open("data/dune_results.json", "w") as f:
+    #     json.dump(results_resp, f)
 
     yield results_resp
 
 
 def get_start_end_date(
-    table_id: str, start_date: int, end_date: int = epoch_date_before_today_utc()
+    table_id: str,
+    start_date: int,
+    end_date: int = int(datetime.now(pytz.UTC).timestamp()),
 ) -> Dict:
     """
     Input:
@@ -231,7 +231,7 @@ def get_across__aggregator_daily(
 # hourly_token_pricing_query_id
 @dlt.resource(
     table_name="source_hourly_token_pricing_blockchain_eth",
-    write_disposition="replace",
+    write_disposition="append",
     columns=pydantic_to_table_schema_columns(HourlyTokenPricingBlockchainEth),
 )
 def get_hourly_token_pricing_blockchain_eth(
@@ -243,10 +243,8 @@ def get_hourly_token_pricing_blockchain_eth(
         start_date=1609459200,  # 2021-01-01
     )
 
-    # [ ] TODO Just for replace- remove later
-
-    date_param["start_date"] = 1609459200
-    date_param["end_date"] = epoch_date_before_today_utc()
+    # end date is latest timestamp
+    date_param["end_date"] = int(datetime.now(pytz.UTC).timestamp())
 
     if date_param["start_date"] < date_param["end_date"]:
         for result in get_result_by_query_id(
@@ -345,3 +343,10 @@ if __name__ == "__main__":
     )
     p.run(dune_bridges(), loader_file_format="jsonl")
     logging.info("Finished DLT Dune Bridges!")
+
+    # pprint.pprint(
+    #     get_start_end_date(
+    #         table_id="mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth",
+    #         start_date=1609459200,  # 2021-01-01
+    #     )
+    # )

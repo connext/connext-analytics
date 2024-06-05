@@ -66,18 +66,18 @@ def apply_sidebar_filters(df):
         "Chains:", options=df["chain"].unique(), default=[]
     )
     selected_router = st.sidebar.multiselect(
-        "Routers:", options=df["router_address"].unique(), default=[]
+        "Routers:", options=df["router_name"].unique(), default=[]
     )
     selected_asset = st.sidebar.multiselect(
-        "Tokens/Assets:", options=df["asset"].unique(), default=[]
+        "Tokens/Assets:", options=df["asset_group"].unique(), default=[]
     )
 
     if selected_chain:
         df = df[df["chain"].isin(selected_chain)]
     if selected_router:
-        df = df[df["router_address"].isin(selected_router)]
+        df = df[df["router_name"].isin(selected_router)]
     if selected_asset:
-        df = df[df["asset"].isin(selected_asset)]
+        df = df[df["asset_group"].isin(selected_asset)]
 
     return df
 
@@ -87,21 +87,20 @@ def display_data(filtered_data):
     st.data_editor(
         filtered_data,
         hide_index=True,
-        column_config={
-            "date": "Date",
-            "router_address": "Router Address",
-            "chain": "Chain",
-            "asset": "Asset",
-            "tvl": "TVL",
-            "daily_fee_earned": "Daily Fee Earned",
-            "total_fee_earned": "Total Fee Earned",
-            "daily_liquidity_added": "Daily Liquidity movement(+/-)",
-            "router_locked_total": "Router Locked Total",
-            "calculated_router_locked_total": "Calculated-Router Locked Total",
-            "balance": "Balance",
-        },
+        # column_config={
+        #     "date": "Date",
+        #     "router_address": "Router Address",
+        #     "chain": "Chain",
+        #     "asset": "Asset",
+        #     "tvl": "TVL",
+        #     "daily_fee_earned": "Daily Fee Earned",
+        #     "total_fee_earned": "Total Fee Earned",
+        #     "daily_liquidity_added": "Daily Liquidity movement(+/-)",
+        #     "router_locked_total": "Router Locked Total",
+        #     "calculated_router_locked_total": "Calculated-Router Locked Total",
+        #     "balance": "Balance",
+        # },
     )
 
 
-# Define data variable here for global access across the app
-ROUTER_DAILY_METRICS_RAW = get_raw_data_from_bq_df("router_daily_metrics__raw")
+ROUTER_DAILY_METRICS_RAW = get_raw_data_from_bq_df("router_daily_metrics")

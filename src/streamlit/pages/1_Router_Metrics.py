@@ -20,11 +20,11 @@ def weighted_mean(data, val_col, wt_col):
 def plot_line_metrics(df, metric_name):
 
     metric_selector = {
-        "TVL": "weekly_balance",
-        "APR": "weekly_apr",
-        "APR-7D": "avg_7d_apr",
-        "APR-14D": "avg_14d_apr",
-        "FEE": "weekly_fee_earned",
+        "TVL": "total_balance_usd",
+        "APR": "apr",
+        "APR-7D": "apr_7d",
+        "APR-14D": "apr_14d",
+        "FEE": "router_fee_usd",
     }
     aggregation_selector = {
         "TVL": "sum",
@@ -34,10 +34,10 @@ def plot_line_metrics(df, metric_name):
         "FEE": "sum",
     }
 
-    df_agg = df[["date", "asset", metric_selector[metric_name]]]
+    df_agg = df[["date", "asset_group", "chain", metric_selector[metric_name]]]
 
     # tvl -> sum and apr -> avg
-    df_agg = df_agg.groupby(["date", "asset"]).agg(
+    df_agg = df_agg.groupby(["date", "asset_group"]).agg(
         {metric_selector[metric_name]: aggregation_selector[metric_name]}
     )
     df_agg.reset_index(inplace=True)
@@ -50,7 +50,7 @@ def plot_line_metrics(df, metric_name):
         df_agg,
         x="date",
         y=metric_name,
-        color="asset",
+        color="asset_group",
         title=f"{metric_name} Over Time",
         labels={"date": "Date", metric_name: metric_name},
         markers=True,
@@ -64,88 +64,53 @@ def plot_line_metrics(df, metric_name):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def clean_asset_names(df):
-    # Remove 'next' from the start of the strings in the 'asset' column
-    df["asset"] = df["asset"].str.replace(r"^next", "", regex=True)
-    # aggreagte meric for new changes
-
+def clean_df(df):
+    """THis is agg data on chain asset for all router combined"""
     df_clean = (
-        df.groupby(["date", "asset", "chain", "router_address"])
-        .agg({"tvl": "sum", "daily_fee_earned": "sum", "balance": "sum"})
+        df.groupby(["date", "asset_group", "chain"])
+        .agg({"total_balance_usd": "sum", "router_fee_usd": "sum"})
         .reset_index()
     )
-
     df_clean["date"] = pd.to_datetime(df_clean["date"])
+    # Calculate APR -> remove data points where there is no locked amount
+    df_clean = df_clean[df_clean["total_balance_usd"] > 0]
+    df_clean["apr"] = (
+        df_clean["router_fee_usd"].fillna(0) / df_clean["total_balance_usd"]
+    ) * 365
+    df_clean["apr"] = round(100 * df_clean["apr"], 2)
 
-    # Set the 'date' column as the index
-    df_clean.set_index("date", inplace=True)
+    # 7-d running avg of APR and 14-d running avg of APR
+    df_clean["apr_7d"] = df_clean["apr"].rolling(7).mean()
+    df_clean["apr_14d"] = df_clean["apr"].rolling(14).mean()
 
-    # Resample the data to weekly frequency
-    weekly_data = (
-        df_clean.groupby("asset")
-        .resample("W")
-        .agg({"daily_fee_earned": "sum", "balance": "sum"})
-        .rename(
-            columns={
-                "daily_fee_earned": "weekly_fee_earned",
-                "balance": "weekly_balance",
-            }
-        )
-    )
-
-    # Calculate the weekly APR
-    weekly_data["weekly_apr"] = np.where(
-        weekly_data["weekly_balance"] > 0,
-        (weekly_data["weekly_fee_earned"] / weekly_data["weekly_balance"]) * 52,
-        None,
-    )
-
-    # Convert to percentage and round
-    weekly_data["weekly_apr"] = round(100 * weekly_data["weekly_apr"], 2)
-
-    # Reset the index if needed
-    weekly_data.reset_index(inplace=True)
-
-    # df_clean["weekly_apr"] = np.where(
-    #     df_clean["balance"] > 0,
-    #     (df_clean["daily_fee_earned"] / df_clean["balance"]) * 365,
-    #     None,
-    # )
-    # df_clean["daily_apr"] = round(100 * df_clean["daily_apr"], 2)
-    return weekly_data
+    return df_clean.reset_index(drop=True)
 
 
 def main():
 
     st.title("Router Metrics and Utilizations")
 
-    filtered_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)
+    st.write(ROUTER_DAILY_METRICS_RAW)
+    filter_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)
 
-    new_agg_filtered_data = clean_asset_names(filtered_data)
-    st.text(new_agg_filtered_data.columns)
+    new_agg_filtered_data = clean_df(filter_data)
 
-    st.data_editor(new_agg_filtered_data)
+    st.text(f"Cleaned Data Columns: {new_agg_filtered_data.columns}")
 
     st.subheader("Daily Avg. APR Across Routers")
     plot_line_metrics(new_agg_filtered_data, "APR")
+
+    st.subheader("Daily Avg. APR-7D Across Routers")
+    plot_line_metrics(new_agg_filtered_data, "APR-7D")
+
+    st.subheader("Daily Avg. APR-14D Across Routers")
+    plot_line_metrics(new_agg_filtered_data, "APR-14D")
 
     st.subheader("Daily Agg. Fee Across Routers")
     plot_line_metrics(new_agg_filtered_data, "FEE")
 
     st.subheader("Daily Avg. TVL Across Routers")
     plot_line_metrics(new_agg_filtered_data, "TVL")
-
-    # new_agg_filtered_data
-
-    # st.subheader("Aggregated APR")
-    # plot_line_metrics(filtered_data, "APR")
-
-    # st.subheader("Aggregated APR-7D")
-    # plot_line_metrics(filtered_data, "APR-7D")
-
-    # st.subheader("Aggregated APR-14D")
-    # plot_line_metrics(filtered_data, "APR-14D")
-
 
 if __name__ == "__main__":
     main()

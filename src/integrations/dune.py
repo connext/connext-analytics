@@ -332,21 +332,14 @@ def dune_bridges() -> Sequence[DltResource]:
     ]
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    logging.info("Running DLT Dune Bridges")
+#     logging.info("Running DLT Dune Bridges")
 
-    p = dlt.pipeline(
-        pipeline_name="dune",
-        destination="bigquery",
-        dataset_name="dune",
-    )
-    p.run(dune_bridges(), loader_file_format="jsonl")
-    logging.info("Finished DLT Dune Bridges!")
-
-    # pprint.pprint(
-    #     get_start_end_date(
-    #         table_id="mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth",
-    #         start_date=1609459200,  # 2021-01-01
-    #     )
-    # )
+#     p = dlt.pipeline(
+#         pipeline_name="dune",
+#         destination="bigquery",
+#         dataset_name="dune",
+#     )
+#     p.run(dune_bridges(), loader_file_format="jsonl")
+#     logging.info("Finished DLT Dune Bridges!")

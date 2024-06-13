@@ -1,14 +1,15 @@
+# Adding the streamlit pages to the sidebar
 import pytz
-import streamlit as st
 import pandas as pd
+import streamlit as st
 import pandas_gbq as gbq
 from datetime import datetime, timedelta
 
 st.set_page_config(layout="wide")
-st.title("Connext Routers")
 
 
-@st.cache_data(ttl=3600)
+# TODO: [ ] - Add a cache for the dataframes to 3600 seconds lateer
+@st.cache_data(ttl=36000)
 def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
     """
     Get raw data from BigQuery
@@ -58,8 +59,10 @@ def apply_sidebar_filters(df):
         start_date, end_date = from_date, to_date
 
         # convert date to isoformat
-        df["date"] = pd.to_datetime(df["date"]).dt.date
-        df = df[(df["date"] >= start_date) & (df["date"] <= end_date)]
+        df["datetime"] = pd.to_datetime(df["date"])
+        df["day"] = df["datetime"].dt.date
+        df["hour"] = df["datetime"].dt.hour
+        df = df[(df["day"] >= start_date) & (df["day"] <= end_date)]
 
     # Other filters (Chain, Router, Asset)
     selected_chain = st.sidebar.multiselect(
@@ -82,25 +85,38 @@ def apply_sidebar_filters(df):
     return df
 
 
-def display_data(filtered_data):
-    st.markdown("## Raw data:")
-    st.data_editor(
-        filtered_data,
-        hide_index=True,
-        # column_config={
-        #     "date": "Date",
-        #     "router_address": "Router Address",
-        #     "chain": "Chain",
-        #     "asset": "Asset",
-        #     "tvl": "TVL",
-        #     "daily_fee_earned": "Daily Fee Earned",
-        #     "total_fee_earned": "Total Fee Earned",
-        #     "daily_liquidity_added": "Daily Liquidity movement(+/-)",
-        #     "router_locked_total": "Router Locked Total",
-        #     "calculated_router_locked_total": "Calculated-Router Locked Total",
-        #     "balance": "Balance",
-        # },
+def clean_df(df):
+    """THis is agg data on chain asset for all router combined"""
+    df_clean = (
+        df.groupby(["date", "asset_group", "chain"])
+        .agg(
+            {
+                "total_balance_usd": "sum",
+                "router_fee_usd": "sum",
+                "router_volume_usd": "sum",
+            }
+        )
+        .reset_index()
     )
+    df_clean["date"] = pd.to_datetime(df_clean["date"])
+    # Calculate APR -> remove data points where there is no locked amount
+    df_clean = df_clean[df_clean["total_balance_usd"] > 0]
+    df_clean["apr"] = (
+        df_clean["router_fee_usd"].fillna(0) / df_clean["total_balance_usd"]
+    ) * 365
+    df_clean["apr"] = round(100 * df_clean["apr"], 2)
+
+    # 7-d running avg of APR and 14-d running avg of APR
+    df_clean["apr_7d"] = df_clean["apr"].rolling(7).mean()
+    df_clean["apr_14d"] = df_clean["apr"].rolling(14).mean()
+
+    # calculate utilization: SUM(volume)/SUM(locked_usd) AS utilization_last_1_day,
+    df_clean["utilization"] = (
+        df_clean["router_volume_usd"] / df_clean["total_balance_usd"]
+    )
+
+    return df_clean.reset_index(drop=True)
 
 
 ROUTER_DAILY_METRICS_RAW = get_raw_data_from_bq_df("router_daily_metrics")
+ROUTER_UTILIZATION_RAW = get_raw_data_from_bq_df("router_utilization_hourly")

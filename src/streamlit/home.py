@@ -1,16 +1,36 @@
+import pytz
 import pandas as pd
 import streamlit as st
+import pandas_gbq as gbq
+from datetime import datetime, timedelta
+from setup import apply_sidebar_filters, ROUTER_DAILY_METRICS_RAW
 
-from utility import display_data, ROUTER_DAILY_METRICS_RAW, apply_sidebar_filters
+
+def display_data(filtered_data):
+    st.markdown("## Raw data:")
+    st.data_editor(
+        filtered_data,
+        hide_index=True,
+        # column_config={
+        #     "date": "Date",
+        #     "router_address": "Router Address",
+        #     "chain": "Chain",
+        #     "asset": "Asset",
+        #     "tvl": "TVL",
+        #     "daily_fee_earned": "Daily Fee Earned",
+        #     "total_fee_earned": "Total Fee Earned",
+        #     "daily_liquidity_added": "Daily Liquidity movement(+/-)",
+        #     "router_locked_total": "Router Locked Total",
+        #     "calculated_router_locked_total": "Calculated-Router Locked Total",
+        #     "balance": "Balance",
+        # },
+    )
 
 
 # Main function to display the app
 def main():
 
-    # st.set_page_config(layout="wide")
-    # st.title("Connext Routers")
-
-    # Fetching raw data
+    st.title("Connext Routers")
 
     # Applying sidebar filters
     filtered_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)
@@ -43,8 +63,6 @@ def main():
             Summation of Liquidity added or removed on given day.
             - `Router Locked Total`: Total liquidity locked by the router in its lifetime, currently held.
             Its a running total  of above amount.
-            - `rbh_total_locked`: Router balance held total locked.
-            - `ctv_total_locked`: Calculated total value locked for the router.
             - `total_balance`: Total balance available.
             - `APR`: Annual Percentage Rate calculated daily based on the router fees and total locked amount. The fees are not added back
             to the tvl. Hence there is no compounding of APR ie APY.

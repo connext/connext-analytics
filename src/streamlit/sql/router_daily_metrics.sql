@@ -13,4 +13,4 @@ SELECT
     r.total_balance_usd
     FROM
         `mainnet-bigq.y42_connext_y42_dev.routers_tvl_agg_daily` r
-    WHERE r.asset_group IN ("USDC", "USDT", "WETH", "DAI")
+    WHERE r.asset_group IN ("USDC", "USDT", "WETH", "DAI", "ezETH")

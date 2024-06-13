@@ -1,16 +1,15 @@
 # Things to implement on this page:
 # Router Metrics and Utilizations
-import numpy as np
-from annotated_types import UpperCase
-from numpy import mean
-import pytz
 import pandas as pd
 import streamlit as st
-from datetime import datetime, timedelta
 import plotly.express as px
 
 # Raw Data
-from utility import display_data, ROUTER_DAILY_METRICS_RAW, apply_sidebar_filters
+from setup import (
+    ROUTER_DAILY_METRICS_RAW,
+    apply_sidebar_filters,
+    clean_df,
+)
 
 
 def weighted_mean(data, val_col, wt_col):
@@ -25,6 +24,8 @@ def plot_line_metrics(df, metric_name):
         "APR-7D": "apr_7d",
         "APR-14D": "apr_14d",
         "FEE": "router_fee_usd",
+        "Utilization": "utilization",
+        "Volume": "router_volume_usd",
     }
     aggregation_selector = {
         "TVL": "sum",
@@ -32,6 +33,8 @@ def plot_line_metrics(df, metric_name):
         "APR-7D": "mean",
         "APR-14D": "mean",
         "FEE": "sum",
+        "Utilization": "mean",
+        "Volume": "sum",
     }
 
     df_agg = df[["date", "asset_group", "chain", metric_selector[metric_name]]]
@@ -57,33 +60,9 @@ def plot_line_metrics(df, metric_name):
     )
     # Set y-axis as percentage from 0 to 100 if metric is APR related
     if "APR" in metric_name:
-        fig.update_layout(
-            yaxis=dict(range=[1, 100])  # 0 to 1 corresponds to 0% to 100%
-        )
+        fig.update_layout(yaxis=dict(autorange=True))
 
     st.plotly_chart(fig, use_container_width=True)
-
-
-def clean_df(df):
-    """THis is agg data on chain asset for all router combined"""
-    df_clean = (
-        df.groupby(["date", "asset_group", "chain"])
-        .agg({"total_balance_usd": "sum", "router_fee_usd": "sum"})
-        .reset_index()
-    )
-    df_clean["date"] = pd.to_datetime(df_clean["date"])
-    # Calculate APR -> remove data points where there is no locked amount
-    df_clean = df_clean[df_clean["total_balance_usd"] > 0]
-    df_clean["apr"] = (
-        df_clean["router_fee_usd"].fillna(0) / df_clean["total_balance_usd"]
-    ) * 365
-    df_clean["apr"] = round(100 * df_clean["apr"], 2)
-
-    # 7-d running avg of APR and 14-d running avg of APR
-    df_clean["apr_7d"] = df_clean["apr"].rolling(7).mean()
-    df_clean["apr_14d"] = df_clean["apr"].rolling(14).mean()
-
-    return df_clean.reset_index(drop=True)
 
 
 def main():
@@ -91,26 +70,35 @@ def main():
     st.title("Router Metrics and Utilizations")
 
     st.write(ROUTER_DAILY_METRICS_RAW)
+
     filter_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)
+    new_agg_filtered_data_router_metrics = clean_df(filter_data)
 
-    new_agg_filtered_data = clean_df(filter_data)
-
-    st.text(f"Cleaned Data Columns: {new_agg_filtered_data.columns}")
+    st.text(f"Cleaned Data Columns: {new_agg_filtered_data_router_metrics.columns}")
 
     st.subheader("Daily Avg. APR Across Routers")
-    plot_line_metrics(new_agg_filtered_data, "APR")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "APR")
 
-    st.subheader("Daily Avg. APR-7D Across Routers")
-    plot_line_metrics(new_agg_filtered_data, "APR-7D")
+    st.subheader("Running 7-day Avg. APR Across Routers")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "APR-7D")
 
-    st.subheader("Daily Avg. APR-14D Across Routers")
-    plot_line_metrics(new_agg_filtered_data, "APR-14D")
+    st.subheader("Running 14-day Avg. APR Across Routers")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "APR-14D")
 
-    st.subheader("Daily Agg. Fee Across Routers")
-    plot_line_metrics(new_agg_filtered_data, "FEE")
+    st.subheader("Agg. Fee Across Routers")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "FEE")
 
-    st.subheader("Daily Avg. TVL Across Routers")
-    plot_line_metrics(new_agg_filtered_data, "TVL")
+    st.subheader("Agg. TVL Across Routers")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "TVL")
+
+    # utilization
+    st.subheader("Agg. Utilization Across Routers")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "Utilization")
+
+    # Router Volume
+    st.subheader("Agg. Volume Across Routers")
+    plot_line_metrics(new_agg_filtered_data_router_metrics, "Volume")
+
 
 if __name__ == "__main__":
     main()

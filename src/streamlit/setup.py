@@ -36,43 +36,37 @@ def apply_sidebar_filters(df):
     st.sidebar.header("Filters")
 
     st.sidebar.subheader("Time Range Picker")
-    # skip today
-
     default_start, default_end = (
-        datetime.now(pytz.utc) - timedelta(days=8),
+        datetime.now(pytz.utc) - timedelta(days=15),
         datetime.now(pytz.utc) - timedelta(days=1),
     )
 
     from_date = st.sidebar.date_input(
-        "Start Date",
-        value=default_start,
-        max_value=default_end,
+        "Start Date", value=default_start, max_value=default_end, key="start_date"
     )
     to_date = st.sidebar.date_input(
         "End Date",
         value=default_end,
         min_value=default_start,
         max_value=default_end,
+        key="end_date",
     )
 
-    if from_date is not None and to_date is not None:
+    if from_date and to_date:
         start_date, end_date = from_date, to_date
-
-        # convert date to isoformat
         df["datetime"] = pd.to_datetime(df["date"])
         df["day"] = df["datetime"].dt.date
         df["hour"] = df["datetime"].dt.hour
         df = df[(df["day"] >= start_date) & (df["day"] <= end_date)]
 
-    # Other filters (Chain, Router, Asset)
     selected_chain = st.sidebar.multiselect(
-        "Chains:", options=df["chain"].unique(), default=[]
+        "Chains:", options=df["chain"].unique(), default=[], key="chain"
     )
     selected_router = st.sidebar.multiselect(
-        "Routers:", options=df["router_name"].unique(), default=[]
+        "Routers:", options=df["router_name"].unique(), default=[], key="router"
     )
     selected_asset = st.sidebar.multiselect(
-        "Tokens/Assets:", options=df["asset_group"].unique(), default=[]
+        "Tokens/Assets:", options=df["asset_group"].unique(), default=[], key="asset"
     )
 
     if selected_chain:
@@ -118,5 +112,36 @@ def clean_df(df):
     return df_clean.reset_index(drop=True)
 
 
+def clean_slow_volume_data(data):
+
+    data["router_name"] = "slow_path"
+    return data
+
+
+def combine_raw_daily_with_slow(raw_df, slow_df):
+
+    # new df: ROUTER_DAILY_METRICS_RAW concat with slow_volume_raw
+    slow = slow_df.copy()
+    slow["date"] = pd.to_datetime(slow["date"])
+    slow["date"] = slow["date"].dt.date
+    slow_raw_daily = slow.groupby(
+        ["date", "chain", "asset_group", "asset", "router_name"]
+    ).agg({"destination_slow_volume_usd": "sum"})
+    slow_raw_daily = slow_raw_daily.reset_index()
+    raw_df["date"] = pd.to_datetime(raw_df["date"])
+    raw_df["date"] = raw_df["date"].dt.date
+    ROUTER_DAILY_METRICS_RAW_SLOW = pd.concat([raw_df, slow_raw_daily])
+    return ROUTER_DAILY_METRICS_RAW_SLOW
+
+
 ROUTER_DAILY_METRICS_RAW = get_raw_data_from_bq_df("router_daily_metrics")
+
+
 ROUTER_UTILIZATION_RAW = get_raw_data_from_bq_df("router_utilization_hourly")
+SLOW_VOLUME_RAW = get_raw_data_from_bq_df("raw_slow_path_volume__hourly")
+SLOW_VOLUME_RAW = clean_slow_volume_data(SLOW_VOLUME_RAW)
+
+# concat slow_volume_raw with daily
+ROUTER_UTILIZATION_RAW_SLOW = combine_raw_daily_with_slow(
+    ROUTER_DAILY_METRICS_RAW, SLOW_VOLUME_RAW
+)

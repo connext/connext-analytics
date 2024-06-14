@@ -4,7 +4,11 @@ import pandas as pd
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from setup import apply_sidebar_filters, clean_df, ROUTER_DAILY_METRICS_RAW
+from setup import (
+    apply_sidebar_filters,
+    clean_df,
+    ROUTER_UTILIZATION_RAW_SLOW,
+)
 
 
 def simulate_apr(df, apr_target):
@@ -49,6 +53,63 @@ def simulate_apr(df, apr_target):
     )
 
     return aggregated_df
+
+
+def simulate_apr_with_volume(df, apr_target, slow_df):
+    """
+    simulate_apr
+    Args:
+        df (pd.DataFrame): dataframe of the router metrics- that is pre filtered based on the sidebar
+        apr_target (int): the target APR to reach
+        last_x_days (int): the timeframe to simulate
+
+    Returns:
+        pd.DataFrame: dataframe of the simulated APR
+    """
+    agg_slow_df = (
+        slow_df.groupby(["date"])
+        .agg({"destination_slow_volume_usd": "sum"})
+        .reset_index()
+    )
+    agg_slow_df["date"] = pd.to_datetime(agg_slow_df["date"]).dt.date
+
+    agg_fast_df = (
+        df.groupby("date")
+        .agg(
+            {
+                "apr": "mean",
+                "router_volume_usd": "sum",
+                "router_fee_usd": "sum",
+                "total_balance_usd": "sum",
+            }
+        )
+        .reset_index()
+    )
+    agg_fast_df["date"] = agg_fast_df["date"].dt.date
+
+    # combine agg_fast_df and agg_slow_df
+    combined_df = pd.merge(agg_fast_df, agg_slow_df, on="date", how="left")
+    combined_df["volume"] = (
+        combined_df["router_volume_usd"] + combined_df["destination_slow_volume_usd"]
+    )
+
+    combined_df["slow_fee"] = combined_df["destination_slow_volume_usd"] * 0.0005
+
+    # Select the timeframe -> APR target is in % -> change fee to calculate using volume from df + slow_df
+    combined_df["required_liquidity"] = combined_df.apply(
+        lambda row: (row["slow_fee"] * 365) / (apr_target / 100), axis=1
+    )
+    # rolling 3d required liquidity: none zero and null rows
+    combined_df["rolling_3d_required_liquidity"] = (
+        combined_df["required_liquidity"].rolling(window=3).sum()
+    )
+    combined_df["rolling_7d_required_liquidity"] = (
+        combined_df["required_liquidity"].rolling(window=7).sum()
+    )
+
+    # Corrected aggregation: specify each APR and liquidity column separately
+
+    return combined_df
 
 
 def plot_aggregated_data(
@@ -118,7 +179,7 @@ def plot_aggregated_data(
     return fig
 
 
-def simulate_apr_parameters(df):
+def simulate_apr_parameters(df, slow_df):
     """
     INPUTS:
         DF: dataframe of the router metrics- that is pre filtered based on the sidebar
@@ -155,10 +216,16 @@ def simulate_apr_parameters(df):
     # do a plotly bar plot for required_liquidity and current liquidity ie balance with a line chart of current apr in 1 plot
     # date | required_liquidity | apr | total_balance_usd
     simulated_df = simulate_apr(df, apr_target=APR_TARGET)
+    simulate_df_with_volume = simulate_apr_with_volume(
+        df=df, apr_target=APR_TARGET, slow_df=slow_df
+    )
 
-    st.write(simulated_df)
-    st.subheader(f"Simulated Target: {APR_TARGET} % APR with Current Liquidity and APR")
-
+    st.subheader(
+        f"Simulated Target: {APR_TARGET} % APR with Current Liquidity and APR using Fast Volume"
+    )
+    st.text(
+        f"last {simulated_df.shape[0]} days of data simulated, using only Fast Volume to see, How much Liquidty is needed for selected Desired APR: {APR_TARGET} %"
+    )
     fig = plot_aggregated_data(
         simulated_df,
         date_col="date",
@@ -169,8 +236,29 @@ def simulate_apr_parameters(df):
     )
     st.plotly_chart(fig, use_container_width=True)
 
+    st.subheader(
+        f"Simulated Target: {APR_TARGET} % APR with Current Liquidity and APR using Fast Volume + Slow Volume"
+    )
+    st.text(
+        f"last {simulate_df_with_volume.shape[0]} days of data simulated, using Fast Volume + Slow Volume to see, How much Liquidty is needed for selected Desired APR: {APR_TARGET} %"
+    )
+    fig = plot_aggregated_data(
+        simulate_df_with_volume,
+        date_col="date",
+        liquidity_cols=["required_liquidity"],
+        current_liquidity="total_balance_usd",
+        apr_cols=["apr"],
+        target_apr=APR_TARGET,
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
     st.markdown(
         """
+    ---
+        
+    ### Rolling 3D and 7D Liquidity and APR for the same above simulation
+    We roll Liquidity over 3D and 7D, to smooth the data and see the trend
+    
     <span style='color: red;'>**Note: TO USE ROLLING DATA MAKE SURE TO FILTER THE DATA FOR JUST 1 TOKEN**</span>
     """,
         unsafe_allow_html=True,
@@ -259,22 +347,6 @@ def relationship_between_utilization_and_apr(df):
     st.plotly_chart(fig, use_container_width=True)
 
 
-# fig = px.scatter(
-#     df_agg,
-#     x="utilization",
-#     y="apr",
-#     color="asset_group",
-#     symbol="chain",
-#     hover_data=["chain", "asset_group"],
-#     labels={
-#         "utilization": "Utilization (Router Volume USD / Total Balance USD)",
-#         "apr": "APR ((Router Fee USD / Total Balance USD) * 365)",
-#     },
-#     title="Scatter Plot of APR vs Utilization",
-# )
-# st.plotly_chart(fig, use_container_width=True)
-
-
 def liquidity_gameplan():
     st.title("Effective Liquidity Modelling")
     st.subheader("Liquidity Gameplan")
@@ -343,13 +415,18 @@ def liquidity_gameplan():
         
         """
     )
+    return None
 
 
 def main():
 
-    filter_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)
-    new_agg_filtered_data_router_metrics = clean_df(filter_data)
-    simulate_apr_parameters(df=new_agg_filtered_data_router_metrics)
+    filter_data = apply_sidebar_filters(ROUTER_UTILIZATION_RAW_SLOW)
+    fast_data = filter_data[filter_data["router_name"] != "slow_path"]
+    slow_data = filter_data[filter_data["router_name"] == "slow_path"]
+    # st.write(slow_data.head())
+    new_agg_filtered_data_router_metrics = clean_df(fast_data)
+    simulate_apr_parameters(df=new_agg_filtered_data_router_metrics, slow_df=slow_data)
+
     liquidity_gameplan()
 
 

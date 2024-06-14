@@ -6,7 +6,6 @@ SELECT
     r.asset,
     r.asset_group,
     r.initial_locked_usd,
-    r.slow_volume_usd,
     r.router_fee_usd,
     r.liquidity_locked_usd,
     r.liquidity_fill_back_usd, 

@@ -1,0 +1,14 @@
+[theme]
+base = "dark"
+
+[server]
+headless = true
+
+[global]
+pageTitle = "Your App Title"
+
+[layout]
+wide = true
+runOnSave = true
+
+

@@ -28,9 +28,6 @@ WITH
             CASE
                 WHEN t.status = "CompletedFast" THEN CAST(destination_transacting_amount AS FLOAT64) / POW (10, COALESCE(CAST(a.decimal AS INT64), 0))
             END AS destination_fast_amount,
-            CASE
-                WHEN t.status = "CompletedSlow" THEN CAST(destination_transacting_amount AS FLOAT64) / POW (10, COALESCE(CAST(a.decimal AS INT64), 0))
-            END AS destination_slow_amount,
             t.destination_domain,
             t.destination_local_asset,
             a.decimal,
@@ -40,7 +37,7 @@ WITH
                 t.canonical_id = a.canonical_id
                 AND t.destination_domain = a.domain
             ) -- TODO Remove Filter Later
-            -- WHERE
+            WHERE JSON_EXTRACT_SCALAR (t.routers, '$[0]') IS NOT NULL
             --     t.destination_local_asset = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
             --     AND t.destination_domain = "6648936"
             --     AND JSON_EXTRACT_SCALAR (t.routers, '$[0]') = "0x6fd84ba95525c4ccd218f2f16f646a08b4b0a598"
@@ -52,7 +49,6 @@ WITH
             cm.chain AS chain,
             COALESCE(tm.asset, t.destination_local_asset) AS asset,
             SUM(destination_fast_amount) AS destination_fast_volume,
-            SUM(destination_slow_amount) AS destination_slow_volume,
             SUM(destination_fast_amount * 0.0005) AS router_fee
         FROM
             tx t
@@ -93,7 +89,6 @@ WITH
             COALESCE(tx_agg.asset, tx_liquidity_flow.asset) AS asset,
             tx_agg.router_fee AS router_fee,
             tx_agg.destination_fast_volume AS destination_fast_volume,
-            tx_agg.destination_slow_volume AS destination_slow_volume,
             COALESCE(tx_agg.destination_fast_volume, 0) AS liquidity_locked,
             COALESCE(tx_liquidity_flow.liquidity_filled_back, 0) AS liquidity_fill_back
         FROM
@@ -190,7 +185,6 @@ WITH
             f.asset AS asset,
             f.router_fee,
             f.destination_fast_volume AS router_volume,
-            f.destination_slow_volume,
             COALESCE(f.liquidity_locked, 0) AS liquidity_locked,
             COALESCE(f.liquidity_fill_back, 0) AS liquidity_fill_back,
             SUM(COALESCE(f.router_fee, 0)) OVER (
@@ -211,7 +205,6 @@ WITH
             COALESCE(frt.router, ff.router) AS router,
             COALESCE(frt.chain, ff.chain) AS chain,
             COALESCE(frt.asset, ff.asset) AS asset,
-            ff.destination_slow_volume AS slow_volume,
             frt.amount AS router_dw,
             -- fill with pre- value
             LAST_VALUE (frt.total_locked IGNORE NULLS) OVER (
@@ -312,7 +305,6 @@ WITH
             END AS price_group,
             f.router_dw,
             f.initial_locked,
-            f.slow_volume,
             f.router_volume,
             f.router_fee,
             f.liquidity_locked,
@@ -338,7 +330,6 @@ WITH
             cf.price_group,
             cf.router_dw,
             cf.initial_locked,
-            cf.slow_volume,
             cf.router_volume,
             cf.router_fee,
             cf.liquidity_locked,
@@ -392,7 +383,6 @@ WITH
             dp.price,
             pcf.router_dw,
             pcf.initial_locked,
-            pcf.slow_volume,
             pcf.router_volume,
             pcf.router_fee,
             pcf.liquidity_locked,
@@ -403,7 +393,6 @@ WITH
             -- USD values
             dp.price * pcf.router_dw AS router_dw_usd,
             dp.price * pcf.initial_locked AS initial_locked_usd,
-            dp.price * pcf.slow_volume AS slow_volume_usd,
             dp.price * pcf.router_volume AS router_volume_usd,
             dp.price * pcf.router_fee AS router_fee_usd,
             dp.price * pcf.liquidity_locked AS liquidity_locked_usd,
@@ -428,9 +417,11 @@ SELECT
 FROM
     usd_data
 WHERE
-    router_name = "Connext"
-    AND chain = "Ethereum Mainnet"
-    AND asset = "WETH"
+    price IS NOT NULL
+
+--     router_name = "Connext"
+--     AND chain = "Ethereum Mainnet"
+--     AND asset = "WETH"
     -- skip todays data
     -- DATE (DATE_TRUNC (date, DAY)) < DATE (DATE_TRUNC (CURRENT_DATE(), DAY))
 ORDER BY

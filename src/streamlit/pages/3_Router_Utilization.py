@@ -22,7 +22,6 @@ def clean_utilization_data(data, agg_freq):
 
     hourly_avg = new_data.groupby(["day", "chain", "asset_group", "hour"]).agg(
         {
-            "slow_volume_usd": "sum",
             "router_fee_usd": "sum",
             "router_volume_usd": "sum",
             "total_balance_usd": "sum",

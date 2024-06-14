@@ -14,7 +14,7 @@ def clean_df(data):
 def main():
     st.title("Router Liquidty Experiments")
     filter_data = apply_sidebar_filters(ROUTER_UTILIZATION_RAW)
-    st.write(filter_data)
+    # st.write(filter_data)
 
     return filter_data
 

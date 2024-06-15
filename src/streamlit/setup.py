@@ -118,30 +118,50 @@ def clean_slow_volume_data(data):
     return data
 
 
-def combine_raw_daily_with_slow(raw_df, slow_df):
+# def combine_raw_daily_with_slow(raw_df, slow_df):
 
-    # new df: ROUTER_DAILY_METRICS_RAW concat with slow_volume_raw
-    slow = slow_df.copy()
-    slow["date"] = pd.to_datetime(slow["date"])
-    slow["date"] = slow["date"].dt.date
-    slow_raw_daily = slow.groupby(
-        ["date", "chain", "asset_group", "asset", "router_name"]
-    ).agg({"destination_slow_volume_usd": "sum"})
-    slow_raw_daily = slow_raw_daily.reset_index()
-    raw_df["date"] = pd.to_datetime(raw_df["date"])
-    raw_df["date"] = raw_df["date"].dt.date
-    ROUTER_DAILY_METRICS_RAW_SLOW = pd.concat([raw_df, slow_raw_daily])
-    return ROUTER_DAILY_METRICS_RAW_SLOW
+#     # new df: ROUTER_DAILY_METRICS_RAW concat with slow_volume_raw
+#     slow = slow_df.copy()
+#     slow["date"] = pd.to_datetime(slow["date"])
+#     slow["date"] = slow["date"].dt.date
+#     slow_raw_daily = slow.groupby(
+#         ["date", "chain", "asset_group", "asset", "router_name"]
+#     ).agg({"destination_slow_volume_usd": "sum"})
+#     slow_raw_daily = slow_raw_daily.reset_index()
+#     raw_df["date"] = pd.to_datetime(raw_df["date"])
+#     raw_df["date"] = raw_df["date"].dt.date
+#     daily_slow_fast = pd.concat([raw_df, slow_raw_daily])
+#     return daily_slow_fast
 
 
+def convert_hourly_utlilization_data_to_daily(hourly_df):
+    df = hourly_df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = df["date"].dt.date
+    df = df.groupby(["date", "chain", "asset_group", "asset", "router_name"]).agg(
+        {
+            "total_locked_usd": "mean",
+            "router_fee_usd": "sum",
+            "router_volume_usd": "sum",
+            "total_balance_usd": "mean",
+            "destination_slow_volume_usd": "sum",
+        }
+    )
+    return df.reset_index()
+
+
+# Data
 ROUTER_DAILY_METRICS_RAW = get_raw_data_from_bq_df("router_daily_metrics")
-
 
 ROUTER_UTILIZATION_RAW = get_raw_data_from_bq_df("router_utilization_hourly")
 SLOW_VOLUME_RAW = get_raw_data_from_bq_df("raw_slow_path_volume__hourly")
 SLOW_VOLUME_RAW = clean_slow_volume_data(SLOW_VOLUME_RAW)
 
-# concat slow_volume_raw with daily
-ROUTER_UTILIZATION_RAW_SLOW = combine_raw_daily_with_slow(
-    ROUTER_DAILY_METRICS_RAW, SLOW_VOLUME_RAW
+
+# concat hourly slow data with utilization hourly
+ROUTER_UTILIZATION_RAW_SLOW = pd.concat([ROUTER_UTILIZATION_RAW, SLOW_VOLUME_RAW])
+
+# ROUTER_UTILIZATION_RAW from hourly to daily from utliation data
+ROUTER_DAILY_METRICS_RAW_SLOW = convert_hourly_utlilization_data_to_daily(
+    ROUTER_UTILIZATION_RAW_SLOW
 )

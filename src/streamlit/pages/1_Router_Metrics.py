@@ -69,12 +69,8 @@ def main():
 
     st.title("Router Metrics and Utilizations")
 
-    st.write(ROUTER_DAILY_METRICS_RAW)
-
     filter_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)
     new_agg_filtered_data_router_metrics = clean_df(filter_data)
-
-    st.text(f"Cleaned Data Columns: {new_agg_filtered_data_router_metrics.columns}")
 
     st.subheader("Daily Avg. APR Across Routers")
     plot_line_metrics(new_agg_filtered_data_router_metrics, "APR")
@@ -98,6 +94,10 @@ def main():
     # Router Volume
     st.subheader("Agg. Volume Across Routers")
     plot_line_metrics(new_agg_filtered_data_router_metrics, "Volume")
+
+    st.markdown("#### Raw Data")
+    st.text(f"Cleaned Data Columns: {new_agg_filtered_data_router_metrics.columns}")
+    st.write(ROUTER_DAILY_METRICS_RAW)
 
 
 if __name__ == "__main__":

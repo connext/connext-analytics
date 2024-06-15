@@ -3,7 +3,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from setup import ROUTER_UTILIZATION_RAW, apply_sidebar_filters, SLOW_VOLUME_RAW
+from setup import (
+    ROUTER_UTILIZATION_RAW,
+    apply_sidebar_filters,
+    ROUTER_UTILIZATION_RAW_SLOW,
+)
 
 
 def clean_utilization_data(data, agg_freq):
@@ -314,7 +318,7 @@ def plot_mixed_metrics(df):
             y=df["destination_slow_volume_usd"],
             name="Slow Volume",
             mode="lines+markers",
-            marker=dict(color="yellow"),
+            marker=dict(color="lightblue"),
             yaxis="y1",
         )
     )
@@ -325,7 +329,7 @@ def plot_mixed_metrics(df):
             y=df["total_balance_usd"],
             name="Balance (USD)",
             mode="lines+markers",
-            marker=dict(color="teal"),
+            marker=dict(color="green"),
             yaxis="y1",
         )
     )
@@ -334,9 +338,9 @@ def plot_mixed_metrics(df):
         go.Scatter(
             x=df["day"],
             y=df["total_locked_usd"],
-            name="Locked (USD)",
+            name="Liquidity (USD)",
             mode="lines+markers",
-            marker=dict(color="blue"),
+            marker=dict(color="yellow"),
             yaxis="y1",
         )
     )
@@ -382,7 +386,7 @@ def main():
     st.title("Router Utilization Dashboard")
 
     # Apply filters to both dataframes with unique key prefixes
-    filter_data = apply_sidebar_filters(ROUTER_UTILIZATION_RAW)
+    filter_data = apply_sidebar_filters(ROUTER_UTILIZATION_RAW_SLOW)
     fast_data = filter_data[filter_data["router_name"] != "slow_path"]
     slow_data = filter_data[filter_data["router_name"] == "slow_path"]
 

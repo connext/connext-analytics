@@ -1,17 +1,15 @@
+import asyncio
 import httpx
 import logging
-import time
 import pandas as pd
 import pandas_gbq as gbq
 from src.integrations.models.router_protocol import GraphQLResponseRouterProtocol
-
 
 PROJECT_ID = "mainnet-bigq"
 url = "https://api.pro-nitro-explorer.routernitro.com/graphql"
 
 logging.basicConfig(level=logging.INFO)
 
-# GraphQL query and variables
 query = """
 query TransactionsList($where: NitroTransactionFilter, $sort: NitroTransactionSort, $limit: Int, $page: Int) {
   findNitroTransactionsByFilter(where: $where, sort: $sort, limit: $limit, page: $page) {
@@ -45,34 +43,35 @@ variables = {
     "where": {
         "src_chain_id": None,
         "dest_chain_id": None,
-        "status": {"eq": "completed"},
         "transaction_type": None,
     },
-    "sort": {"src_timestamp": "asc"},
     "limit": 30,
     "page": 1,
 }
 
 
-def fetch_data(page, retries=500, backoff_factor=2, timeout=30):
+async def fetch_data(page, retries=500, backoff_factor=2, timeout=30):
     variables["page"] = page
-    for attempt in range(retries):
-        try:
-            response = httpx.post(
-                url, json={"query": query, "variables": variables}, timeout=timeout
-            )
-            response.raise_for_status()
-            response_data = response.json()
-            return GraphQLResponseRouterProtocol(**response_data)
+    async with httpx.AsyncClient() as client:
+        for attempt in range(retries):
+            try:
+                response = await client.post(
+                    url,
+                    json={"query": query, "variables": variables},
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                response_data = response.json()
+                return GraphQLResponseRouterProtocol(**response_data)
 
-        except (httpx.RequestError, httpx.TimeoutException) as e:
-            logging.error(f"An error occurred: {e}")
-            if attempt < retries - 1:
-                sleep_time = backoff_factor * (2**attempt)
-                logging.info(f"Retrying in {sleep_time} seconds...")
-                time.sleep(sleep_time)
-            else:
-                raise
+            except (httpx.RequestError, httpx.TimeoutException) as e:
+                logging.error(f"An error occurred: {e}")
+                if attempt < retries - 1:
+                    sleep_time = backoff_factor * (2**attempt)
+                    logging.info(f"Retrying in {sleep_time} seconds...")
+                    await asyncio.sleep(sleep_time)
+                else:
+                    raise
 
 
 def push_data_to_gbq(data):
@@ -88,45 +87,51 @@ def push_data_to_gbq(data):
     )
 
 
-def main():
+async def main(parallel_fetch=10):
     all_data = []
     page = 1
     total_pages = None
 
     while True:
         try:
-            data = fetch_data(page)
-            transactions = data.data.findNitroTransactionsByFilter
-            all_data_dicts = [tx.model_dump() for tx in transactions.data]
-            all_data.extend(all_data_dicts)
-            total_txs = transactions.total
-            total_pages = total_txs // transactions.limit
+            tasks = [fetch_data(page + i) for i in range(parallel_fetch)]
+            results = await asyncio.gather(*tasks)
+            for data in results:
+                transactions = data.data.findNitroTransactionsByFilter
+                all_data_dicts = [tx.model_dump() for tx in transactions.data]
+                all_data.extend(all_data_dicts)
+                total_txs = transactions.total
+                total_pages = (
+                    total_txs + transactions.limit - 1
+                ) // transactions.limit  # Calculate total pages
 
-            if page >= total_pages:
+            if page > total_pages:
                 logging.info(f"Pushing {len(all_data)} transactions to GBQ, All done!")
                 push_data_to_gbq(all_data)
                 break
 
-            if page % 100 == 0:
+            # Log the current page number
+            logging.info(f"Current page: {page}")
+
+            # push after every 10 pages
+            if (page - 1) % 10 == 0:
                 logging.info(
                     f"Pushing {len(all_data)} transactions to GBQ, page {page}"
                 )
                 push_data_to_gbq(all_data)
                 all_data = []
-                logging.info(
-                    f"Resetting all data to len: {len(all_data)}, page: {page}"
-                )
+                logging.info(f"Resetting all data to len: {len(all_data)}")
 
-            page += 1
-            time.sleep(10)
+            page += parallel_fetch
+            await asyncio.sleep(10)
             logging.info(f"Fetched page {page} of {total_pages}")
 
         except httpx.RequestError as e:
             logging.error(f"An error occurred: {e}")
-            time.sleep(10)
+            await asyncio.sleep(10)
 
     return None
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main(parallel_fetch=10))

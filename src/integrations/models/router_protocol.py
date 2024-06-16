@@ -3,29 +3,29 @@ from typing import List, Optional
 
 
 class TransactionData(BaseModel):
-    src_timestamp: int
-    dest_timestamp: int
-    src_chain_id: str
-    dest_chain_id: str
-    src_tx_hash: str
-    dest_tx_hash: str
-    status: str
-    src_address: str
-    dest_address: str
-    src_amount: str
-    dest_amount: str
-    dest_stable_amount: str
-    src_symbol: str
-    dest_symbol: str
-    dest_stable_symbol: str
-    has_message: bool
+    src_timestamp: Optional[int]
+    dest_timestamp: Optional[int]
+    src_chain_id: Optional[str]
+    dest_chain_id: Optional[str]
+    src_tx_hash: Optional[str]
+    dest_tx_hash: Optional[str]
+    status: Optional[str]
+    src_address: Optional[str]
+    dest_address: Optional[str]
+    src_amount: Optional[str]
+    dest_amount: Optional[str]
+    dest_stable_amount: Optional[str]
+    src_symbol: Optional[str]
+    dest_symbol: Optional[str]
+    dest_stable_symbol: Optional[str]
+    has_message: Optional[bool]
     native_token_amount: Optional[str]
 
 
 class TransactionsResponse(BaseModel):
-    limit: int
-    page: int
-    total: int
+    limit: Optional[int]
+    page: Optional[int]
+    total: Optional[int]
     data: List[TransactionData]
 
 
@@ -64,13 +64,11 @@ def model_testing():
                         "has_message": False,
                         "native_token_amount": "",
                     }
-                    # Add more transactions as needed
                 ],
             }
         }
     }
 
-    # Ensure the response_data is passed correctly to the model
     try:
         response = GraphQLResponseRouterProtocol(**response_data)
         print(response)

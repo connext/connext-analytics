@@ -1,0 +1,78 @@
+from pydantic import BaseModel
+from typing import List, Optional
+
+
+class TransactionData(BaseModel):
+    src_timestamp: int
+    dest_timestamp: int
+    src_chain_id: str
+    dest_chain_id: str
+    src_tx_hash: str
+    dest_tx_hash: str
+    status: str
+    src_address: str
+    dest_address: str
+    src_amount: str
+    dest_amount: str
+    dest_stable_amount: str
+    src_symbol: str
+    dest_symbol: str
+    dest_stable_symbol: str
+    has_message: bool
+    native_token_amount: Optional[str]
+
+
+class TransactionsResponse(BaseModel):
+    limit: int
+    page: int
+    total: int
+    data: List[TransactionData]
+
+
+class Data(BaseModel):
+    findNitroTransactionsByFilter: TransactionsResponse
+
+
+class GraphQLResponseRouterProtocol(BaseModel):
+    data: Data
+
+
+def model_testing():
+    response_data = {
+        "data": {
+            "findNitroTransactionsByFilter": {
+                "limit": 30,
+                "page": 1,
+                "total": 773808,
+                "data": [
+                    {
+                        "src_timestamp": 1702024047,
+                        "dest_timestamp": 1702024172,
+                        "src_chain_id": "137",
+                        "dest_chain_id": "42161",
+                        "src_tx_hash": "0xbf3bf2c87c6b54a4e3bc079245fc58918dc7075014b4480a438f298b346b8914",
+                        "dest_tx_hash": "0x1b4be4d0d744f33a6209a57b021a68f7b328f9eb8565284d9ec93d2e9f43a2db",
+                        "status": "completed",
+                        "src_address": "0xC168E40227E4ebD8C1caE80F7a55a4F0e6D66C97",
+                        "dest_address": "0x13538f1450Ca2E1882Df650F87Eb996fF4Ffec34",
+                        "src_amount": "2.22",
+                        "dest_amount": "2.21778",
+                        "dest_stable_amount": "2.21778",
+                        "src_symbol": "DFYN",
+                        "dest_symbol": "DFYN",
+                        "dest_stable_symbol": "DFYN",
+                        "has_message": False,
+                        "native_token_amount": "",
+                    }
+                    # Add more transactions as needed
+                ],
+            }
+        }
+    }
+
+    # Ensure the response_data is passed correctly to the model
+    try:
+        response = GraphQLResponseRouterProtocol(**response_data)
+        print(response)
+    except Exception as e:
+        print(e)

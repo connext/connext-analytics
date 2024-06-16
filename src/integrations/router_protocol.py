@@ -1,12 +1,15 @@
 import httpx
-import json
+import logging
 import time
 import pandas as pd
 import pandas_gbq as gbq
 from src.integrations.models.router_protocol import GraphQLResponseRouterProtocol
 
+
 PROJECT_ID = "mainnet-bigq"
 url = "https://api.pro-nitro-explorer.routernitro.com/graphql"
+
+logging.basicConfig(level=logging.INFO)
 
 # GraphQL query and variables
 query = """
@@ -63,10 +66,10 @@ def fetch_data(page, retries=500, backoff_factor=2, timeout=30):
             return GraphQLResponseRouterProtocol(**response_data)
 
         except (httpx.RequestError, httpx.TimeoutException) as e:
-            print(f"An error occurred: {e}")
+            logging.error(f"An error occurred: {e}")
             if attempt < retries - 1:
                 sleep_time = backoff_factor * (2**attempt)
-                print(f"Retrying in {sleep_time} seconds...")
+                logging.info(f"Retrying in {sleep_time} seconds...")
                 time.sleep(sleep_time)
             else:
                 raise
@@ -74,6 +77,7 @@ def fetch_data(page, retries=500, backoff_factor=2, timeout=30):
 
 def push_data_to_gbq(data):
     df = pd.DataFrame(data)
+    logging.info(f"Pushing {len(df)} transactions to GBQ")
     gbq.to_gbq(
         dataframe=df,
         project_id=PROJECT_ID,
@@ -99,19 +103,26 @@ def main():
             total_pages = total_txs // transactions.limit
 
             if page >= total_pages:
+                logging.info(f"Pushing {len(all_data)} transactions to GBQ, All done!")
                 push_data_to_gbq(all_data)
                 break
 
             if page % 100 == 0:
+                logging.info(
+                    f"Pushing {len(all_data)} transactions to GBQ, page {page}"
+                )
                 push_data_to_gbq(all_data)
                 all_data = []
+                logging.info(
+                    f"Resetting all data to len: {len(all_data)}, page: {page}"
+                )
 
             page += 1
             time.sleep(10)
-            print(f"Fetched page {page} of {total_pages}")
+            logging.info(f"Fetched page {page} of {total_pages}")
 
         except httpx.RequestError as e:
-            print(f"An error occurred: {e}")
+            logging.error(f"An error occurred: {e}")
             time.sleep(10)
 
     return None

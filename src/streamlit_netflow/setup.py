@@ -6,7 +6,9 @@ import streamlit as st
 import pandas_gbq as gbq
 from datetime import datetime, timedelta
 
-st.set_page_config(layout="wide", page_title="Net Flow")
+
+def page_settings():
+    st.set_page_config(layout="wide")
 
 
 @st.cache_data(ttl=86400)
@@ -151,6 +153,7 @@ def get_df_by_netting_window(df_data, netting_window, group_by):
     df_clean = netting_calculations(df_clean)
 
     # get Daily avg based on the new aggreagtions
+
     df_final = (
         df_clean.set_index("date")
         .groupby([pd.Grouper(freq="D"), *group_by])
@@ -166,5 +169,6 @@ def get_df_by_netting_window(df_data, netting_window, group_by):
     return df_final.reset_index()
 
 
+page_settings()
 # Data
 ALL_BRIDGES_HOURLY_DATA = get_raw_data_from_bq_df("all_bridges_netflow__hourly")

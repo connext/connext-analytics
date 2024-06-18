@@ -1,4 +1,5 @@
 import streamlit as st
+from setup import page_settings
 
 
 def main() -> None:

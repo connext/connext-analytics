@@ -45,6 +45,7 @@ variables = {
         "dest_chain_id": None,
         "transaction_type": None,
     },
+    "sort": {"src_timestamp": "desc"},
     "limit": 30,
     "page": 1,
 }
@@ -104,8 +105,11 @@ async def main(parallel_fetch=10):
                 total_pages = (
                     total_txs + transactions.limit - 1
                 ) // transactions.limit  # Calculate total pages
+                logging.info(f"Total pages: {total_pages}")
+                last_tx_timestamp = int(all_data_dicts[-1]["src_timestamp"])
+                logging.info(f"Last tx timestamp: {last_tx_timestamp}")
 
-            if page > total_pages:
+            if last_tx_timestamp <= 1712751518:
                 logging.info(f"Pushing {len(all_data)} transactions to GBQ, All done!")
                 push_data_to_gbq(all_data)
                 break

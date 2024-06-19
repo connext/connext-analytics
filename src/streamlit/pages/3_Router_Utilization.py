@@ -10,13 +10,126 @@ from setup import (
 )
 
 
+def router_utlization_metrics(data):
+    new_data = data[(data["asset_group"] != "") & (data["chain"] != "")].copy()
+    new_data = new_data[~new_data["router"].isna()]
+
+    # replace router_volume_usd where there is 0 with null
+    new_data["router_volume_usd"] = new_data["router_volume_usd"].replace(0, None)
+    # st.write(new_data)
+
+    # get last value of total_balance_usd for each group
+    new_data["total_locked_usd"] = new_data.groupby(
+        ["datetime", "chain", "asset", "router"]
+    )["total_locked_usd"].transform("last")
+
+    hourly_avg = (
+        new_data.groupby(["day", "router"])
+        .agg(
+            {
+                "router_fee_usd": "sum",
+                "router_volume_usd": "sum",
+                "total_locked_usd": "sum",
+            }
+        )
+        .reset_index()
+    )
+    hourly_avg["router_utilization"] = hourly_avg["router_volume_usd"] / hourly_avg[
+        "total_locked_usd"
+    ].replace(0, None)
+    hourly_avg.loc[hourly_avg["total_locked_usd"] < 0, "router_utilization"] = 1
+
+    by_router_utilization = hourly_avg[["day", "router", "router_utilization"]]
+    # st.write(hourly_avg)
+
+    router_utilization_avg = hourly_avg.groupby("day").agg(
+        {
+            "router_utilization": "mean",
+            "router_volume_usd": "sum",
+            "total_locked_usd": "sum",
+        }
+    )
+
+    # keep only utilizations
+    router_utilization_avg = router_utilization_avg[
+        ["router_utilization"]
+    ].reset_index()
+    router_utilization_avg["router"] = "avg"
+
+    # total utilization
+    total_utilization = (
+        new_data.groupby("day")
+        .agg(
+            router_volume_usd_mean=("router_volume_usd", "mean"),
+            router_volume_usd_sum=("router_volume_usd", "sum"),
+            total_locked_usd_mean=("total_locked_usd", "mean"),
+            total_locked_usd_sum=("total_locked_usd", "sum"),
+        )
+        .reset_index()
+    )
+
+    total_utilization["avg_router_utilization"] = (
+        total_utilization["router_volume_usd_mean"]
+        / total_utilization["total_locked_usd_mean"]
+    )
+
+    total_utilization["total_router_utilization"] = (
+        total_utilization["router_volume_usd_sum"]
+        / total_utilization["total_locked_usd_sum"]
+    )
+
+    avg_total_utilization = total_utilization.copy()
+    avg_total_utilization["router"] = "total_avg"
+    # rename column
+    avg_total_utilization.rename(
+        columns={"avg_router_utilization": "router_utilization"}, inplace=True
+    )
+
+    avg_total_utilization = avg_total_utilization[
+        ["day", "router", "router_utilization"]
+    ]
+    # st.write(avg_total_utilization)
+    total_utilization["router"] = "total"
+    total_utilization = total_utilization[["day", "router", "total_router_utilization"]]
+    # rename column
+    total_utilization.rename(
+        columns={"total_router_utilization": "router_utilization"}, inplace=True
+    )
+    # st.write(total_utilization)
+
+    # add all rows to the dataframe
+
+    router_utilization_avg = pd.concat(
+        [
+            router_utilization_avg,
+            by_router_utilization,
+            total_utilization,
+            avg_total_utilization,
+        ]
+    )
+    # multiple by 100
+
+    router_utilization_avg["router_utilization"] = (
+        router_utilization_avg["router_utilization"] * 100
+    )
+    # if router_utilization > 1 then set to 1
+    router_utilization_avg.loc[
+        router_utilization_avg["router_utilization"] > 100, "router_utilization"
+    ] = 100
+    # if router_utilization < 0 then set to 0
+    router_utilization_avg.loc[
+        router_utilization_avg["router_utilization"] < 0, "router_utilization"
+    ] = 0
+    return router_utilization_avg
+
+
 def clean_utilization_data(data, agg_freq):
 
     new_data = data[(data["asset_group"] != "") & (data["chain"] != "")]
     new_data = new_data[~new_data["router"].isna()]
 
     # replace router_volume_usd where there is 0 with null
-    new_data["router_volume_usd"] = new_data["router_volume_usd"]
+    new_data["router_volume_usd"] = new_data["router_volume_usd"].replace(0, None)
     # st.write(new_data)
 
     # get last value of total_balance_usd for each group
@@ -34,9 +147,9 @@ def clean_utilization_data(data, agg_freq):
     )
 
     # TODO testing: locked instead of balance -> take absolute value
-    hourly_avg["utilization"] = (
-        hourly_avg["router_volume_usd"] / hourly_avg["total_locked_usd"]
-    )
+    hourly_avg["utilization"] = hourly_avg["router_volume_usd"] / hourly_avg[
+        "total_locked_usd"
+    ].replace(0, None)
 
     # where locked usd is negative set utilization to 1
     hourly_avg.loc[hourly_avg["total_locked_usd"] < 0, "utilization"] = 1
@@ -246,6 +359,79 @@ def utilization_heatmap(data, metric):
     st.plotly_chart(fig)
 
 
+def plot_router_utilization(data):
+    # add a drop down selector to show which plot to show
+    router_to_show = st.multiselect(
+        "Select plot view",
+        options=["avg", "total", "total_avg", "individual"],
+        default=["avg", "total", "total_avg"],
+    )
+    st.markdown(
+        """
+    **Avg. Router Utilization(Teal)**: This line indicates the average utilization of each router, determined by summing all volumes and the total locked at the hourly level.
+    
+    **Total Utilization(Green)**: This line represents the total utilization, calculated by summing all volumes and the total locked at the daily level.
+
+    **Avg. Utilization(Red)**: This line displays the average utilization of each router, calculated by averaging the volumes and the total locked at the daily level.    
+        """
+    )
+
+    # st.write(data)
+
+    if "individual" in router_to_show:
+        # plot line chart for router_utilization color by router
+        fig = px.line(
+            data[
+                (data["router"] != "total_avg")
+                & (data["router"] != "total")
+                & (data["router"] != "avg")
+            ],
+            x="day",
+            y="router_utilization",
+            color="router",
+        )
+        st.plotly_chart(fig)
+
+    else:
+        # for router all add as dash line
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=data["day"],
+                y=data[data["router"] == "avg"]["router_utilization"],
+                name="Avg. Router Utilization",
+                mode="lines",
+                line=dict(color="teal"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=data["day"],
+                y=data[data["router"] == "total"]["router_utilization"],
+                name="Total Utilization",
+                mode="lines",
+                line=dict(color="green"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=data["day"],
+                y=data[data["router"] == "total_avg"]["router_utilization"],
+                name="Avg. Utilization",
+                mode="lines",
+                line=dict(color="red"),
+            )
+        )
+        st.plotly_chart(fig)
+
+    st.text(
+        """
+        Note: The utilization is the ratio of the Fast volume of a router over the total locked value.
+        Why is Total Utilization lower than avg Router Utilization. Because the total utilization is calculated by summing all volumes and total locked at the day level.
+        """
+    )
+
+
 def combined_fast_slow_vol_daily(df, slow_df):
     df_agg = df[
         [
@@ -258,7 +444,15 @@ def combined_fast_slow_vol_daily(df, slow_df):
             "total_balance_usd",
             "utilization_percentage",
         ]
-    ]
+    ].copy()
+
+    # df_agg_router = df_agg.groupby(["day", "chain", "asset_group", "router"]).agg(
+    #     {
+    #         "router_volume_usd": "sum",
+    #         "router_fee_usd": "sum",
+    #         "total_locked_usd": "sum",
+    #     }
+    # )
 
     # get last value of total_balance_usd for each group
     df_agg["total_balance_usd_last"] = df_agg.groupby(["day", "chain", "asset_group"])[
@@ -403,7 +597,13 @@ def main():
 
     plot_mixed_metrics(df_slow_fast_agg)
 
-    # add dotted line
+    # ------- router utlization: Total and avg-----------------#
+
+    st.markdown("---")
+    st.subheader("Router Utilization: Total and Avg")
+    router_utilization_metrics = router_utlization_metrics(fast_data)
+    # st.write(router_utilization_metrics)
+    plot_router_utilization(router_utilization_metrics)
 
     st.markdown("---")
 

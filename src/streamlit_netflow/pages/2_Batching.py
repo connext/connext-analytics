@@ -5,7 +5,7 @@ from setup import ALL_CONNEXT_TXS, apply_universal_sidebar_filters
 
 
 @st.cache_data(ttl=86400)
-def batch_txs(data: pd.DataFrame) -> pd.DataFrame:
+def batch_txs(data: pd.DataFrame, bs: int, nw: str) -> pd.DataFrame:
     def create_batches(df: pd.DataFrame) -> pd.DataFrame:
         # Initialize variables
         batch_id = 1
@@ -15,9 +15,9 @@ def batch_txs(data: pd.DataFrame) -> pd.DataFrame:
 
         # Group transactions into batches
         for idx, row in df.iterrows():
-            if len(current_batch) < 20 and (
+            if len(current_batch) < bs and (
                 row["date"] - current_batch_start_time
-            ) <= timedelta(hours=3):
+            ) <= timedelta(hours=nw):
                 current_batch.append((row["date"], batch_id))
             else:
                 for timestamp, b_id in current_batch:
@@ -54,7 +54,7 @@ def batch_txs(data: pd.DataFrame) -> pd.DataFrame:
     return result_df
 
 
-def aggregate_batched_tx(data: pd.DataFrame, bs: int, nw: str):
+def aggregate_batched_tx(data: pd.DataFrame):
     """
     INPUTS:
         data: pd.DataFrame
@@ -132,10 +132,8 @@ def main():
     # batch the txs -> adding cache to avoid re-running the function
     # filtered aggregated data
     raw_txs = apply_universal_sidebar_filters(df=ALL_CONNEXT_TXS, date_col="date")
-    batched_txs = batch_txs(raw_txs)
-    batched_txs_agg = aggregate_batched_tx(
-        data=batched_txs, bs=batch_size, nw=netting_window
-    )
+    batched_txs = batch_txs(raw_txs, bs=batch_size, nw=netting_window)
+    batched_txs_agg = aggregate_batched_tx(data=batched_txs)
 
     # showcase data
     st.markdown(

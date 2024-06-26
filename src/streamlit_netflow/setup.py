@@ -34,7 +34,15 @@ def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
     return gbq.read_gbq(sql)
 
 
-def apply_universal_sidebar_filters(df):
+def apply_universal_sidebar_filters(df, date_col="date"):
+    """
+    Apply universal sidebar filters to the dataframe
+    Filters applied and columns needed in dataframe:
+    - asset_group
+    - bridge
+    - chain
+    - date
+    """
     st.sidebar.header("Filters")
 
     selected_asset = st.sidebar.multiselect(
@@ -69,7 +77,10 @@ def apply_universal_sidebar_filters(df):
 
     if from_date and to_date:
         start_date, end_date = from_date, to_date
-        df["datetime"] = pd.to_datetime(df["date"])
+        if df[date_col].dtype == "O":
+            df["datetime"] = pd.to_datetime(df[date_col])
+        else:
+            df["datetime"] = df[date_col]
         df["day"] = df["datetime"].dt.date
         df["hour"] = df["datetime"].dt.hour
         df = df[(df["day"] >= start_date) & (df["day"] <= end_date)]
@@ -172,3 +183,4 @@ def get_df_by_netting_window(df_data, netting_window, group_by):
 page_settings()
 # Data
 ALL_BRIDGES_HOURLY_DATA = get_raw_data_from_bq_df("all_bridges_netflow__hourly")
+ALL_CONNEXT_TXS = get_raw_data_from_bq_df("batching_netflow_raw_txs")

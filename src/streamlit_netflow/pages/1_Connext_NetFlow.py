@@ -1,5 +1,3 @@
-# Things to implement on this page:
-# Router Metrics and Utilizations
 import pandas as pd
 import streamlit as st
 import plotly.express as px

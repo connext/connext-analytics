@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/streamlit/connext-arb-distribution-streamlit",
+        "-f",
+        "Docker/Dockerfile.streamlit-arb-distribution",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/streamlit/connext-arb-distribution-streamlit"

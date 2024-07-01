@@ -1,4 +1,6 @@
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
 import streamlit as st
 from setup import (
     apply_universal_sidebar_filters,
@@ -10,85 +12,36 @@ from setup import (
 def theory():
     st.markdown(
         """
-        
-        #### [Requirements](https://www.notion.so/Arb-Distribution-0297a6e965674e11867c98dc0420b610)
-
-        **Calculation Considerations**
-        - Hourly Pricing data
-        - Amount converted to USD -> ARB
-        - ARB distribution by user and aggregated to start of Week (based on xcall_timestamp)
-
-        **Steps:**
-
-        1) Calculate gas fees used on origin chain
-
-        a) Gas fees
-        - `xcall_gas_price * xcall_gas_limit`
-
-        b) Relayer fees
-        - Sum of:
-            - `relayer_fees["0x0000000000000000000000000000000000000000"] * native gas price`
-            - `relayer_fees["<origin_transacting_asset>"] * transacting asset price`
-            - Note: usually relayer fee is paid in native or transacting but sometimes it can be both
-
-        2) Calculate liquidity fees
-
-        a) Router fees
-        - `origin_transacting_amount * 5bps`
-
-        b) AMM fees
-        - For L2s as origin: `origin_transacting_amount * 13bps`
-        - For L1 as origin: `origin_transacting_amount * 8bps`
-
-        3) Convert fees to ARB
-        - Add 1) and 2)
-        - Convert total to equivalent ARB amount at the time of transfer
-
+        [Requirements](https://www.notion.so/Arb-Distribution-0297a6e965674e11867c98dc0420b610) | [Calculation and SQL](https://github.com/connext/connext-analytics/blob/main/src/streamlit_arb_distribution/sql/arb_distribution.sql) | Houlry Pricing Data Used
     """
     )
 
 
-def user_aggregator(df):
-
-    df_agg = df.groupby(
-        ["xcall_caller", "date", "origin_chain", "destination_chain"]
-    ).agg(
-        {
-            "usd_gas_fee_amount": "sum",
-            "usd_relay_fee_1_amount": "sum",
-            "usd_relay_fee_2_amount": "sum",
-            "usd_amm_fee_amount": "sum",
-            "usd_router_fee_amount": "sum",
-            "usd_destination_amount": "sum",
-        }
-    )
-
-    return df_agg
-
-
-def user_weekly_distribution(df, arb_price):
+def clean_cal_data(df, arb_data):
     df_weekly = df.copy()
-
+    arb_price = arb_data.copy()
     arb_price["hour"] = pd.to_datetime(arb_price["date"]).dt.hour
-    arb_price["date"] = pd.to_datetime(arb_price["date"]).dt.date
+    arb_price["day"] = pd.to_datetime(arb_price["date"]).dt.date
 
     # join on date
     df_weekly = df_weekly.merge(
-        arb_price, left_on=["day", "hour"], right_on=["date", "hour"], how="left"
+        arb_price, left_on=["day", "hour"], right_on=["day", "hour"], how="left"
     )
 
     # drop df_weekly date_y
     df_weekly.drop(columns=["date_x", "date_y"], inplace=True)
 
     # week of the month
-    df_weekly["week_of_year"] = pd.to_datetime(df["date"]).dt.isocalendar().week
-    df_weekly["month"] = pd.to_datetime(df["date"]).dt.month
-    df_weekly["year"] = pd.to_datetime(df["date"]).dt.year
+    df_weekly["week_of_year"] = (
+        pd.to_datetime(df_weekly["datetime"]).dt.isocalendar().week
+    )
+    df_weekly["month"] = pd.to_datetime(df_weekly["datetime"]).dt.month
+    df_weekly["year"] = pd.to_datetime(df_weekly["datetime"]).dt.year
     df_weekly["week_start_date"] = (
-        pd.to_datetime(df["date"]).dt.to_period("W").dt.start_time
+        pd.to_datetime(df_weekly["datetime"]).dt.to_period("W").dt.start_time
     )
     df_weekly["week_end_date"] = (
-        pd.to_datetime(df["date"]).dt.to_period("W").dt.end_time
+        pd.to_datetime(df_weekly["datetime"]).dt.to_period("W").dt.end_time
     )
     df_weekly["total_fee_usd"] = (
         df_weekly["usd_gas_fee_amount"].fillna(0)
@@ -100,7 +53,28 @@ def user_weekly_distribution(df, arb_price):
 
     df_weekly["total_fee_arb"] = df_weekly["total_fee_usd"] / df_weekly["price"]
 
-    df_weekly = df_weekly.groupby(
+    # st.write(df_weekly)
+
+    return df_weekly
+
+
+def aggregate_flow(df):
+
+    df_agg = df.groupby(["origin_chain", "destination_chain"]).agg(
+        {
+            "total_fee_usd": "sum",
+            "total_fee_arb": "sum",
+            "usd_destination_amount": "sum",
+            "price": "mean",
+        }
+    )
+
+    return df_agg.reset_index()
+
+
+def user_weekly_distribution(df):
+
+    df_weekly = df.groupby(
         ["xcall_caller", "week_start_date", "week_end_date", "asset"]
     ).agg(
         {
@@ -131,21 +105,152 @@ def user_weekly_distribution(df, arb_price):
     return df_weekly[cols_order].reset_index(drop=True)
 
 
+def plot_sankey(df, col="usd_destination_amount"):
+
+    # Prepare data for Sankey diagram
+    all_nodes = list(set(df["origin_chain"]).union(set(df["destination_chain"])))
+    node_indices = {node: idx for idx, node in enumerate(all_nodes)}
+
+    source_indices = [node_indices[origin] for origin in df["origin_chain"]]
+    target_indices = [
+        node_indices[destination] for destination in df["destination_chain"]
+    ]
+    values = df[col]
+
+    # Add metric values to the labels
+    all_nodes_with_values = [
+        f"{node} ({df[df['origin_chain'] == node][col].sum() + df[df['destination_chain'] == node][col].sum():,.2f})"
+        for node in all_nodes
+    ]
+
+    fig = go.Figure(
+        data=[
+            go.Sankey(
+                node=dict(
+                    pad=15,
+                    thickness=20,
+                    line=dict(color="black", width=0.5),
+                    label=all_nodes_with_values,  # Updated labels with values
+                ),
+                link=dict(
+                    source=source_indices,
+                    target=target_indices,
+                    value=values,
+                ),
+            )
+        ]
+    )
+
+    fig.update_layout(
+        title_text=f"Flow of {col} from origin to destination",
+        font_size=10,
+    )
+    st.plotly_chart(fig)
+
+
+def plot_daily_arb_distribution(df, col):
+    daily = (
+        df.groupby("day")
+        .agg(
+            {
+                "usd_destination_amount": "sum",
+                "total_fee_usd": "sum",
+                "total_fee_arb": "sum",
+            }
+        )
+        .reset_index()
+    )
+
+    fig = px.line(
+        daily,
+        x="day",
+        y=col,
+        title=f"Daily {col}",
+    )
+
+    fig.update_layout(yaxis_title=col)
+    fig.update_layout(xaxis_title="Date")
+    st.plotly_chart(fig)
+
+
 def main() -> None:
     st.title("ARB Distribution")
 
-    st.text("Date Filter is inclusive of the date selected. Dates are in UTC timezone.")
+    st.text(
+        f"Date Filter is inclusive of the date selected. Dates are in UTC timezone. {theory()}"
+    )
 
     # filter_data
     filter_raw_data = apply_universal_sidebar_filters(ARB_DISTRIBUTION_DATA)
-
-    st.subheader("ARB Distribution Weekly Data")
-    weekly_df = user_weekly_distribution(filter_raw_data, ARB_HOURLY_PRICE_DATA)
-    st.data_editor(weekly_df)
-    theory()
+    df_clean = clean_cal_data(filter_raw_data, ARB_HOURLY_PRICE_DATA)
     st.markdown("---")
-    st.subheader("Raw Data for Destination: ARB chain")
-    st.data_editor(filter_raw_data)
+
+    agg_flow = aggregate_flow(df_clean)
+
+    destination_volume_usd = agg_flow["usd_destination_amount"].sum()
+    fee_arb = agg_flow["total_fee_arb"].sum()
+    fee_usd = agg_flow["total_fee_usd"].sum()
+
+    weekly_df = user_weekly_distribution(df_clean)
+
+    st.markdown(
+        f"""
+    ### Weekly Aggregated Data by Xcaller.
+    Data for week of start date {weekly_df["week_start_date"].min()} to end date {weekly_df["week_end_date"].max()}
+    """
+    )
+    st.download_button(
+        label="Download Weekly Data",
+        data=weekly_df.to_csv(index=False),
+        file_name="weekly_arb_distribution.csv",
+        mime="text/csv",
+    )
+    st.dataframe(
+        weekly_df[
+            [
+                "xcall_caller",
+                "asset",
+                "price",
+                "total_fee_arb",
+                "total_fee_usd",
+            ]
+        ],
+        width=1500,
+    )
+    st.markdown("---")
+
+    col = st.selectbox(
+        "Select a metric",
+        ["usd_destination_amount", "total_fee_usd", "total_fee_arb"],
+    )
+
+    c1, c2, c3 = st.columns([1, 1, 1])
+    with c1:
+
+        st.subheader(
+            """
+            Summary
+            """
+        )
+        st.metric(
+            label="ARB Destination Volume",
+            value="$ " + str(round(destination_volume_usd, 0)),
+        )
+        st.metric(label="Fee (USD)", value="$ " + str(round(fee_usd, 0)))
+        st.metric(label="Fee (ARB)", value="ARB " + str(round(fee_arb, 0)))
+        st.markdown("---")
+
+    with c2:
+
+        st.subheader("Flow of USD Destination Amount")
+
+        plot_sankey(agg_flow, col=col)
+    with c3:
+        plot_daily_arb_distribution(df_clean, col=col)
+
+    st.markdown("---")
+    st.subheader("Raw Data")
+    st.data_editor(df_clean)
     return None
 
 

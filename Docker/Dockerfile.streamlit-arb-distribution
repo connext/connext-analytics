@@ -1,0 +1,23 @@
+FROM python:3.11.4
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONFAULTHANDLER 1
+
+ENV STREAMLIT_LOG_LEVEL="debug"
+ENV STREAMLIT_SERVER_MAX_UPLOAD_SIZE=300
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+
+WORKDIR /app
+COPY Pipfile.lock Pipfile ./
+
+# Building deps
+RUN pip install pipenv
+RUN pipenv install --system --deploy
+
+COPY . .
+
+EXPOSE 8501
+
+# Command to run Streamlit
+CMD ["pipenv", "run", "streamlit", "run", "src/streamlit_arb_distribution/ARB_Distribution.py", "--logger.level=debug"]

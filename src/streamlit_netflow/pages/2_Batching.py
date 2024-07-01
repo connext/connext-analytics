@@ -116,7 +116,13 @@ def main():
         options=["1-Hour", "3-Hour", "6-Hour", "12-Hour", "1-Day"],
         value="3-Hour",
     )
-
+    netting_window_in_hours = {
+        "1-Hour": 1,
+        "3-Hour": 3,
+        "6-Hour": 6,
+        "12-Hour": 12,
+        "1-Day": 24,
+    }
     batch_size = st.sidebar.select_slider(
         label="**Batch Size(# of Tx per batch):**",
         options=[
@@ -132,7 +138,9 @@ def main():
     # batch the txs -> adding cache to avoid re-running the function
     # filtered aggregated data
     raw_txs = apply_universal_sidebar_filters(df=ALL_CONNEXT_TXS, date_col="date")
-    batched_txs = batch_txs(raw_txs, bs=batch_size, nw=netting_window)
+    batched_txs = batch_txs(
+        raw_txs, bs=batch_size, nw=netting_window_in_hours[netting_window]
+    )
     batched_txs_agg = aggregate_batched_tx(data=batched_txs)
 
     # showcase data

@@ -125,7 +125,7 @@ WITH
     t.status IN ('CompletedSlow',
       'CompletedFast')
     AND t.destination_domain = "1634886255"
-    AND t.xcall_timestamp >= 1717200000 ),
+    AND t.xcall_timestamp >= 1718668800),
   clean_tx AS (
   SELECT
     t.transfer_id,
@@ -307,7 +307,9 @@ WITH
     ct.router_fee_amount AS router_fee_amount,
     ct.destination_amount AS destination_amount
   FROM
-    clean_tx ct ),
+    clean_tx ct
+  -- filter for WETH inflows Only
+  WHERE ct.destination_asset= 'WETH' ),
   -- adding daily pricing to final
   daily_price AS (
   SELECT
@@ -317,7 +319,7 @@ WITH
   FROM
     `mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth` p
   WHERE
-    CAST(p.date AS TIMESTAMP) >= "2024-06-01"
+    CAST(p.date AS TIMESTAMP) >= "2024-06-18"
   GROUP BY
     1,
     2 ),

@@ -75,7 +75,7 @@ def aggregate_flow(df):
 def user_weekly_distribution(df):
 
     df_weekly = df.groupby(
-        ["xcall_caller", "week_start_date", "week_end_date", "asset"]
+        ["xcall_caller", "week_start_date", "week_end_date", "destination_asset"]
     ).agg(
         {
             "total_fee_usd": "sum",
@@ -92,12 +92,13 @@ def user_weekly_distribution(df):
         by="week_start_date", ascending=False
     )
 
+    df_weekly.rename(columns={"price": "arb_usd_price"}, inplace=True)
     cols_order = [
         "week_start_date",
         "week_end_date",
         "xcall_caller",
-        "asset",
-        "price",
+        "destination_asset",
+        "arb_usd_price",
         "total_fee_arb",
         "total_fee_usd",
     ]
@@ -194,9 +195,8 @@ def main() -> None:
     weekly_df = user_weekly_distribution(df_clean)
 
     st.markdown(
-        f"""
+        """
     ### Weekly Aggregated Data by Xcaller.
-    Data for week of start date {weekly_df["week_start_date"].min()} to end date {weekly_df["week_end_date"].max()}
     """
     )
     st.download_button(
@@ -209,8 +209,8 @@ def main() -> None:
         weekly_df[
             [
                 "xcall_caller",
-                "asset",
-                "price",
+                "destination_asset",
+                "arb_usd_price",
                 "total_fee_arb",
                 "total_fee_usd",
             ]
@@ -250,6 +250,7 @@ def main() -> None:
 
     st.markdown("---")
     st.subheader("Raw Data")
+    st.text("Filter applied raw data from the Transfers table. See SQL for details.")
     st.data_editor(df_clean)
     return None
 

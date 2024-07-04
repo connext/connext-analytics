@@ -75,7 +75,7 @@ def aggregate_flow(df):
 def user_weekly_distribution(df):
 
     df_weekly = df.groupby(
-        ["xcall_caller", "week_start_date", "week_end_date", "destination_asset"]
+        ["to", "week_start_date", "week_end_date", "destination_asset"]
     ).agg(
         {
             "total_fee_usd": "sum",
@@ -92,11 +92,13 @@ def user_weekly_distribution(df):
         by="week_start_date", ascending=False
     )
 
-    df_weekly.rename(columns={"price": "arb_usd_price"}, inplace=True)
+    df_weekly.rename(
+        columns={"price": "arb_usd_price", "to": "user_address(to)"}, inplace=True
+    )
     cols_order = [
         "week_start_date",
         "week_end_date",
-        "xcall_caller",
+        "user_address(to)",
         "destination_asset",
         "arb_usd_price",
         "total_fee_arb",
@@ -151,7 +153,7 @@ def plot_sankey(df, col="usd_destination_amount"):
 
 def plot_daily_arb_distribution(df, col):
     daily = (
-        df.groupby("day")
+        df.groupby(["day", "origin_chain"])
         .agg(
             {
                 "usd_destination_amount": "sum",
@@ -162,16 +164,34 @@ def plot_daily_arb_distribution(df, col):
         .reset_index()
     )
 
-    fig = px.line(
+    fig = px.bar(
         daily,
         x="day",
         y=col,
-        title=f"Daily {col}",
+        color="origin_chain",
+        title=f"Daily {col} by Source Chain",
+        labels={"origin_chain": "Source Chain", col: col.replace("_", " ").title()},
     )
-
-    fig.update_layout(yaxis_title=col)
+    fig.update_layout(yaxis_title=col.replace("_", " ").title())
     fig.update_layout(xaxis_title="Date")
     st.plotly_chart(fig)
+
+
+def get_only_eth_june_30_data(df):
+    df_filter = df[
+        (df["datetime"] >= "2024-06-30")
+        & (df["datetime"] < "2024-07-01")
+        & (df["origin_chain"] == "Ethereum Mainnet")
+    ]
+    cols_2_keep = [
+        "datetime",
+        "origin_chain",
+        "destination_chain",
+        "destination_amount",
+        "usd_destination_amount",
+        "transfer_id",
+    ]
+    return df_filter[cols_2_keep]
 
 
 def main() -> None:
@@ -208,7 +228,7 @@ def main() -> None:
     st.dataframe(
         weekly_df[
             [
-                "xcall_caller",
+                "user_address(to)",
                 "destination_asset",
                 "arb_usd_price",
                 "total_fee_arb",
@@ -246,12 +266,22 @@ def main() -> None:
 
         plot_sankey(agg_flow, col=col)
     with c3:
+
         plot_daily_arb_distribution(df_clean, col=col)
 
     st.markdown("---")
     st.subheader("Raw Data")
     st.text("Filter applied raw data from the Transfers table. See SQL for details.")
     st.data_editor(df_clean)
+
+    st.markdown("---")
+    st.subheader("ETH June 30 Data")
+    eth_30_data = get_only_eth_june_30_data(df_clean)
+    st.dataframe(eth_30_data)
+    st.metric(
+        label="Total WETH Destination Amount",
+        value="WETH " + str(round(eth_30_data["destination_amount"].sum(), 0)),
+    )
     return None
 
 

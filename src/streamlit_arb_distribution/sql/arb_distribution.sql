@@ -53,9 +53,10 @@ WITH
     AS destination_chain_name,
     t.xcall_caller,
     t.origin_sender,
+    t.to,
     origin_transacting_asset,
     -- for testing
-    destination_local_asset AS destination_transacting_asset,
+    destination_transacting_asset AS destination_transacting_asset,
     oa.domain AS origin_domain,
     CAST(oa.decimal AS INT64) AS origin_decimal,
     ( CAST(destination_transacting_amount AS FLOAT64) / POW (10, COALESCE(CAST(da.decimal AS INT64), 0)) ) AS destination_transacting_amount,
@@ -124,11 +125,13 @@ WITH
     -- FILTER FOR ARBITRUM DESTINATION ONLY
     t.status IN ('CompletedSlow',
       'CompletedFast')
+    AND LOWER(t.destination_transacting_asset)  = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
     AND t.destination_domain = "1634886255"
     AND t.xcall_timestamp >= 1718668800),
   clean_tx AS (
   SELECT
     t.transfer_id,
+    t.to,
     t.xcall_timestamp,
     t.origin_chain_name,
     t.destination_chain_name,
@@ -202,6 +205,7 @@ WITH
   clean_final AS (
   SELECT
     ct.transfer_id,
+    ct.to,
     ct.xcall_timestamp AS date,
     ct.xcall_caller AS xcall_caller,
     ct.origin_sender AS origin_sender,
@@ -329,6 +333,7 @@ WITH
     cf.date,
     cf.xcall_caller,
     cf.origin_sender,
+    cf.to,
     cf.origin_chain,
     cf.destination_chain,
     -- assets

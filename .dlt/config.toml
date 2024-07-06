@@ -50,6 +50,7 @@ hourly_token_pricing_query_id= 3752571
 # hourly_token_pricing_query_id= 3795794  # this is latest price query
 cannonical_bridges_hourly_flows_tokens_query_id=3753088
 cannonical_bridges_hourly_flows_native_query_id=3753520
+arb_weth_deposit_transactions_query_id=3895717
 
 
 [sources.all_bridge_explorer]

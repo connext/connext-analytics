@@ -19,9 +19,31 @@ WITH
     token_name AS asset
   FROM
     `mainnet-bigq.stage.connext_tokens` ct ),
+  weth_txs AS (
+  SELECT
+    DISTINCT 
+    wt.hash,
+    wt.user_address,
+    wt.date,
+    CASE
+      WHEN wt.origin_chain = 'bnb' THEN 'Binance Smart Chain'
+      WHEN wt.origin_chain = 'base' THEN 'Base Mainnet'
+      WHEN wt.origin_chain = 'linea' THEN 'Linea Mainnet'
+      WHEN wt.origin_chain = 'gnosis' THEN 'xDAI Chain'
+      WHEN wt.origin_chain = 'polygon' THEN 'Polygon Mainnet'
+      WHEN wt.origin_chain = 'ethereum' THEN 'Ethereum Mainnet'
+      WHEN wt.origin_chain = 'optimism' THEN 'Optimistic Ethereum'
+      ELSE wt.origin_chain
+  END
+    AS origin_chain,
+    wt.destination_chain,
+    wt.volume_eth
+  FROM
+    `mainnet-bigq.dune.source_arb_weth_deposit_transactions` wt ),
   tx AS (
   SELECT
     transfer_id,
+    xcall_transaction_hash,
     TIMESTAMP_SECONDS (t.xcall_timestamp) AS xcall_timestamp,
     CASE
       WHEN t.origin_domain = '6648936' THEN 'Ethereum Mainnet'
@@ -125,12 +147,13 @@ WITH
     -- FILTER FOR ARBITRUM DESTINATION ONLY
     t.status IN ('CompletedSlow',
       'CompletedFast')
-    AND LOWER(t.destination_transacting_asset)  = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+    AND LOWER(t.destination_transacting_asset) = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
     AND t.destination_domain = "1634886255"
     AND t.xcall_timestamp >= 1718668800),
   clean_tx AS (
   SELECT
     t.transfer_id,
+    t.xcall_transaction_hash,
     t.to,
     t.xcall_timestamp,
     t.origin_chain_name,
@@ -205,6 +228,7 @@ WITH
   clean_final AS (
   SELECT
     ct.transfer_id,
+    ct.xcall_transaction_hash,
     ct.to,
     ct.xcall_timestamp AS date,
     ct.xcall_caller AS xcall_caller,
@@ -312,8 +336,9 @@ WITH
     ct.destination_amount AS destination_amount
   FROM
     clean_tx ct
-  -- filter for WETH inflows Only
-  WHERE ct.destination_asset= 'WETH' ),
+    -- filter for WETH inflows Only
+  WHERE
+    ct.destination_asset= 'WETH' ),
   -- adding daily pricing to final
   daily_price AS (
   SELECT
@@ -330,6 +355,7 @@ WITH
   usd_data AS (
   SELECT
     cf.transfer_id,
+    cf.xcall_transaction_hash,
     cf.date,
     cf.xcall_caller,
     cf.origin_sender,
@@ -401,6 +427,12 @@ WITH
     3,
     4 DESC )
 SELECT
-  *
+  wt.user_address,
+  ud.*
 FROM
-  usd_data
+  usd_data ud
+LEFT JOIN
+  weth_txs wt
+ON
+  (ud.xcall_transaction_hash = wt.hash
+    AND ud.origin_chain = wt.origin_chain)

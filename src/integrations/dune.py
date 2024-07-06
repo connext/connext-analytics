@@ -22,6 +22,7 @@ from src.integrations.models.dune import (
     HourlyTokenPricingBlockchainEth,
     CannonicalBridgesFlowsTokensHourly,
     CannonicalBridgesFlowsNativeHourly,
+    ArbWethDepositTransaction,
 )
 from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
@@ -228,7 +229,7 @@ def get_across__aggregator_daily(
         logging.info("Data uptodate in the DB")
 
 
-# hourly_token_pricing_query_id
+# hourly_token_pricing_query_id1
 @dlt.resource(
     table_name="source_hourly_token_pricing_blockchain_eth",
     write_disposition="append",
@@ -256,6 +257,38 @@ def get_hourly_token_pricing_blockchain_eth(
                 yield HourlyTokenPricingBlockchainEth(
                     **record
                 )  # Unpack each dictionary
+    else:
+        logging.info("Data uptodate in the DB")
+
+
+# ARB Distributions
+@dlt.resource(
+    table_name="source_arb_weth_deposit_transactions",
+    write_disposition="append",
+    columns=pydantic_to_table_schema_columns(ArbWethDepositTransaction),
+)
+def get_arb_weth_deposit_transactions(
+    arb_weth_deposit_transactions_query_id=dlt.config.value,
+) -> Iterator[TDataItems]:
+
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_arb_weth_deposit_transactions",
+        start_date=1718668800,
+    )
+    # date_param = {}
+    # date_param["start_date"] = 1718668800
+
+    # end date is latest timestamp
+    date_param["end_date"] = int(datetime.now(pytz.UTC).timestamp())
+
+    if date_param["start_date"] < date_param["end_date"]:
+        for result in get_result_by_query_id(
+            arb_weth_deposit_transactions_query_id,
+            start_date=date_param["start_date"],
+            end_date=date_param["end_date"],
+        ):
+            for record in result:  # Iterate over each dictionary in the list
+                yield ArbWethDepositTransaction(**record)  # Unpack each dictionary
     else:
         logging.info("Data uptodate in the DB")
 
@@ -322,6 +355,7 @@ def dune_bridges() -> Sequence[DltResource]:
     return [
         # new:
         get_hourly_token_pricing_blockchain_eth,
+        get_arb_weth_deposit_transactions,
         # get_hourly_cannonical_bridges_hourly_flows_tokens,
         # get_hourly_cannonical_bridges_hourly_flows_native,
         # old:
@@ -341,5 +375,6 @@ def dune_bridges() -> Sequence[DltResource]:
 #         destination="bigquery",
 #         dataset_name="dune",
 #     )
+
 #     p.run(dune_bridges(), loader_file_format="jsonl")
 #     logging.info("Finished DLT Dune Bridges!")

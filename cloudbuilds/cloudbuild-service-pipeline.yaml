@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-pipeline-service",
+        "-f",
+        "Docker/Dockerfile.pipeline-service",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/connext-pipeline-service"

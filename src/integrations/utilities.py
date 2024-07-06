@@ -24,6 +24,22 @@ def get_secret_gcp_secrete_manager(secret_name: str):
     return response.payload.data.decode("UTF-8")
 
 
+def upload_to_gcs_via_folder(data, bucket_name, folder_name):
+    "uploading within a folder, Name for the upload within that folder is the timestamp of upload"
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+
+    # Generate a filename with the current date and time
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{folder_name}/{current_time}.json"
+
+    # Get the blob (file) where you want to store the JSON data
+    blob = bucket.blob(filename)
+
+    blob.upload_from_string(json.dumps(data), content_type="application/json")
+    logging.info(f"Uploaded {filename} to {bucket_name}")
+
+
 def upload_json_to_gcs(data, bucket_name):
     # Convert data to JSON
     json_data = json.dumps(data)

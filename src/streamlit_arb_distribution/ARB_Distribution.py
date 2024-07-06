@@ -66,9 +66,10 @@ def aggregate_flow(df):
             "total_fee_arb": "sum",
             "usd_destination_amount": "sum",
             "price": "mean",
+            "transfer_id": "nunique",
         }
     )
-
+    df_agg.rename(columns={"transfer_id": "transfer_count"}, inplace=True)
     return df_agg.reset_index()
 
 
@@ -274,14 +275,8 @@ def main() -> None:
     st.text("Filter applied raw data from the Transfers table. See SQL for details.")
     st.data_editor(df_clean)
 
-    st.markdown("---")
-    st.subheader("ETH June 30 Data")
-    eth_30_data = get_only_eth_june_30_data(df_clean)
-    st.dataframe(eth_30_data)
-    st.metric(
-        label="Total WETH Destination Amount",
-        value="WETH " + str(round(eth_30_data["destination_amount"].sum(), 0)),
-    )
+    # From <> to chain aggregate raw data
+    st.dataframe(agg_flow)
     return None
 
 

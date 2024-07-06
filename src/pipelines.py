@@ -40,6 +40,9 @@ from src.integrations.utilities import (
 )
 from src.integrations.dune import dune_bridges
 from src.integrations.defilamma import defilamma_raw
+from src.integrations.arb_distribution_mode_metis_upload_2_bq import (
+    main as arb_distribution_mode_metis_upload_2_bq_main,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -279,4 +282,15 @@ def defilamma_pipeline():
     )
     p.run(defilamma_raw(), loader_file_format="jsonl")
     logging.info("Finished DLT defilamma")
+    return {"message": "Pipeline completed"}
+
+
+# -----
+# ARB DISTRIBUTION MODE & METIS
+# -----
+
+
+@app.get("/arb_distribution_mode_metis/pipeline")
+def arb_distribution_mode_metis_pipeline():
+    arb_distribution_mode_metis_upload_2_bq_main()
     return {"message": "Pipeline completed"}

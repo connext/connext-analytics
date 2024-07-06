@@ -115,3 +115,12 @@ class CannonicalBridgesFlowsNativeHourly(BaseModel):
     gas_used: Optional[float] = None
     fee_usd: Optional[float] = None
     tx_count: Optional[int] = None
+
+
+class ArbWethDepositTransaction(BaseModel):
+    hash: Optional[str] = None
+    user_address: Optional[str] = None
+    date: Optional[str] = None
+    origin_chain: Optional[str] = None
+    destination_chain: Optional[str] = None
+    volume_eth: Optional[float] = None

@@ -271,12 +271,13 @@ def get_arb_weth_deposit_transactions(
     arb_weth_deposit_transactions_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
 
-    date_param = get_start_end_date(
-        table_id="mainnet-bigq.dune.source_arb_weth_deposit_transactions",
-        start_date=1718668800,
-    )
-    # date_param = {}
-    # date_param["start_date"] = 1718668800
+    # date_param = get_start_end_date(
+    #     table_id="mainnet-bigq.dune.source_arb_weth_deposit_transactions",
+    #     start_date=1718668800,
+    # )
+
+    date_param = {}
+    date_param["start_date"] = 1718668800
 
     # end date is latest timestamp
     date_param["end_date"] = int(datetime.now(pytz.UTC).timestamp())
@@ -354,27 +355,20 @@ def get_hourly_cannonical_bridges_hourly_flows_native(
 def dune_bridges() -> Sequence[DltResource]:
     return [
         # new:
-        get_hourly_token_pricing_blockchain_eth,
+        # get_hourly_token_pricing_blockchain_eth,
         get_arb_weth_deposit_transactions,
-        # get_hourly_cannonical_bridges_hourly_flows_tokens,
-        # get_hourly_cannonical_bridges_hourly_flows_native,
-        # old:
-        # get_native_evm_eth__bridges,
-        # get_tokens_evm_eth__bridges,
-        # get_stargate_bridges_daily_agg,
-        # get_across__aggregator_daily,
     ]
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     logging.info("Running DLT Dune Bridges")
+    logging.info("Running DLT Dune Bridges")
 
-#     p = dlt.pipeline(
-#         pipeline_name="dune",
-#         destination="bigquery",
-#         dataset_name="dune",
-#     )
+    p = dlt.pipeline(
+        pipeline_name="dune",
+        destination="bigquery",
+        dataset_name="dune",
+    )
 
-#     p.run(dune_bridges(), loader_file_format="jsonl")
-#     logging.info("Finished DLT Dune Bridges!")
+    p.run(dune_bridges(), loader_file_format="jsonl")
+    logging.info("Finished DLT Dune Bridges!")

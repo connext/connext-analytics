@@ -21,25 +21,44 @@ WITH
     `mainnet-bigq.stage.connext_tokens` ct ),
   weth_txs AS (
   SELECT
-    DISTINCT 
-    wt.hash,
+    -- all chains
+    DISTINCT wt.hash,
     wt.user_address,
     wt.date,
     CASE
-      WHEN wt.origin_chain = 'bnb' THEN 'Binance Smart Chain'
+      WHEN wt.origin_chain = 'bnb' THEN 'Binance Smart Chain Mainnet'
       WHEN wt.origin_chain = 'base' THEN 'Base Mainnet'
       WHEN wt.origin_chain = 'linea' THEN 'Linea Mainnet'
       WHEN wt.origin_chain = 'gnosis' THEN 'xDAI Chain'
-      WHEN wt.origin_chain = 'polygon' THEN 'Polygon Mainnet'
+      WHEN wt.origin_chain = 'polygon' THEN 'Matic Mainnet'
       WHEN wt.origin_chain = 'ethereum' THEN 'Ethereum Mainnet'
       WHEN wt.origin_chain = 'optimism' THEN 'Optimistic Ethereum'
       ELSE wt.origin_chain
   END
     AS origin_chain,
-    wt.destination_chain,
-    wt.volume_eth
+    "Arbitrum One" AS destination_chain
   FROM
-    `mainnet-bigq.dune.source_arb_weth_deposit_transactions` wt ),
+    `mainnet-bigq.dune.source_arb_weth_deposit_transactions` wt
+  UNION ALL
+    -- mode
+  SELECT
+    DISTINCT adt.hash,
+    LOWER(adt.from_address) AS user_address,
+    adt.timestamp AS date,
+    "Mode Mainnet" AS origin_chain,
+    "Arbitrum One" AS destination_chain
+  FROM
+    `stage.source_mode_weth_arb_chain_deposits__transactions` adt
+  UNION ALL
+    -- metis
+  SELECT
+    DISTINCT adt.hash,
+    LOWER(adt.from_address) AS user_address,
+    adt.timestamp AS date,
+    "Metis Andromeda Mainnet" AS origin_chain,
+    "Arbitrum One" AS destination_chain
+  FROM
+    `stage.source_metis_weth_arb_chain_deposits__transactions` adt ),
   tx AS (
   SELECT
     transfer_id,
@@ -436,3 +455,7 @@ LEFT JOIN
 ON
   (ud.xcall_transaction_hash = wt.hash
     AND ud.origin_chain = wt.origin_chain)
+-- WHERE
+--   wt.user_address IS NULL
+--   -- WHERE ud.xcall_transaction_hash = "0x8bbeaf16cb660a1eff2bcff50e505140afc37c30a013f1754408933a36ead906"
+--   ORDER BY ud.usd_destination_amount DESC

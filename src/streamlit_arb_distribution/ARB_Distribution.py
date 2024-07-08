@@ -76,7 +76,6 @@ def aggregate_flow(df):
 def user_weekly_distribution(df):
     df_weekly = df.groupby(
         [
-            "origin_chain",
             "user_address",
             "destination_asset",
         ]
@@ -95,7 +94,6 @@ def user_weekly_distribution(df):
 
     cols_order = [
         "user_address",
-        "origin_chain",
         "destination_asset",
         "arb_usd_price",
         "total_fee_arb",

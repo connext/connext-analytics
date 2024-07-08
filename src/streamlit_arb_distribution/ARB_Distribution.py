@@ -74,32 +74,28 @@ def aggregate_flow(df):
 
 
 def user_weekly_distribution(df):
-
     df_weekly = df.groupby(
-        ["to", "week_start_date", "week_end_date", "destination_asset"]
+        [
+            "origin_chain",
+            "user_address",
+            "destination_asset",
+        ]
     ).agg(
-        {
-            "total_fee_usd": "sum",
-            "total_fee_arb": "sum",
-            "price": "mean",
-        }
+        total_fee_usd=("total_fee_usd", "sum"),
+        total_fee_arb=("total_fee_arb", "sum"),
+        arb_usd_price=("price", "mean"),
+        first_tx_date=("datetime", "min"),
+        last_tx_date=("datetime", "max"),
     )
-
     # filter greate than 0
     df_weekly = df_weekly[df_weekly["total_fee_usd"] > 0]
 
     # sort by week of month
-    df_weekly = df_weekly.reset_index().sort_values(
-        by="week_start_date", ascending=False
-    )
+    df_weekly = df_weekly.reset_index()
 
-    df_weekly.rename(
-        columns={"price": "arb_usd_price", "to": "user_address(to)"}, inplace=True
-    )
     cols_order = [
-        "week_start_date",
-        "week_end_date",
-        "user_address(to)",
+        "user_address",
+        "origin_chain",
         "destination_asset",
         "arb_usd_price",
         "total_fee_arb",
@@ -227,15 +223,7 @@ def main() -> None:
         mime="text/csv",
     )
     st.dataframe(
-        weekly_df[
-            [
-                "user_address(to)",
-                "destination_asset",
-                "arb_usd_price",
-                "total_fee_arb",
-                "total_fee_usd",
-            ]
-        ],
+        weekly_df,
         width=1500,
     )
     st.markdown("---")

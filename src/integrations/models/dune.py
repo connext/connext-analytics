@@ -124,3 +124,31 @@ class ArbWethDepositTransaction(BaseModel):
     origin_chain: Optional[str] = None
     destination_chain: Optional[str] = None
     volume_eth: Optional[float] = None
+
+
+class BridgesAggregateFlowsMonthly(BaseModel):
+    """
+    cols in the data:
+    date
+    currency_symbol
+    source_chain_name
+    destination_chain_name
+    tx_count_10k_txs
+    volume_10k_txs
+    avg_volume_10k_txs
+    avg_volume
+    total_txs
+    total_volume
+    """
+
+    bridge: Optional[str] = None
+    date: Optional[str] = None
+    currency_symbol: Optional[str] = None
+    source_chain_name: Optional[str] = None
+    destination_chain_name: Optional[str] = None
+    tx_count_10k_txs: Optional[int] = None
+    volume_10k_txs: Optional[float] = None
+    avg_volume_10k_txs: Optional[float] = None
+    avg_volume: Optional[float] = None
+    total_txs: Optional[int] = None
+    total_volume: Optional[float] = None

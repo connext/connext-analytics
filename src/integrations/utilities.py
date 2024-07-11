@@ -181,7 +181,7 @@ def get_latest_value_from_bq_table_by_col(
         if "Reason: 404" in str(e):
             logging.info(f"The table {table_id} was not found.")
             logging.info(f"The base value {base_val} was returned.")
-            raise
+            return base_val
         else:
             raise
 

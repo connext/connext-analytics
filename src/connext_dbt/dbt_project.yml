@@ -32,4 +32,7 @@ models:
     metrics_routers_lp_pools:
       +materialized: view
       +schema: metrics_routers_lp_pools
+    crypto_bridges_aggregate:
+      +materialized: view
+      +schema: crypto_bridges_aggregate
 

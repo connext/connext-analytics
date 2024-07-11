@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/streamlit/streamlit-bridge-comparisons",
+        "-f",
+        "Docker/Dockerfile.streamlit-bridge-comparisons",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/streamlit/streamlit-bridge-comparisons"

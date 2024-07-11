@@ -23,6 +23,7 @@ from src.integrations.models.dune import (
     CannonicalBridgesFlowsTokensHourly,
     CannonicalBridgesFlowsNativeHourly,
     ArbWethDepositTransaction,
+    BridgesAggregateFlowsMonthly,
 )
 from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
@@ -348,6 +349,56 @@ def get_hourly_cannonical_bridges_hourly_flows_native(
         logging.info("Data uptodate in the DB")
 
 
+# NATIVE
+@dlt.resource(
+    table_name="source_bridges_aggregate_flows_monthly",
+    write_disposition="replace",
+    columns=pydantic_to_table_schema_columns(BridgesAggregateFlowsMonthly),
+)
+def get_bridges_aggregate_flows_monthly(
+    bridges_aggregate_flows_monthly_query_id_list=dlt.config.value,
+) -> Iterator[TDataItems]:
+    """
+    get_bridges_aggregate_flows_monthly
+
+    Args:
+        bridges_aggregate_flows_monthly_query_id_list (list, optional): Loop over all query ids and get data for each,
+        append to the result and store to the BQ
+        The overall data ETL is on replace basis, so if the data is up to date, it will replace the old data in BQ
+
+        Notes:
+        - provide a start date 1 day before the desired date.
+        - end date is latest timestamp - but not needed given its a monthly agg.
+
+    QUERY IDS:
+        3908167: circle CCTP- bridge_circle_cctp_flow_aggregate
+        3909186: Native Bridges Tokens- bridge_native_cannonical_token_flow_aggregate
+        3909641: Native Bridges ETH- bridge_native_cannonical_eth_flow_aggregate
+        3908667: Across- bridge_across_flow_aggregate
+        3908109: LayerZero- bridge_layerzero_flow_aggregate
+
+    Yields:
+        Iterator[TDataItems]: _description_
+    """
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_bridges_aggregate_flows_monthly",
+        start_date=DUNE_START_DATE,
+        end_date=epoch_date_before_today_utc(),
+    )
+    if date_param["start_date"] < date_param["end_date"]:
+        for query_id in bridges_aggregate_flows_monthly_query_id_list:
+            for result in get_result_by_query_id(
+                query_id,
+                start_date=DUNE_START_DATE,  # we are using start date as 1st jan 2024 given we are replacing all data
+                end_date=date_param["end_date"],
+            ):
+                for record in result:  # Iterate over each dictionary in the list
+                    # add bridge name based on query if to the records
+                    yield BridgesAggregateFlowsMonthly(**record)
+    else:
+        logging.info("Data uptodate in the DB")
+
+
 # Sources
 @dlt.source(
     max_table_nesting=0,
@@ -355,20 +406,31 @@ def get_hourly_cannonical_bridges_hourly_flows_native(
 def dune_bridges() -> Sequence[DltResource]:
     return [
         # new:
-        # get_hourly_token_pricing_blockchain_eth,
+        get_hourly_token_pricing_blockchain_eth,
         get_arb_weth_deposit_transactions,
     ]
 
 
-if __name__ == "__main__":
+# Sources
+@dlt.source(
+    max_table_nesting=0,
+)
+def dune_monthly_metrics() -> Sequence[DltResource]:
+    return [
+        # testing
+        get_bridges_aggregate_flows_monthly
+    ]
 
-    logging.info("Running DLT Dune Bridges")
 
-    p = dlt.pipeline(
-        pipeline_name="dune",
-        destination="bigquery",
-        dataset_name="dune",
-    )
+# if __name__ == "__main__":
 
-    p.run(dune_bridges(), loader_file_format="jsonl")
-    logging.info("Finished DLT Dune Bridges!")
+#     logging.info("Running DLT Dune Bridges")
+
+#     p = dlt.pipeline(
+#         pipeline_name="dune",
+#         destination="bigquery",
+#         dataset_name="dune",
+#     )
+
+#     p.run(dune_bridges(), loader_file_format="jsonl")
+#     logging.info("Finished DLT Dune Bridges!")

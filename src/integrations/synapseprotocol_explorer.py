@@ -15,6 +15,7 @@ from src.integrations.models.synapseprotocol_explorer import (
     TransactionInfo,
     FlattenedTransactionInfo,
 )
+from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
 PROJECT_ID = "mainnet-bigq"
 logging.basicConfig(level=logging.INFO)
@@ -62,7 +63,7 @@ def send_graphql_get_request(
     columns=pydantic_to_table_schema_columns(FlattenedTransactionInfo),
 )
 def get_synapse_data(
-    start_date=datetime(2023, 1, 1, tzinfo=timezone.utc),
+    start_date,
     end_date=datetime.combine(
         (datetime.now(timezone.utc) - timedelta(days=1)).date(), time.min, timezone.utc
     ),
@@ -196,12 +197,24 @@ def get_synapse_data(
     max_table_nesting=0,
 )
 def synapse_explorer_source() -> Sequence[DltResource]:
-    return [
-        get_synapse_data(
-            start_date=datetime(2023, 1, 1, tzinfo=timezone.utc),
-            end_date=datetime(2023, 8, 25, tzinfo=timezone.utc),
+
+    start_date = get_latest_value_from_bq_table_by_col(
+        "mainnet-bigq.raw.source_synapseprotocol_explorer_transactions",
+        "from_time",
+        base_val=datetime.combine(
+            (datetime.now(timezone.utc) - timedelta(days=1)).date(),
+            time.min,
+            timezone.utc,
         ),
-    ]
+    )
+    # convert to datetime
+    start_date = datetime.fromtimestamp(start_date, tz=timezone.utc)
+    # Convert to the start of the next day
+    start_date = (start_date + timedelta(days=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+
+    return [get_synapse_data(start_date=start_date)]
 
 
 if __name__ == "__main__":

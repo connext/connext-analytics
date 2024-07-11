@@ -90,7 +90,8 @@ def get_skip_count_from_bq():
     return skip
 
 
-async def de_bridge_explorer_pipeline():
+async def de_bridge_explorer_pipeline(max_date_in_db):
+    """max_date_in_db: the max date from database, once we get to that date we kill the loop"""
 
     final_df = pd.DataFrame()
     skip = 0
@@ -110,7 +111,7 @@ async def de_bridge_explorer_pipeline():
             f"Fetched orders: skip={skip}, shape={df_deexplorer.shape}, Min timestamp from pulled data: {min_timestamp}"
         )
 
-        if min_timestamp < 1704067200:
+        if min_timestamp < int(max_date_in_db):
             logging.info("This year's data is pulled. Stopping...")
             break
 
@@ -136,5 +137,13 @@ async def de_bridge_explorer_pipeline():
         skip += 100
 
 
+def get_max_date_from_db() -> int:
+    df = gbq.read_gbq(
+        """SELECT max(creationtimestamp) AS max FROM `mainnet-bigq.raw.source_de_bridge_explorer__transactions`"""
+    )
+    return df.iloc[0]["max"]
+
+
 if __name__ == "__main__":
-    asyncio.run(de_bridge_explorer_pipeline())
+    MAX_DATE = get_max_date_from_db()
+    asyncio.run(de_bridge_explorer_pipeline(max_date_in_db=MAX_DATE))

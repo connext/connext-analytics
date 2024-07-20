@@ -1,10 +1,5 @@
-# Things to implement on this page:
-# Router Metrics and Utilizations
-import pandas as pd
 import streamlit as st
 import plotly.express as px
-
-# Raw Data
 from setup import (
     ROUTER_DAILY_METRICS_RAW,
     apply_sidebar_filters,
@@ -12,7 +7,7 @@ from setup import (
 )
 
 
-def weighted_mean(data, val_col, wt_col):P
+def weighted_mean(data, val_col, wt_col):
     return (data[val_col] * data[wt_col]).sum() / data[wt_col].sum()
 
 

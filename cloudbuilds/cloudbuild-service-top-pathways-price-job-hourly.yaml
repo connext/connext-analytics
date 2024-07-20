@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/jobs/top-pathways-price-hourly-jobs",
+        "-f",
+        "Docker/Dockerfile.top-pathways-price-hourly-jobs",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/jobs/top-pathways-price-hourly-jobs"

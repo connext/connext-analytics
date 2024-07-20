@@ -35,6 +35,8 @@ discord-py-interactions = "*"
 [dev-packages]
 black="*"
 sqlfluff = "*"
+pylance = "*"
+flake8 = "*"
 
 [requires]
 python_version = "3.11.4"

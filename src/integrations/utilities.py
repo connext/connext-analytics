@@ -47,8 +47,14 @@ def upload_json_to_gcs(data, bucket_name):
     # Create a GCS client
     storage_client = storage.Client()
 
-    # Get the bucket
-    bucket = storage_client.get_bucket(bucket_name)
+    # Get the bucket - if no bucket then create it
+    try:
+        bucket = storage_client.get_bucket(bucket_name)
+    except Exception as e:
+        logging.info(f"Bucket {bucket_name} not found, creating it. {e}")
+        bucket = storage_client.create_bucket(bucket_name)
+        logging.info(f"Bucket {bucket_name} created.")
+        bucket = storage_client.get_bucket(bucket_name)
 
     # Generate a filename with the current date and time
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

@@ -30,7 +30,11 @@ def get_greater_than_date_from_bq_table(table_id, date_col):
             raise
 
 
-def get_routes_pathways_from_bq(aggregator, reset):
+def get_routes_pathways_from_bq(
+    aggregator,
+    reset,
+    table_id="mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways",
+):
     """
     reset: used to reset pathway to all possible paths using table selector
         -- OPTIONS:
@@ -39,7 +43,7 @@ def get_routes_pathways_from_bq(aggregator, reset):
                 -- This is created based of LIFI pathway table, which is based of python code.
     aggregator: socket or lifi
     """
-    table_id = "mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways"
+
     if reset:
         logging.info("Resetting routes to all possible paths")
         table_id = "mainnet-bigq.raw.stg_all_possible_pathways__routes__lifi_socket"
@@ -93,14 +97,64 @@ def get_routes_pathways_from_bq(aggregator, reset):
         raise
 
 
-if __name__ == "__main__":
-    data = get_routes_pathways_from_bq(aggregator="lifi", reset=False)
-    pprint(data[0])
-#     socket = len(data)
-#     logging.info(f"socket Done: {socket}")
+def get_top_routes_pathways_from_bq(aggregator):
+    """
+    We are pulling data for predefined top routes from DIMA
+    aggregator: socket or lifi
+    """
 
-#     # lifi = len(get_routes_pathways_from_bq(aggregator="lifi", reset=True))
-#     # logging.info(f"lifi Done: {lifi}")
-# p = get_routes_pathways_from_bq(aggregator="socket", reset=True)
-# logging.info(f"socket Done: {len(p)}")
-# pprint(p[0])
+    try:
+
+        sql = read_sql_from_file_add_template(
+            sql_file_name="top_pathways_lifi_socket_hourly_pull",
+            template_data={"aggregator": aggregator},
+        )
+
+        df = pandas_gbq.read_gbq(sql)
+        cols_2_keep = [
+            "fromChainId",
+            "toChainId",
+            "fromAmount",
+            "fromTokenAddress",
+            "toTokenAddress",
+            "fromAddress",
+            "aggregator",
+        ]
+        df = df[cols_2_keep]
+        df["fromAmount"] = df["fromAmount"].apply(lambda x: int(float(x)))
+        df["fromChainId"] = df["fromChainId"].astype(float).astype(int)
+        df["toChainId"] = df["toChainId"].astype(float).astype(int)
+
+        if aggregator == "socket":
+            df["uniqueRoutesPerBridge"] = "false"
+            df["sort"] = "output"
+            df.rename(
+                columns={"fromAddress": "userAddress"},
+                inplace=True,
+            )
+
+            df.drop(columns=["aggregator"], inplace=True)
+            return df.to_dict(orient="records")
+
+        elif aggregator == "lifi":
+            df["allowDestinationCall"] = True
+            df.drop(columns=["aggregator"], inplace=True)
+            payload = df.to_dict(orient="records")
+            # add integrator as connext
+            new_key_value = {
+                "options": {
+                    "integrator": "connext.network",
+                    "exchanges": {"deny": ["all"]},
+                }
+            }
+            for dict_item in payload:
+                dict_item.update(new_key_value)
+            return payload
+
+    except Exception as e:
+        logging.info(f"An unexpected error occurred: {e}")
+        raise
+
+
+# if __name__ == "__main__":
+#     data = get_top_routes_pathways_from_bq(aggregator="lifi")

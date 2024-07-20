@@ -335,7 +335,9 @@ async def get_routes(sem, url, payload):
         return output
 
 
-async def main_routes(payloads, max_concurrency=10, ext_url="/advanced/routes"):
+async def main_routes(
+    payloads: list, max_concurrency: int = 10, ext_url: str = "/advanced/routes"
+) -> list:
     url = BASE_URL + ext_url
     sem = Semaphore(max_concurrency)
     tasks = []

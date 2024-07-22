@@ -27,7 +27,7 @@ from src.integrations.socket import (
 )
 from src.integrations.helpers_routes_aggreagators import (
     get_greater_than_date_from_bq_table,
-    get_routes_pathways_from_bq,
+    get_routes_pathways_from_bq, 
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata

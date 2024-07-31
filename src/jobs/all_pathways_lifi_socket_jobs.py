@@ -15,9 +15,6 @@ from src.integrations.helpers_routes_aggreagators import (
 from src.integrations.utilities import (
     upload_json_to_gcs,
 )
-from src.integrations.helpers_routes_aggreagators import (
-    get_greater_than_date_from_bq_table,
-)
 from google.cloud import storage
 from datetime import datetime
 import json
@@ -28,43 +25,30 @@ logging.basicConfig(level=logging.INFO)
 PROJECT_ID = "mainnet-bigq"
 
 
-async def lifi_pipeline(reset):
+async def lifi_pipeline():
     """
     lifi pipeline
     """
     # LIFI
-
-    logging.info(f"start,pathway reset: {reset}")
-    pathways = get_routes_pathways_from_bq(aggregator="lifi", reset=reset)
+    pathways = get_routes_pathways_from_bq(aggregator="lifi")
     logging.info(f" lifi pathways: {len(pathways)}")
 
-    routes = await main_routes(payloads=pathways)
+    routes = await main_routes(payloads=pathways, max_concurrency=3)
     upload_json_to_gcs(routes, "lifi_routes")
     return {"lifi_routes_job": "completed"}
 
 
-async def socket_pipeline(reset):
+async def socket_pipeline():
     """
     socket pipeline
     """
     # Socket
-
-    logging.info(f"start,pathway reset: {reset}")
-    payloads = get_routes_pathways_from_bq(aggregator="socket", reset=reset)
+    payloads = get_routes_pathways_from_bq(aggregator="socket")
     logging.info(f"socket pathways, data length: {len(payloads)}")
 
-    routes = await get_all_routes(payloads=payloads)
+    routes = await get_all_routes(payloads=payloads, max_concurrency=3)
     upload_json_to_gcs(routes, "socket_routes")
     return {"socket_routes_job": "completed"}
-
-
-async def run_lifi_socket_routes_jobs(reset: bool = False):
-
-    response1, response2 = await asyncio.gather(
-        lifi_pipeline(reset=reset),
-        socket_pipeline(reset=reset),
-    )
-    return {"lifi_routes_job": response1, "socket_routes_job": response2}
 
 
 def push_socket_steps_from_cs_to_bq(
@@ -112,13 +96,15 @@ def push_socket_steps_from_cs_to_bq(
             )
 
 
+async def run_lifi_socket_routes_jobs(reset: bool = False):
+
+    response1, response2 = await asyncio.gather(
+        lifi_pipeline(),
+        socket_pipeline(),
+    )
+    return {"lifi_routes_job": response1, "socket_routes_job": response2}
+
+
 if __name__ == "__main__":
     logging.info("started Routes jobs")
-    print(asyncio.run(run_lifi_socket_routes_jobs()))
-
-    push_socket_steps_from_cs_to_bq(
-        greater_than_date_steps=get_greater_than_date_from_bq_table(
-            table_id="mainnet-bigq.raw.source_socket__routes_steps",
-            date_col="upload_datetime",
-        ),
-    )
+    asyncio.run(run_lifi_socket_routes_jobs())

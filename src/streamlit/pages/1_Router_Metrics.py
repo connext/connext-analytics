@@ -12,7 +12,7 @@ from setup import (
 )
 
 
-def weighted_mean(data, val_col, wt_col):P
+def weighted_mean(data, val_col, wt_col):
     return (data[val_col] * data[wt_col]).sum() / data[wt_col].sum()
 
 

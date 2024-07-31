@@ -27,7 +27,7 @@ from src.integrations.socket import (
 )
 from src.integrations.helpers_routes_aggreagators import (
     get_greater_than_date_from_bq_table,
-    get_routes_pathways_from_bq, 
+    get_routes_pathways_from_bq,
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata
@@ -38,7 +38,7 @@ from src.integrations.utilities import (
     run_bigquery_query,
     convert_lists_and_booleans_to_strings,
 )
-from src.integrations.dune import dune_bridges
+from src.integrations.dune import dune_bridges, dune_daily_metrics
 from src.integrations.defilamma import defilamma_raw
 from src.integrations.arb_distribution_mode_metis_upload_2_bq import (
     main as arb_distribution_mode_metis_upload_2_bq_main,
@@ -263,6 +263,22 @@ def dune_pipeline():
     )
     p.run(dune_bridges(), loader_file_format="jsonl")
     logging.info("Finished DLT Dune Bridges!")
+    return {"message": "Pipeline completed"}
+
+
+@app.get("/dune/daily_metrics/pipeline")
+def dune_daily_metrics_pipeline():
+
+    logging.info("Running DLT Dune Bridges")
+
+    p = dlt.pipeline(
+        pipeline_name="dune",
+        destination="bigquery",
+        dataset_name="dune",
+    )
+
+    p.run(dune_daily_metrics(), loader_file_format="jsonl")
+    logging.info("Finished DLT Dune Daily Metrics!")
     return {"message": "Pipeline completed"}
 
 

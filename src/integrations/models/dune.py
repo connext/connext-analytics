@@ -152,3 +152,7 @@ class BridgesAggregateFlowsMonthly(BaseModel):
     avg_volume: Optional[float] = None
     total_txs: Optional[int] = None
     total_volume: Optional[float] = None
+
+
+class BridgesAggregateFlowsDaily(BridgesAggregateFlowsMonthly):
+    date: Optional[str] = None

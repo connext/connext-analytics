@@ -23,7 +23,7 @@ from src.integrations.models.dune import (
     CannonicalBridgesFlowsTokensHourly,
     CannonicalBridgesFlowsNativeHourly,
     ArbWethDepositTransaction,
-    BridgesAggregateFlowsMonthly,
+    BridgesAggregateFlowsDaily,
 )
 from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
@@ -351,12 +351,12 @@ def get_hourly_cannonical_bridges_hourly_flows_native(
 
 # NATIVE
 @dlt.resource(
-    table_name="source_bridges_aggregate_flows_monthly",
-    write_disposition="replace",
-    columns=pydantic_to_table_schema_columns(BridgesAggregateFlowsMonthly),
+    table_name="source_bridges_aggregate_flows_daily",
+    write_disposition="append",
+    columns=pydantic_to_table_schema_columns(BridgesAggregateFlowsDaily),
 )
-def get_bridges_aggregate_flows_monthly(
-    bridges_aggregate_flows_monthly_query_id_list=dlt.config.value,
+def get_bridges_aggregate_flows_daily(
+    bridges_aggregate_flows_daily_query_id_list=dlt.config.value,
 ) -> Iterator[TDataItems]:
     """
     get_bridges_aggregate_flows_monthly
@@ -377,16 +377,18 @@ def get_bridges_aggregate_flows_monthly(
         3908667: Across- bridge_across_flow_aggregate
         3908109: LayerZero- bridge_layerzero_flow_aggregate
 
+    URL PARAMETER: # ?end_date_t6c1ea=1722038400&start_date_t6c1ea=1703980800
+
     Yields:
         Iterator[TDataItems]: _description_
     """
     date_param = get_start_end_date(
-        table_id="mainnet-bigq.dune.source_bridges_aggregate_flows_monthly",
+        table_id="mainnet-bigq.dune.source_bridges_aggregate_flows_daily",
         start_date=DUNE_START_DATE,
         end_date=epoch_date_before_today_utc(),
     )
     if date_param["start_date"] < date_param["end_date"]:
-        for query_id in bridges_aggregate_flows_monthly_query_id_list:
+        for query_id in bridges_aggregate_flows_daily_query_id_list:
             for result in get_result_by_query_id(
                 query_id,
                 start_date=DUNE_START_DATE,  # we are using start date as 1st jan 2024 given we are replacing all data
@@ -394,7 +396,7 @@ def get_bridges_aggregate_flows_monthly(
             ):
                 for record in result:  # Iterate over each dictionary in the list
                     # add bridge name based on query if to the records
-                    yield BridgesAggregateFlowsMonthly(**record)
+                    yield BridgesAggregateFlowsDaily(**record)
     else:
         logging.info("Data uptodate in the DB")
 
@@ -415,22 +417,8 @@ def dune_bridges() -> Sequence[DltResource]:
 @dlt.source(
     max_table_nesting=0,
 )
-def dune_monthly_metrics() -> Sequence[DltResource]:
+def dune_daily_metrics() -> Sequence[DltResource]:
     return [
         # testing
-        get_bridges_aggregate_flows_monthly
+        get_bridges_aggregate_flows_daily
     ]
-
-
-# if __name__ == "__main__":
-
-#     logging.info("Running DLT Dune Bridges")
-
-#     p = dlt.pipeline(
-#         pipeline_name="dune",
-#         destination="bigquery",
-#         dataset_name="dune",
-#     )
-
-#     p.run(dune_bridges(), loader_file_format="jsonl")
-#     logging.info("Finished DLT Dune Bridges!")

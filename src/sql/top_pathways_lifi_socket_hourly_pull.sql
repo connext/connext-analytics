@@ -75,7 +75,7 @@ aggregators AS (
     SELECT
         'lifi' AS aggregator
     UNION ALL
-    SELECT 'socket'      
+    SELECT 'socket'
 ),
 
   final_raw AS (

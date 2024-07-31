@@ -30,38 +30,31 @@ def get_greater_than_date_from_bq_table(table_id, date_col):
             raise
 
 
-def get_routes_pathways_from_bq(
-    aggregator,
-    reset,
-    table_id="mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways",
-):
+def get_routes_pathways_from_bq(aggregator):
     """
-    reset: used to reset pathway to all possible paths using table selector
-        -- OPTIONS:
-            -- SELECT * FROM `mainnet-bigq.raw.stg__inputs_connext_routes_working_pathways`
-            -- SELECT * FROM `mainnet-bigq.raw.stg_all_possible_pathways__routes__lifi_socket`
-                -- This is created based of LIFI pathway table, which is based of python code.
-    aggregator: socket or lifi
+    stg_all_possible_pathways__routes__lifi_socket: These are approx 4k paths for LIFI, Socket
     """
-
-    if reset:
-        logging.info("Resetting routes to all possible paths")
-        table_id = "mainnet-bigq.raw.stg_all_possible_pathways__routes__lifi_socket"
-
     try:
 
-        sql = read_sql_from_file_add_template(
-            sql_file_name="generate_routes_pathways",
-            template_data={
-                "except_col": "aggregator",
-                "aggregator": aggregator,
-                "table_id": table_id,
-                "reset": reset,
-            },
+        logging.info(
+            f"sql_file_name: stg_all_possible_pathways__routes__lifi_socket, aggregator: {aggregator}"
         )
-        pprint(sql)
+        sql = read_sql_from_file_add_template(
+            sql_file_name="stg_all_possible_pathways__routes__lifi_socket",
+            template_data={"aggregator": aggregator},
+        )
 
         df = pandas_gbq.read_gbq(sql)
+        cols_2_keep = [
+            "fromChainId",
+            "toChainId",
+            "fromAmount",
+            "fromTokenAddress",
+            "toTokenAddress",
+            "fromAddress",
+            "aggregator",
+        ]
+        df = df[cols_2_keep]
         df["fromAmount"] = df["fromAmount"].apply(lambda x: int(float(x)))
         df["fromChainId"] = df["fromChainId"].astype(float).astype(int)
         df["toChainId"] = df["toChainId"].astype(float).astype(int)

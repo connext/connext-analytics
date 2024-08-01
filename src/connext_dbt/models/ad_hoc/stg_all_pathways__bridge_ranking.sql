@@ -28,39 +28,66 @@ WITH
     ),
 
 final AS (
-
     SELECT
     r.usedbridgenames,
-    CASE 
-        WHEN r.from_chain = 42161 THEN "Arbitrum One" 
-        WHEN r.from_chain = 8453 THEN "Base Mainnet"
-        WHEN r.from_chain = 56 THEN "BNB Chain"
-        WHEN r.from_chain = 1 THEN "Ethereum Mainnet"
-        WHEN r.from_chain = 59144 THEN "Linea Mainnet"
-        WHEN r.from_chain = 10 THEN "Optimism Mainnet"
-        WHEN r.from_chain = 137 THEN "Polygon Mainnet"
-        WHEN r.from_chain = 1101 THEN "Polygon zkEVM"
-        WHEN r.from_chain = 324 THEN "zkSync"
-        WHEN r.from_chain = 1088 THEN "Metis Mainnet"
-        WHEN r.from_chain = 42220 THEN "Celo Mainnet"
-        WHEN r.from_chain = 34443 THEN "Mode Mainnet"
+    CASE
+        WHEN r.from_chain = 1 THEN 'Ethereum'
+        WHEN r.from_chain = 10 THEN 'Optimism'
+        WHEN r.from_chain = 25 THEN 'Cronos'
+        WHEN r.from_chain = 56 THEN 'BNB Chain'
+        WHEN r.from_chain = 100 THEN 'Gnosis'
+        WHEN r.from_chain = 137 THEN 'Polygon'
+        WHEN r.from_chain = 250 THEN 'Fantom'
+        WHEN r.from_chain = 288 THEN 'Boba'
+        WHEN r.from_chain = 324 THEN 'zkSync'
+        WHEN r.from_chain = 1088 THEN 'Metis'
+        WHEN r.from_chain = 1101 THEN 'Polygon zkEVM'
+        WHEN r.from_chain = 1284 THEN 'Moonbeam'
+        WHEN r.from_chain = 1285 THEN 'Moonriver'
+        WHEN r.from_chain = 2000 THEN 'DogeChain'
+        WHEN r.from_chain = 42161 THEN 'Arbitrum'
+        WHEN r.from_chain = 43114 THEN 'Avalanche'
+        WHEN r.from_chain = 53935 THEN 'DFK Chain'
+        WHEN r.from_chain = 59144 THEN 'Linea'
+        WHEN r.from_chain = 7700 THEN 'Canto'
+        WHEN r.from_chain = 81457 THEN 'Base'
+        WHEN r.from_chain = 8453 THEN 'Base'
+        WHEN r.from_chain = 34443 THEN 'Mode'
+        WHEN r.from_chain = 1313161554 THEN 'Aurora'
+        WHEN r.from_chain = 1666600000 THEN 'Harmony'
+        WHEN r.from_chain = 8217 THEN 'Klaytn'
         ELSE CAST(r.from_chain AS STRING)
-    END AS from_chain,
-    -- destination_chain_name 
-    CASE 
-        WHEN r.to_chain = 42161 THEN "Arbitrum One" 
-        WHEN r.to_chain = 8453 THEN "Base Mainnet"
-        WHEN r.to_chain = 56 THEN "BNB Chain"
-        WHEN r.to_chain = 1 THEN "Ethereum Mainnet"
-        WHEN r.to_chain = 59144 THEN "Linea Mainnet"
-        WHEN r.to_chain = 10 THEN "Optimism Mainnet"
-        WHEN r.to_chain = 137 THEN "Polygon Mainnet"
-        WHEN r.to_chain = 1101 THEN "Polygon zkEVM"
-        WHEN r.to_chain = 324 THEN "zkSync"
-        WHEN r.to_chain = 1088 THEN "Metis Mainnet"
-        WHEN r.to_chain = 42220 THEN "Celo Mainnet"
+    END
+    AS from_chain,
+    CASE
+        WHEN r.to_chain = 1 THEN 'Ethereum'
+        WHEN r.to_chain = 10 THEN 'Optimism'
+        WHEN r.to_chain = 25 THEN 'Cronos'
+        WHEN r.to_chain = 56 THEN 'BNB Chain'
+        WHEN r.to_chain = 100 THEN 'Gnosis'
+        WHEN r.to_chain = 137 THEN 'Polygon'
+        WHEN r.to_chain = 250 THEN 'Fantom'
+        WHEN r.to_chain = 288 THEN 'Boba'
+        WHEN r.to_chain = 324 THEN 'zkSync'
+        WHEN r.to_chain = 1088 THEN 'Metis'
+        WHEN r.to_chain = 1101 THEN 'Polygon zkEVM'
+        WHEN r.to_chain = 1284 THEN 'Moonbeam'
+        WHEN r.to_chain = 1285 THEN 'Moonriver'
+        WHEN r.to_chain = 2000 THEN 'DogeChain'
+        WHEN r.to_chain = 42161 THEN 'Arbitrum'
+        WHEN r.to_chain = 43114 THEN 'Avalanche'
+        WHEN r.to_chain = 53935 THEN 'DFK Chain'
+        WHEN r.to_chain = 59144 THEN 'Linea'
+        WHEN r.to_chain = 7700 THEN 'Canto'
+        WHEN r.to_chain = 81457 THEN 'Base'
+        WHEN r.to_chain = 8453 THEN 'Base'
+        WHEN r.to_chain = 34443 THEN "Mode"
+        WHEN r.to_chain = 1313161554 THEN 'Aurora'
+        WHEN r.to_chain = 1666600000 THEN 'Harmony'
+        WHEN r.to_chain = 8217 THEN 'Klaytn'
         ELSE CAST(r.to_chain AS STRING)
-    END AS to_chain,
+    END
+    AS to_chain,
     r.from_chain AS from_chain_id,
     r.to_chain AS to_chain_id,
     r.from_token AS from_token,
@@ -102,7 +129,7 @@ ranking_bridges_raw AS (
     ) rb
 )
 
-SELECT 
+SELECT
     rb.from_chain,
     rb.to_chain,
     rb.token,

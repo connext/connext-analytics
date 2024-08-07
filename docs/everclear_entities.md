@@ -1,0 +1,280 @@
+### Summary of Each Component
+
+#### **Architecture**
+
+Everclear employs a Spoke and Hub model for handling intents and settlements across supported domains. Here's a breakdown of the process:
+
+- **Spoke and Hub Contracts**: The core contracts that trigger and manage functions for intents and settlements.
+- **SpokeGateway and HubGateway**: Gateways that facilitate the transport of messages between domains.
+- **Hyperlane**: The transport layer used for communication between the Spoke and Hub.
+
+**Entities Involved**:
+- **Rebalancers**: Use the system to balance funds across domains.
+- **Arbitrageurs**: Monitor the system to purchase discounted intents.
+
+**Flow**:
+1. Rebalancer creates an intent.
+2. Arbitrageur picks up the intent.
+3. Funds are moved from their wallet to the Spoke contract.
+4. Intents are queued and sent to the Clearing chain.
+5. On the Hub, intents are matched or converted into invoices/deposits.
+6. Matched intents become settlements in the settlement queue.
+7. Settlements are processed and sent back to the Spoke domains.
+
+### **Flow of Funds**
+
+1. **Intent Creation**: Rebalancers or Arbitrageurs create intents, pulling funds from their wallets.
+2. **Spoke Contract**: Holds the funds and increases the unclaimed balance.
+3. **Intent Queue**: Intents are transported to the Clearing chain.
+4. **Hub Domain**: Processes intents into invoices or deposits.
+5. **Settlement Queue**: Processes invoices/deposits into settlements.
+6. **Settlement Strategies**: Netting and xERC20 strategies used for settlement.
+7. **Spoke Domains**: Final settlements are sent back, and users receive tokens or balance updates.
+
+### **Components**
+
+#### **Supported Domains**
+
+- **Spoke**: Holds funds and formats messages for dispatch via the SpokeGateway.
+- **SpokeGateway**: Dispatches and formats settlement messages.
+
+#### **Clearing Layer (Hub)**
+
+- **Hub**: Handles inbound intents and dispatches settlements.
+- **HubGateway**: Dispatches messages and formats inbound payloads.
+
+#### **Agents**
+
+- **Lighthouse**: Manages queues and executes cron jobs based on configured thresholds.
+- **Cartographer**: Creates a cross-chain view of the network state using indexing layers (subgraphs).
+
+#### **Transport Layer (Hyperlane)**
+
+- **Hyperlane**: Manages the transport of messages across the network.
+
+### Entity Diagram
+
+
+```mermaid
+flowchart TD
+    A[Rebalancer/Arbitrageur] -> B[Intent Creation]
+    B -> C[Spoke Contract]
+    C -> D[Intent Queue]
+    D -> E[Clearing Chain (Hub)]
+    E -> F{Intent Processing}
+    F ->|Matched| G[Deposit Queue]
+    F ->|Unmatched| H[Invoice Queue]
+    G -> I[Settlement Queue]
+    H -> I[Settlement Queue]
+    I -> J[Settlement Strategies]
+    J ->|Netting| K[Spoke Domains]
+    J ->|xERC20| K[Spoke Domains]
+    K -> L[User Receives Tokens/Balance]
+    C -> M[SpokeGateway]
+    M -> N[Hyperlane]
+    N -> O[HubGateway]
+    O -> E
+    E -> P[HubGateway]
+    P -> Q[Hyperlane]
+    Q -> R[SpokeGateway]
+    R -> S[Spoke Contract]
+    
+    subgraph Agents
+        T[Lighthouse] -- Manages -> D
+        U[Cartographer] -- Indexes -> Q
+    end
+```
+
+### Explanation of Each Step in the Diagram
+
+- **Rebalancer** (A): Users who create intents.
+    - **Intent Creation**: The process where Rebalancers create intents.
+- **Arbitrageur** (B): Users who pick up intents.
+- **Spoke Contract** (C): Holds the funds and manages intents.
+- **Intent Queue** (D): Collects intents to be sent to the Hub for processing.
+- **Clearing Chain (Hub)** (E): Central hub for processing intents.
+- **Intent Processing** (F): Determines whether intents are matched or unmatched.
+  - **Matched Intents** go to the Deposit Queue (G).
+  - **Unmatched Intents** go to the Invoice Queue (H).
+- **Settlement Queue** (I): Collects settlements from both Deposit and Invoice Queues.
+- **Settlement Strategies** (J): Different strategies for settling intents.
+  - **Netting Strategy** (K): Settles netted intents.
+  - **xERC20 Strategy** (K): Settles xERC20 tokens.
+- **User Receives Tokens/Balance** (L): Final step where users receive their settlements.
+- **SpokeGateway** (M): Facilitates message dispatch from the Spoke to the transport layer.
+- **Hyperlane** (N): The transport layer for messages between the Hub and Spoke.
+- **HubGateway** (O): Manages message formatting and dispatch to the Hub.
+- **HubGateway** (P): Processes outbound messages to Hyperlane.
+- **SpokeGateway** (R): Receives messages from Hyperlane and processes them at the Spoke.
+- **Spoke Contract** (S): Final destination where intents are settled.
+
+#### **Agents**
+- **Lighthouse** (T): Manages the queues and ensures timely processing.
+- **Cartographer** (U): Provides a cross-chain view of the network state using indexing layers.
+
+
+### Flow of funds
+
+```mermaid
+flowchart TD
+    A[Rebalancer/Arbitrageur] --> B[Intent Creation]
+    B --> C[Spoke Contract]
+    C --> D[Intent Queue]
+    D --> E[Clearing Chain (Hub)]
+    E --> F{Intent Processing}
+    F -->|Matched| G[Deposit Queue]
+    F -->|Unmatched| H[Invoice Queue]
+    G --> I[Settlement Queue]
+    H --> I[Settlement Queue]
+    I --> J[Settlement Strategies]
+    J -->|Netting| K[Spoke Domains]
+    J -->|xERC20| K[Spoke Domains]
+    K --> L[User Receives Tokens/Balance]
+    C --> M[SpokeGateway]
+    M --> N[Hyperlane]
+    N --> O[HubGateway]
+    O --> E
+    E --> P[HubGateway]
+    P --> Q[Hyperlane]
+    Q --> R[SpokeGateway]
+    R --> S[Spoke Contract]
+    
+    subgraph Agents
+        T[Lighthouse] -- Manages --> D
+        U[Cartographer] -- Indexes --> Q
+    end
+```
+
+### Summary of Each Entity and Process
+
+#### Entities
+
+- **Rebalancers**: Users who create intents to balance funds across domains.
+- **Arbitrageurs**: Users who pick up intents to purchase discounted intents.
+- **Spoke Contract**: Holds the funds and manages intents.
+- **SpokeGateway**: Facilitates message dispatch from the Spoke to the transport layer.
+- **Hyperlane**: The transport layer for messages between the Hub and Spoke.
+- **HubGateway**: Manages message formatting and dispatch to the Hub.
+- **Clearing Chain (Hub)**: Central hub for processing intents.
+- **Settlement Queue**: Collects settlements from both Deposit and Invoice Queues.
+- **Settlement Strategies**: Different strategies for settling intents (Netting and xERC20).
+- **Lighthouse**: Manages the queues and ensures timely processing.
+- **Cartographer**: Provides a cross-chain view of the network state using indexing layers.
+
+#### Processes
+
+1. **Intent Creation**: Rebalancers or Arbitrageurs create intents, pulling funds from their wallets.
+2. **Spoke Contract**: Holds the funds and increases the unclaimed balance.
+3. **Intent Queue**: Intents are transported to the Clearing chain.
+4. **Hub Domain**: Processes intents into invoices or deposits.
+5. **Settlement Queue**: Processes invoices/deposits into settlements.
+6. **Settlement Strategies**: Netting and xERC20 strategies used for settlement.
+7. **Spoke Domains**: Final settlements are sent back, and users receive tokens or balance updates.
+
+
+### Table and Schema
+
+### Metrics and calculations
+
+- **Settlement_Rate_3h**
+  - Category: SLA for Market Makers
+  - Description: Percentage of transactions settled within 3 hours
+  - Target: Purchase 100% of invoices in 3+ hours
+  - Property: by chains; by assets
+  - Tables to use:
+    - `public.messages`
+        - type: `SETTLEMENT`
+        - there is a timestamp for each id. there is queue numbers: 1- 15 etc (`cols: Fisrt | last`)
+    
+  - Questions:
+    - Transaction table is missing or some other table needs to be used in order to get tx level data on users: 
+  - Calculation:
+    - 
+
+- **Invoices_1h_Retention_Rate**
+  - Category: SLA for Market Makers
+  - Description: Percentage of invoices that remain in the system for ~1h
+  - Target: >60% of invoices remain ~1h
+  - Property: by chains; by assets
+
+- **Epoch_Discounts**
+  - Category: SLA for Market Makers
+  - Description: Number of epoch discounts applied to the invoice before settlement
+  - Target: for >60% of the invoices remained ~1h, receiving a discount of <2 epochs
+  - Property: by chains; by assets
+
+- **Trading_Volume**
+  - Category: SLA for Market Makers
+  - Description: Daily trading volume for MMs
+  - Target: Daily trading activity above 6x committed sum
+  - Property: by chains; by assets; by MMs
+
+- **Discount_value**
+  - Category: SLA for Market Makers
+  - Description: The average discount applied to invoices
+  - Target: KR3: Efficiency gain for users on par with Across (TBD)
+  - Property: by chains; by assets; by MMs
+
+- **APY**
+  - Category: SLA for Market Makers
+  - Description: Annual Percentage Yield
+  - Target: Average APY
+  - Property: by chains; by assets; by MMs
+
+- **KR1_Clearing_Volume**
+  - Category: OKRs
+  - Description: Clearing volume (settlement + netted)
+  - Target: KR1: 1B clearing volume (run-rate for Day-30)
+  - Property: by chains; by assets
+
+- **KR2_Netting_Rate**
+  - Category: OKRs
+  - Description: Percentage of transactions netted within 24 hours
+  - Target: KR2: 60% netted within 24h
+  - Property: by chains; by assets
+
+- **KR3_Total_rebalancing_fee**
+  - Category: OKRs
+  - Description: Total fee = Protocol fee + Discount
+  - Target: KR3: Efficiency gain on par with Across (TBD)
+  - Property: by chains; by assets
+
+- **Settlement_Rate_6h**
+  - Category: OKRs
+  - Description: Percentage of transactions settled within 6 hours
+  - Target: KR4: 97% settled within 6 hours
+  - Property: by chains; by assets
+
+- **Settlement_Rate_24h**
+  - Category: OKRs
+  - Description: Percentage of transactions settled within 24 hours
+  - Target: KR4: 100% settled within 24h
+  - Property: by chains; by assets
+
+- **Total_Protocol_Revenue**
+  - Category: Product Metrics
+  - Description: Total revenue generated by the protocol
+  - Target: Total protocol revenue
+  - Property: by chains; by assets
+
+- **Settlement_Time**
+  - Category: Product Metrics
+  - Description: Average time taken to settle the intent
+  - Target: Average settlement time (weekly)
+  - Property: by chains; by assets
+
+- **Wallet_retention_rate**
+  - Category: Product Metrics
+  - Description: Measures the frequency and consistency of user activity associated with specific wallet addresses over time, indicating user retention and engagement levels
+  - Target: Retention
+  - Property: by chains; by assets
+
+- **Average_intent_size**
+  - Category: Product Metrics
+  - Description: Average check
+  - Property: by chains; by assets
+
+- **Amount_of_intents**
+  - Category: Product Metrics
+  - Description: Number of intents
+  - Property: by chains; by assets

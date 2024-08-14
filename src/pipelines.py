@@ -14,7 +14,6 @@ from src.integrations.lifi import (
     all_chains,
     get_tokens as get_tokens_lifi,
     get_tools as get_tools_lifi,
-    main_routes,
     get_upload_data_from_lifi_cs_bucket,
     get_greater_than_date_from_bq_lifi_routes,
 )
@@ -22,18 +21,15 @@ from src.integrations.socket import (
     get_chains,
     get_tokens as get_tokens_socket,
     get_bridges,
-    get_all_routes,
     get_upload_data_from_socket_cs_bucket,
 )
 from src.integrations.helpers_routes_aggreagators import (
     get_greater_than_date_from_bq_table,
-    get_routes_pathways_from_bq,
 )
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
 from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata
 from src.integrations.hop_explorer import get_transfers_data
 from src.integrations.utilities import (
-    upload_json_to_gcs,
     read_sql_from_file_add_template,
     run_bigquery_query,
     convert_lists_and_booleans_to_strings,
@@ -43,7 +39,6 @@ from src.integrations.defilamma import defilamma_raw
 from src.integrations.arb_distribution_mode_metis_upload_2_bq import (
     main as arb_distribution_mode_metis_upload_2_bq_main,
 )
-
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()

@@ -1,4 +1,3 @@
-import email
 import os
 import pytz
 import logging
@@ -11,7 +10,7 @@ import json
 from datetime import datetime
 from jinja2 import Template
 from google.cloud import bigquery
-from pendulum import date
+from google.api_core.exceptions import DeadlineExceeded
 
 
 logging.basicConfig(level=logging.INFO)
@@ -20,8 +19,14 @@ logging.basicConfig(level=logging.INFO)
 def get_secret_gcp_secrete_manager(secret_name: str):
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/mainnet-bigq/secrets/{secret_name}/versions/latest"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode("UTF-8")
+    try:
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    except DeadlineExceeded:
+        logging.error("Request to Secret Manager timed out.")
+        raise
+    except Exception as e:
+        logging.info(f"Error accessing secret {secret_name}: {e}")
 
 
 def upload_to_gcs_via_folder(data, bucket_name, folder_name):

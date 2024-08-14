@@ -23,7 +23,7 @@ Everclear employs a Spoke and Hub model for handling intents and settlements acr
 
 ### **Flow of Funds**
 
-1. **Intent Creation**: Rebalancers or Arbitrageurs create intents, pulling funds from their wallets.
+1. **Intent Creation**: Rebalancers create intents, pulling funds from their wallets.
 2. **Spoke Contract**: Holds the funds and increases the unclaimed balance.
 3. **Intent Queue**: Intents are transported to the Clearing chain.
 4. **Hub Domain**: Processes intents into invoices or deposits.
@@ -176,38 +176,92 @@ flowchart TD
 
 ### Metrics and calculations
 
+```sql
+
+    -- Top 100 rows from each table
+    
+    -- assets:
+        -- Takeaway: 
+        -- 1. there are 2 assets with addresses
+    SELECT 'assets' AS table_name, * FROM public.assets LIMIT 100
+
+    -- Balances: Nothing in balance
+    SELECT 'balances' AS table_name, * FROM public.balances LIMIT 100
+
+    -- checkpoints: There are check_names: origin/hub_invoice___chain_ids and other cols is check_point: not sure what that is
+    SELECT 'checkpoints' AS table_name, * FROM public.checkpoints LIMIT 100
+
+    -- no data on depositors
+    SELECT 'depositors' AS table_name, * FROM public.depositors LIMIT 100
+
+    -- no data on destination_intents
+    SELECT 'destination_intents' AS table_name, * FROM public.destination_intents LIMIT 100
+
+    -- data by id -> domain | message_id | etc 
+    SELECT 'hub_intents' AS table_name, * FROM public.hub_intents LIMIT 100
+
+    SELECT 'messages' AS table_name, * FROM public.messages LIMIT 100
+
+    -- origin_intents, queues, tokens
+    SELECT 'origin_intents' AS table_name, * FROM public.origin_intents LIMIT 100
+
+    SELECT 'queues' AS table_name, * FROM public.queues LIMIT 100
+
+    SELECT 'tokens' AS table_name, * FROM public.tokens LIMIT 100
+
+```
+
+
 - **Settlement_Rate_3h**
   - Category: SLA for Market Makers
   - Description: Percentage of transactions settled within 3 hours
   - Target: Purchase 100% of invoices in 3+ hours
   - Property: by chains; by assets
   - Tables to use:
-    - `public.messages`
+    - `public.messages` OR  Combination of `public.origin_intents` and `public.hub_intents`
         - type: `SETTLEMENT`
         - there is a timestamp for each id. there is queue numbers: 1- 15 etc (`cols: Fisrt | last`)
-    
-  - Questions:
-    - Transaction table is missing or some other table needs to be used in order to get tx level data on users: 
-  - Calculation:
-    - 
+  - Calculation
+    - for a given timeframe, take a ratio of tx where type: `SETTLEMENT` / count(tx)
+  - Question
+    - Is the state change of type gets records in the same table or in log table
+  - SQL:
+    ```sql
+    SELECT 'messages' AS table_name, * FROM public.messages LIMIT 100
+    ```
 
 - **Invoices_1h_Retention_Rate**
   - Category: SLA for Market Makers
   - Description: Percentage of invoices that remain in the system for ~1h
   - Target: >60% of invoices remain ~1h
   - Property: by chains; by assets
+  - Tables to use
+    - `public.hub_invoices`
+    - `public.intents`
+  - Calculation
+    - for a given invoice calculate the time from invoice to settlement, take a ratio of tx with invoice to settlement time < 1h / count(tx)
+  - Question
+    - Is the state change of type gets records in the same table or in log table
 
 - **Epoch_Discounts**
   - Category: SLA for Market Makers
   - Description: Number of epoch discounts applied to the invoice before settlement
   - Target: for >60% of the invoices remained ~1h, receiving a discount of <2 epochs
   - Property: by chains; by assets
+  - Tables to use
+    - `public.hub_invoices` and `public.settlements_intents` and `public.messages`: also to check on the state change of types.
+- Calculation
+  - for a given invoice calculate the number of epochs applied before settlement(entry_epoch - exit_epoch)
 
 - **Trading_Volume**
   - Category: SLA for Market Makers
   - Description: Daily trading volume for MMs
   - Target: Daily trading activity above 6x committed sum
   - Property: by chains; by assets; by MMs
+  - Tables to use
+    - `public.intents`
+  - Calculation
+    - for a given invoice calculate the number of epochs applied before settlement(entry_epoch - exit_epoch)
 
 - **Discount_value**
   - Category: SLA for Market Makers

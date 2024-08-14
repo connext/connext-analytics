@@ -381,6 +381,9 @@ def get_bridges_aggregate_flows_daily(
 
     Yields:
         Iterator[TDataItems]: _description_
+    TODO
+    - [X] replace start date from start of year to dynamic date
+    - [X] replace to append for type of disposition
     """
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_bridges_aggregate_flows_daily",
@@ -391,7 +394,7 @@ def get_bridges_aggregate_flows_daily(
         for query_id in bridges_aggregate_flows_daily_query_id_list:
             for result in get_result_by_query_id(
                 query_id,
-                start_date=DUNE_START_DATE,  # we are using start date as 1st jan 2024 given we are replacing all data
+                start_date=date_param["start_date"],
                 end_date=date_param["end_date"],
             ):
                 for record in result:  # Iterate over each dictionary in the list

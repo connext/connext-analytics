@@ -332,3 +332,37 @@ flowchart TD
   - Category: Product Metrics
   - Description: Number of intents
   - Property: by chains; by assets
+
+
+
+### Types per table column.
+Adding a new log for each alter trigger in postgres
+
+- **public.intent_status**
+  - `NONE`
+  - `ADDED`
+  - `DEPOSIT_PROCESSED`
+  - `FILLED`
+  - `ADDED_AND_FILLED`
+  - `INVOICED`
+  - `SETTLED`
+  - `SETTLED_AND_MANUALLY_EXECUTED`
+  - `UNSUPPORTED`
+  - `UNSUPPORTED_RETURNED`
+  - `DISPATCHED`
+  - `DISPATCHED_UNSUPPORTED`
+
+- **public.message_type**
+  - `INTENT`
+  - `FILL`
+  - `SETTLEMENT`
+  - `MAILBOX_UPDATE`
+  - `SECURITY_MODULE_UPDATE`
+  - `GATEWAY_UPDATE`
+  - `LIGHTHOUSE_UPDATE`
+
+- **public.queue_type**
+  - `INTENT`
+  - `FILL`
+  - `SETTLEMENT`
+  - `DEPOSIT`

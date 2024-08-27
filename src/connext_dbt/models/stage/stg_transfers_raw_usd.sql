@@ -6,7 +6,29 @@ WITH connext_tokens AS (
     FROM `mainnet-bigq.stage.connext_tokens` ct
 ),
 
-semi_txs AS (
+hourly_price AS (
+    SELECT
+        symbol,
+        CASE
+            WHEN symbol = 'ETH' THEN 'WETH'
+            WHEN symbol = 'NEXT' THEN 'NEXT'
+            WHEN STARTS_WITH (symbol, 'next') THEN REGEXP_REPLACE (symbol, '^next', '')
+            WHEN symbol = 'alUSD' THEN 'USDT'
+            WHEN symbol = 'nextALUSD' THEN 'USDT'
+            WHEN symbol = 'instETH' THEN 'WETH'
+            WHEN symbol = 'ezETH' THEN 'WETH'
+            WHEN symbol = 'alETH' THEN 'WETH'
+            WHEN symbol = 'nextalETH' THEN 'WETH'
+            ELSE symbol
+        END
+            AS price_group,
+        date,
+        average_price AS price
+
+    FROM `mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth`
+)
+
+, semi_txs AS (
     SELECT
 
         t.transfer_id,
@@ -69,7 +91,6 @@ semi_txs AS (
         t.bridged_amt,
         t.destination_transacting_amount
 
-
     FROM `mainnet-bigq.public.transfers` t
     INNER JOIN `mainnet-bigq.public.transfers_in_usd` tiu
         ON t.transfer_id = tiu.transfer_id
@@ -79,11 +100,9 @@ semi_txs AS (
 
     LEFT JOIN connext_tokens cc_destination
         ON t.destination_transacting_asset = cc_destination.token_address
-
 )
 
 -- adding token decimals and calculate USD value
-
 SELECT
 
     sr.transfer_id,
@@ -136,7 +155,7 @@ SELECT
     sr.error_message,
     sr.error_status,
     sr.closet_price_rank,
-    sr.price,
+    hp.price,
     CAST(a_origin.adopted_decimal AS FLOAT64) AS token_decimal,
     CAST(sr.origin_transacting_amount AS FLOAT64)
     / POW(10, COALESCE(CAST(a_origin.adopted_decimal AS INT64), 0))
@@ -151,17 +170,17 @@ SELECT
         CAST(sr.origin_transacting_amount AS FLOAT64)
         / POW(10, COALESCE(CAST(a_origin.adopted_decimal AS INT64), 0))
     )
-    * sr.price AS usd_origin_amount,
+    * hp.price AS usd_origin_amount,
     (
         CAST(sr.bridged_amt AS FLOAT64)
         / POW(10, COALESCE(CAST(a_origin.decimal AS INT64), 0))
     )
-    * sr.price AS usd_bridged_amount,
+    * hp.price AS usd_bridged_amount,
     (
         CAST(sr.destination_transacting_amount AS FLOAT64)
         / POW(10, COALESCE(CAST(a_dest.adopted_decimal AS INT64), 0))
     )
-    * sr.price AS usd_destination_amount
+    * hp.price AS usd_destination_amount
 FROM semi_txs sr
 LEFT JOIN `mainnet-bigq.public.assets` a_origin
     ON
@@ -174,4 +193,10 @@ LEFT JOIN `mainnet-bigq.public.assets` a_dest
         (
             sr.canonical_id = a_dest.canonical_id
             AND sr.destination_domain = a_dest.domain
+        )
+LEFT JOIN hourly_price hp
+    ON
+        (
+            sr.destination_asset = hp.price_group
+            AND DATE_TRUNC(CAST(sr.xcall_timestamp AS TIMESTAMP), HOUR) = CAST(hp.date AS TIMESTAMP)
         )

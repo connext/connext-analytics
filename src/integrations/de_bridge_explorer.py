@@ -111,17 +111,17 @@ async def de_bridge_explorer_pipeline(max_date_in_db):
             f"Fetched orders: skip={skip}, shape={df_deexplorer.shape}, Min timestamp from pulled data: {min_timestamp}"
         )
 
-        if min_timestamp < int(max_date_in_db):
-            logging.info("This year's data is pulled. Stopping...")
-            break
-
         df_deexplorer.columns = [
             col.lower().replace(".", "_") for col in df_deexplorer.columns
         ]
         df_deexplorer = df_deexplorer.astype(str)
         final_df = pd.concat([final_df, df_deexplorer])
 
-        if len(final_df) > 10000:
+        if min_timestamp < int(max_date_in_db):
+            logging.info(
+                "New data pulled from debridge explorer reached max date in database. Exiting..."
+            )
+
             gbq.to_gbq(
                 final_df,
                 TABLE_ID,
@@ -133,6 +133,8 @@ async def de_bridge_explorer_pipeline(max_date_in_db):
                 f"Uploaded {len(final_df)} rows for time: {min_timestamp} to bigquery"
             )
             final_df = pd.DataFrame()
+
+            break
 
         skip += 100
 

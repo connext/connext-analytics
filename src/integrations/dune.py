@@ -272,13 +272,13 @@ def get_arb_weth_deposit_transactions(
     arb_weth_deposit_transactions_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
 
-    # date_param = get_start_end_date(
-    #     table_id="mainnet-bigq.dune.source_arb_weth_deposit_transactions",
-    #     start_date=1718668800,
-    # )
+    date_param = get_start_end_date(
+        table_id="mainnet-bigq.dune.source_arb_weth_deposit_transactions",
+        start_date=1718668800,
+    )
 
-    date_param = {}
-    date_param["start_date"] = 1718668800
+    # date_param = {}
+    # date_param["start_date"] = 1718668800
 
     # end date is latest timestamp
     date_param["end_date"] = int(datetime.now(pytz.UTC).timestamp())

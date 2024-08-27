@@ -1,3 +1,6 @@
+import time
+import random
+from requests.exceptions import RequestException, Timeout, HTTPError
 import pytz
 from datetime import datetime
 import logging
@@ -23,14 +26,14 @@ logging.basicConfig(
 
 
 # Utility
-def get_min_max_timestamp_from_bq_table() -> int:
+def get_latest_metadata_from_bq_table() -> int:
     """
     Get the latest id from a BigQuery table
     """
-    data = get_raw_from_bq("get_min_max_timestamp_source_all_bridge_explorer_transfers")
+    data = get_raw_from_bq("get_latest_metadata_source_all_bridge_explorer_transfers")
     return {
-        "min_timestamp": int(data.iloc[0]["min_timestamp"]),
-        "max_timestamp": int(data.iloc[0]["max_timestamp"]),
+        "last_tx_timestamp": int(data.iloc[0]["last_tx_timestamp"]),
+        "last_tx_hash": data.iloc[0]["last_tx_hash"],
     }
 
 
@@ -41,30 +44,60 @@ def get_min_max_timestamp_from_bq_table() -> int:
 )
 def get_all_bridge_explorer_transfers(
     all_bridge_explorer_transfers_url=dlt.config.value,
+    max_retries=10,
+    base_delay=5,
 ) -> Iterator[AllBridgeExplorerTransfer]:
-
-    page = 11000
+    """
+    Logic: Paginate through the API and append to the table, pull till timestamp is found to be less than
+    the last tx timestamp also check for tx hash to be found.
+    If found keep data before that tx hash, discard rest and break.
+    """
+    page = 1
     page_size = 20
-    page_remains = 1
     status = "Complete"
 
     page_txs = []
 
-    time_metadata = get_min_max_timestamp_from_bq_table()
-    min_timestamp = time_metadata["min_timestamp"]
+    time_metadata = get_latest_metadata_from_bq_table()
+    last_tx_timestamp = time_metadata["last_tx_timestamp"]
+    last_tx_hash = time_metadata["last_tx_hash"]
 
-    while page_remains > 0:
+    logging.info(
+        f"Starting transfer fetch. Last processed timestamp: {last_tx_timestamp}, hash: {last_tx_hash}"
+    )
 
-        logging.info(f"Fetching page: {page}, page remain: {page_remains}")
+    while True:
+        logging.info(f"Fetching page: {page}, page size: {page_size}")
         url = f"{all_bridge_explorer_transfers_url}?status={status}&page={page}&limit={page_size}"
 
-        response = requests.get(url)
-        response.raise_for_status()  # This will raise an HTTPError for bad responses
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                logging.info(
+                    f"Successfully fetched data from URL: {url}, status code: {response.status_code}"
+                )
+                break  # Success, exit the retry loop
+            except (Timeout, HTTPError) as e:
+                if isinstance(e, HTTPError) and e.response.status_code == 400:
+                    logging.error(f"Bad request error for URL: {url}. Error: {str(e)}")
+                    raise  # Don't retry on 400 errors
+                if attempt < max_retries - 1:
+                    delay = (base_delay * 2**attempt) + (random.randint(0, 1000) / 1000)
+                    logging.warning(
+                        f"Request failed. Retrying in {delay:.2f} seconds..."
+                    )
+                    time.sleep(delay)
+                else:
+                    logging.error(f"Max retries reached for URL: {url}")
+                    raise
+            except RequestException as e:
+                logging.error(f"Error fetching data from URL: {url}. Error: {str(e)}")
+                raise
 
-        logging.info(f"url: {url}, status code: {response.status_code}")
         data = response.json()
-        transactions = data["items"] if "items" in data else []
-        meta = data["meta"]
+        transactions = data.get("items", [])
+        logging.info(f"Retrieved {len(transactions)} transactions from page {page}")
 
         for transaction in transactions:
             record = {
@@ -90,19 +123,41 @@ def get_all_bridge_explorer_transfers(
                 "api_url": url,
             }
 
-            if record["timestamp"] < min_timestamp:
-                logging.info("Adding record if timestamp > min_timestamp")
+            if (
+                record.get("timestamp") == last_tx_timestamp
+                and record.get("id") == last_tx_hash
+            ):
+                logging.info(
+                    f"Reached the last processed transaction. ID: {record['id']}, Timestamp: {record['timestamp']}"
+                )
+                break
+            elif record.get("timestamp") > last_tx_timestamp:
                 page_txs.append(AllBridgeExplorerTransfer(**record))
+                logging.debug(
+                    f"Added transaction to page_txs. ID: {record['id']}, Timestamp: {record['timestamp']}"
+                )
             else:
                 logging.info(
-                    f"Not adding record if timestamp: {record['timestamp']} > min_timestamp: {min_timestamp}"
+                    f"Reached older transactions. Stopping. Last added ID: {record['id']}, Timestamp: {record['timestamp']}"
                 )
+                break
 
-        page_remains = meta["totalPages"] - page
-        page += 1
-        if page > 20000:
+        if len(transactions) < page_size or not transactions:
+            logging.info(f"Reached end of data or empty page. Stopping at page {page}")
             break
 
+        page += 1
+
+        # break after 20k pages aswell
+        if page > 20000:
+            # this is like a fail safe, daily pull limit of 20k pages, with a daily running cron
+            logging.info(f"Reached 20k pages. Stopping at page {page}")
+
+            break
+
+    logging.info(
+        f"Finished fetching transfers. Total transactions processed: {len(page_txs)}"
+    )
     yield page_txs
 
 

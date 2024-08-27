@@ -2,6 +2,8 @@ from datetime import datetime
 import dlt
 import json
 import logging
+import time
+from requests.exceptions import RequestException
 from typing import Sequence
 import requests
 from dlt.extract.source import DltResource
@@ -20,7 +22,7 @@ def get_latest_id_from_bq_table() -> int:
     """
     Get the latest id from a BigQuery table
     """
-    id = get_raw_from_bq("get_min_id_source_symbiosis_bridge_explorer_transactions")[
+    id = get_raw_from_bq("get_max_id_source_symbiosis_bridge_explorer_transactions")[
         "id"
     ][0]
     return int(id)
@@ -109,34 +111,44 @@ def normalize_transaction_data(tx: dict) -> dict:
 )
 def get_symbiosis_bridge_transactions(
     symbiosis_bridge_explorer_transactions_url: str = dlt.config.value,
-    before: int = get_latest_id_from_bq_table(),
+    max_id: int = get_latest_id_from_bq_table(),
+    max_retries: int = 3,
+    base_delay: float = 10,
 ):
     """
+    max_id: int = get_latest_id_from_bq_table()
+        This is the max id from the bq table, the latest transaction id record in our database
     LOGIC:
         - response gives out last: false loop untill true
         - Loop using before parameter and yield each transactions list of 100
         - Loop until last is false
     """
-    # Initialzie the API parameters
-
     all_txs = []
+    before = None  # for the first Pull
+    logging.info(f"Getting transactions till id {max_id}")
 
     while True:
-        logging.info(f"Getting transactions before {before}")
-        response = requests.get(
-            symbiosis_bridge_explorer_transactions_url, params={"before": before}
-        )
-        logging.info(f"Response status code: {response.status_code}")
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(
+                    symbiosis_bridge_explorer_transactions_url,
+                    params={"before": before},
+                )
+                response.raise_for_status()  # Raise an exception for non-200 status codes
 
-        if response.status_code == 500:
-            logging.error(
-                "Received status code 500 from the server. Breaking the loop."
-            )
-            break
+                break  # Success, exit the retry loop
+            except RequestException as e:
+                if attempt == max_retries - 1:
+                    logging.error(f"Max retries reached. Last error: {str(e)}")
+                    raise  # Re-raise the last exception if all retries failed
+                delay = base_delay * (2**attempt)  # Exponential backoff
+                logging.warning(
+                    f"Request failed. Retrying in {delay:.2f} seconds. Error: {str(e)}"
+                )
+                time.sleep(delay)
 
+        # get min id from transactions response
         transactions = response.json()["records"]
-        last = response.json()["last"]
-
         if transactions:
             for tx in transactions:
                 normalized_tx = normalize_transaction_data(tx)
@@ -144,12 +156,17 @@ def get_symbiosis_bridge_transactions(
 
             # get min id from transactions response
             before = min(transactions, key=lambda x: x["id"])["id"]
+            logging.info(f"Getting transactions before id {before}")
 
-        if last:
+        # break the code when the max id is reached, break and store data in bq till max_id,
+        # anything < max_id is already stored, discard anything < max_id
+        if before == max_id:
+            # discard anything < max_id
+            logging.info(
+                f"ALL records before {max_id} discarded and remaining records storing in bq"
+            )
+            all_txs = [tx for tx in all_txs if tx.get("id") >= max_id]
             break
-
-        # if response status code 500 break
-
     yield all_txs
 
 

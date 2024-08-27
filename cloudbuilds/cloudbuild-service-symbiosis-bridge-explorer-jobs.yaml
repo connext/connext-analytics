@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/symbiosis-bridge-explorer-jobs",
+        "-f",
+        "Docker/Dockerfile.symbiosis-bridge-explorer-jobs",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/elt-python/symbiosis-bridge-explorer-jobs"

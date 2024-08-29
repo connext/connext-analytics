@@ -220,6 +220,41 @@ def remove_duplicate_rows_by_col(table_id: str, col: list):
     logging.info(f"{df.shape} rows adjusted in {table_id}")
 
 
+def pydantic_schema_to_list(schema):
+    result = []
+    properties = schema.get("properties", {})
+
+    for field_name, field_info in properties.items():
+        field_type = "STRING"  # Default type
+
+        if "anyOf" in field_info:
+            types = [t.get("type") for t in field_info["anyOf"] if "type" in t]
+            formats = [t.get("format") for t in field_info["anyOf"] if "format" in t]
+
+            if "integer" in types:
+                field_type = "INTEGER"
+            elif "number" in types:
+                field_type = "FLOAT"
+            elif "boolean" in types:
+                field_type = "BOOLEAN"
+            elif "date-time" in formats:
+                field_type = "TIMESTAMP"
+
+        elif "type" in field_info:
+            if field_info["type"] == "integer":
+                field_type = "INTEGER"
+            elif field_info["type"] == "number":
+                field_type = "FLOAT"
+            elif field_info["type"] == "boolean":
+                field_type = "BOOLEAN"
+            elif field_info.get("format") == "date-time":
+                field_type = "TIMESTAMP"
+
+        result.append({"name": field_name, "type": field_type})
+
+    return result
+
+
 # if __name__ == "__main__":
 #     print(
 #         remove_duplicate_rows_by_col(

@@ -1,20 +1,19 @@
+import json
 import time
 import random
+import requests
+import pandas as pd
+import pandas_gbq as gbq
 from requests.exceptions import RequestException, Timeout, HTTPError
 import pytz
 from datetime import datetime
 import logging
-import dlt
-from dlt.sources.helpers import requests
-from dlt.extract.source import DltResource
 from typing import Iterator, Sequence
-from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
 from src.integrations.models.all_bridge_explorer import (
     AllBridgeExplorerTransfer,
     AllBridgeExplorerTokenInfo,
 )
-
-from src.integrations.utilities import get_raw_from_bq
+from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
 
 # Base URL for the API
 # base_url = "https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"
@@ -23,6 +22,8 @@ from src.integrations.utilities import get_raw_from_bq
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+TABLE_NAME_EXPLORER_TRANSFERS = "raw.source_all_bridge_explorer_transfers_new"
+TABLE_NAME_EXPLORER_TOKENS_INFO = "raw.source_all_bridge_explorer_tokens_new"
 
 
 # Utility
@@ -37,14 +38,9 @@ def get_latest_metadata_from_bq_table() -> int:
     }
 
 
-@dlt.resource(
-    table_name="source_all_bridge_explorer_transfers",
-    write_disposition="append",
-    columns=pydantic_to_table_schema_columns(AllBridgeExplorerTransfer),
-)
 def get_all_bridge_explorer_transfers(
-    all_bridge_explorer_transfers_url=dlt.config.value,
-    max_retries=10,
+    all_bridge_explorer_transfers_url,
+    max_retries=100,
     base_delay=5,
 ) -> Iterator[AllBridgeExplorerTransfer]:
     """
@@ -66,6 +62,7 @@ def get_all_bridge_explorer_transfers(
         f"Starting transfer fetch. Last processed timestamp: {last_tx_timestamp}, hash: {last_tx_hash}"
     )
 
+    found_last_tx = False
     while True:
         logging.info(f"Fetching page: {page}, page size: {page_size}")
         url = f"{all_bridge_explorer_transfers_url}?status={status}&page={page}&limit={page_size}"
@@ -130,35 +127,44 @@ def get_all_bridge_explorer_transfers(
                 logging.info(
                     f"Reached the last processed transaction. ID: {record['id']}, Timestamp: {record['timestamp']}"
                 )
+                found_last_tx = True
                 break
-            elif record.get("timestamp") > last_tx_timestamp:
-                page_txs.append(AllBridgeExplorerTransfer(**record))
+            elif record.get("timestamp") > last_tx_timestamp or (
+                record.get("timestamp") == last_tx_timestamp
+                and record.get("id") != last_tx_hash
+            ):
+                tx = AllBridgeExplorerTransfer(**record)
+                page_txs.append(tx.model_dump())
                 logging.debug(
                     f"Added transaction to page_txs. ID: {record['id']}, Timestamp: {record['timestamp']}"
                 )
-            else:
-                logging.info(
-                    f"Reached older transactions. Stopping. Last added ID: {record['id']}, Timestamp: {record['timestamp']}"
-                )
-                break
 
-        if len(transactions) < page_size or not transactions:
-            logging.info(f"Reached end of data or empty page. Stopping at page {page}")
-            break
+        if page % 500 == 0 or found_last_tx:
+            logging.info(f"Loading data after {page} pages")
+            if page_txs:
+                df = pd.DataFrame(page_txs)
+                logging.info(
+                    f"Pushing {len(df)} transactions to BQ and schema: {df.dtypes}"
+                )
+
+                gbq.to_gbq(
+                    dataframe=df,
+                    project_id="mainnet-bigq",
+                    destination_table=TABLE_NAME_EXPLORER_TRANSFERS,
+                    if_exists="append",
+                    api_method="load_csv",
+                    table_schema=pydantic_schema_to_list(
+                        AllBridgeExplorerTransfer.model_json_schema()
+                    ),
+                )
+                page_txs = []
 
         page += 1
-
-        # break after 20k pages aswell
-        if page > 20000:
-            # this is like a fail safe, daily pull limit of 20k pages, with a daily running cron
-            logging.info(f"Reached 20k pages. Stopping at page {page}")
-
+        if found_last_tx:
             break
-
     logging.info(
         f"Finished fetching transfers. Total transactions processed: {len(page_txs)}"
     )
-    yield page_txs
 
 
 def to_snake_case(s):
@@ -173,13 +179,8 @@ def convert_pool_info(token):
     return token
 
 
-@dlt.resource(
-    table_name="source_all_bridge_explorer_tokens",
-    write_disposition="replace",
-    columns=pydantic_to_table_schema_columns(AllBridgeExplorerTokenInfo),
-)
 def get_all_bridge_explorer_token_info(
-    all_bridge_explorer_token_info_url=dlt.config.value,
+    all_bridge_explorer_token_info_url,
 ):
     """
     get_all_bridge_explorer_token_info _summary_
@@ -230,28 +231,41 @@ def get_all_bridge_explorer_token_info(
                 token["api_url"] = all_bridge_explorer_token_info_url
                 # updated date
                 token["updated_at"] = datetime.now(tz=pytz.UTC).isoformat()
-                simplified_data.append(AllBridgeExplorerTokenInfo(**token))
+                tk = AllBridgeExplorerTokenInfo(**token)
+                simplified_data.append(tk.model_dump())
 
-        yield simplified_data
+        # push to table
+        if simplified_data:
+            df = pd.DataFrame(simplified_data)
+            gbq.to_gbq(
+                dataframe=df,
+                project_id="mainnet-bigq",
+                destination_table=TABLE_NAME_EXPLORER_TOKENS_INFO,
+                if_exists="replace",
+                table_schema=pydantic_schema_to_list(
+                    AllBridgeExplorerTokenInfo.model_json_schema()
+                ),
+            )
+
     else:
         print(f"Request failed with status code: {response.status_code}")
 
 
-# Sources
-@dlt.source(
-    max_table_nesting=0,
-)
-def all_bridge_explorer_transfers() -> Sequence[DltResource]:
-    return [get_all_bridge_explorer_transfers, get_all_bridge_explorer_token_info]
+def main():
+    all_bridge_explorer_transfers_url = (
+        "https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"
+    )
+    all_bridge_explorer_token_info_url = (
+        "https://core.api.allbridgecoreapi.net/token-info"
+    )
+
+    get_all_bridge_explorer_transfers(
+        all_bridge_explorer_transfers_url,
+    )
+    get_all_bridge_explorer_token_info(
+        all_bridge_explorer_token_info_url,
+    )
 
 
 if __name__ == "__main__":
-
-    logging.info("Running DLT All Bridge Explorer Transfers")
-    p = dlt.pipeline(
-        pipeline_name="all_bridge_explorer_transfers",
-        destination="bigquery",
-        dataset_name="raw",
-    )
-    p.run(all_bridge_explorer_transfers(), loader_file_format="jsonl")
-    logging.info("Finished DLT All Bridge Explorer Transfers!")
+    main()

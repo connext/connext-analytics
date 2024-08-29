@@ -1,23 +1,22 @@
 from datetime import datetime
-import dlt
 import json
 import logging
 import time
-from requests.exceptions import RequestException
-from typing import Sequence
 import requests
-from dlt.extract.source import DltResource
-from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
+import pandas as pd
+import pandas_gbq as gbq
+from typing import List
+from requests.exceptions import Timeout
 from .models.symbiosis_bridge_explorer import SymbiosisBridgeExplorerTransaction
-from src.integrations.utilities import get_raw_from_bq
+from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
 
-# LOGIC: response gives out last: false loop untill true
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+TABLE_NAME_EXPLORER_TRANSFERS = "raw.source_symbiosis_bridge_explorer_transactions"
 
-# Utility
+
 def get_latest_id_from_bq_table() -> int:
     """
     Get the latest id from a BigQuery table
@@ -104,86 +103,108 @@ def normalize_transaction_data(tx: dict) -> dict:
     return normalized_data
 
 
-@dlt.resource(
-    table_name="source_symbiosis_bridge_explorer_transactions",
-    write_disposition="append",
-    columns=pydantic_to_table_schema_columns(SymbiosisBridgeExplorerTransaction),
-)
-def get_symbiosis_bridge_transactions(
-    symbiosis_bridge_explorer_transactions_url: str = dlt.config.value,
-    max_id: int = get_latest_id_from_bq_table(),
-    max_retries: int = 3,
-    base_delay: float = 10,
+def pull_data_from_api(
+    url: str,
+    params: dict,
+    max_retries: int = 50,
+    base_timeout: int = 30,
+    max_timeout: int = 120,
 ):
-    """
-    max_id: int = get_latest_id_from_bq_table()
-        This is the max id from the bq table, the latest transaction id record in our database
-    LOGIC:
-        - response gives out last: false loop untill true
-        - Loop using before parameter and yield each transactions list of 100
-        - Loop until last is false
-    """
+    for attempt in range(max_retries):
+        try:
+            timeout = min(base_timeout * (2**attempt), max_timeout)
+            response = requests.get(url, params=params, timeout=timeout)
+            response.raise_for_status()
+
+            json_data = response.json()
+            if "records" not in json_data:
+                raise ValueError("Unexpected response structure")
+
+            return json_data["records"]
+        except (requests.RequestException, Timeout, ValueError) as e:
+            if attempt == max_retries - 1:
+                logging.error(f"Max retries reached. Last error: {str(e)}")
+                raise
+            delay = base_timeout * (2**attempt)
+            logging.warning(
+                f"Request failed. Retrying in {delay:.2f} seconds. Error: {str(e)}"
+            )
+            time.sleep(delay)
+
+
+def clean_api_response(
+    transactions: List[dict],
+) -> List[SymbiosisBridgeExplorerTransaction]:
+    cleaned_txs = []
+    for tx in transactions:
+        normalized_tx = normalize_transaction_data(tx)
+        cleaned_txs.append(SymbiosisBridgeExplorerTransaction(**normalized_tx))
+    return cleaned_txs
+
+
+def get_symbiosis_bridge_transactions(
+    symbiosis_bridge_explorer_transactions_url: str = "https://api-v2.symbiosis.finance/explorer/v1/transactions",
+    max_id: int = get_latest_id_from_bq_table(),
+    batch_size: int = 100000,
+    before=None,  # id before which to fetch transactions, change this to get data before a certain id
+):
     all_txs = []
-    before = None  # for the first Pull
     logging.info(f"Getting transactions till id {max_id}")
 
     while True:
-        for attempt in range(max_retries):
-            try:
-                response = requests.get(
-                    symbiosis_bridge_explorer_transactions_url,
-                    params={"before": before},
-                )
-                response.raise_for_status()  # Raise an exception for non-200 status codes
+        transactions = pull_data_from_api(
+            symbiosis_bridge_explorer_transactions_url, params={"before": before}
+        )
 
-                break  # Success, exit the retry loop
-            except RequestException as e:
-                if attempt == max_retries - 1:
-                    logging.error(f"Max retries reached. Last error: {str(e)}")
-                    raise  # Re-raise the last exception if all retries failed
-                delay = base_delay * (2**attempt)  # Exponential backoff
-                logging.warning(
-                    f"Request failed. Retrying in {delay:.2f} seconds. Error: {str(e)}"
-                )
-                time.sleep(delay)
-
-        # get min id from transactions response
-        transactions = response.json()["records"]
         if transactions:
-            for tx in transactions:
-                normalized_tx = normalize_transaction_data(tx)
-                all_txs.append(SymbiosisBridgeExplorerTransaction(**normalized_tx))
+            cleaned_txs = clean_api_response(transactions)
+            all_txs.extend(cleaned_txs)
 
-            # get min id from transactions response
             before = min(transactions, key=lambda x: x["id"])["id"]
             logging.info(f"Getting transactions before id {before}")
 
-        # break the code when the max id is reached, break and store data in bq till max_id,
-        # anything < max_id is already stored, discard anything < max_id
-        if before == max_id:
-            # discard anything < max_id
+            # Push data to BigQuery every 1000 API calls
+            if len(all_txs) >= batch_size:
+                push_to_bigquery(all_txs, TABLE_NAME_EXPLORER_TRANSFERS)
+                all_txs = []  # Clear the list after pushing to BigQuery
+        if before <= max_id:
             logging.info(
                 f"ALL records before {max_id} discarded and remaining records storing in bq"
             )
-            all_txs = [tx for tx in all_txs if tx.get("id") >= max_id]
+            all_txs = [tx for tx in all_txs if tx.id >= max_id]
+
+            # Push any remaining transactions to BigQuery
+            if all_txs:
+                push_to_bigquery(all_txs, TABLE_NAME_EXPLORER_TRANSFERS)
+
             break
-    yield all_txs
+
+    logging.info("Pipeline completed.")
+    return all_txs
 
 
-# Sources
-@dlt.source(max_table_nesting=0)
-def symbiosis_bridge_explorer_pipeline() -> Sequence[DltResource]:
-    return [get_symbiosis_bridge_transactions]
+def push_to_bigquery(
+    transactions: List[SymbiosisBridgeExplorerTransaction], table_name: str
+):
+    df = pd.DataFrame([tx.model_dump() for tx in transactions])
+
+    gbq.to_gbq(
+        dataframe=df,
+        project_id="mainnet-bigq",
+        destination_table=table_name,
+        if_exists="append",
+        api_method="load_csv",
+        table_schema=pydantic_schema_to_list(
+            SymbiosisBridgeExplorerTransaction.model_json_schema()
+        ),
+    )
+
+    logging.info(f"Pushed {len(df)} transactions to BigQuery table: {table_name}")
+
+
+def main():
+    get_symbiosis_bridge_transactions()
 
 
 if __name__ == "__main__":
-
-    logging.info("Running DLT symbiosis_bridge_explorer")
-
-    p = dlt.pipeline(
-        pipeline_name="symbiosis_bridge_explorer",
-        destination="bigquery",
-        dataset_name="raw",
-    )
-    p.run(symbiosis_bridge_explorer_pipeline(), loader_file_format="jsonl")
-    logging.info("Finished DLT symbiosis_bridge_explorer")
+    main()

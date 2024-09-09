@@ -1,0 +1,10 @@
+FROM apache/superset
+
+# Add your configuration settings here, such as environment variables or additional packages
+ENV SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY}
+
+# Expose the port Superset will run on
+EXPOSE 8088
+
+# Command to run Superset
+CMD ["gunicorn", "-w", "2", "-k", "gevent", "--timeout", "120", "-b", "0.0.0.0:8088", "superset.app:create_app()"]

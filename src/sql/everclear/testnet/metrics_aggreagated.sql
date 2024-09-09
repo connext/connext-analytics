@@ -3,13 +3,17 @@
 -- given there are two settrment strategy: direct settlement on intent queue and hub intent based clearing
 -- timestamp start date and end date
 -- clubbing them together
+
+-- for MM -> Look at amounts
+-- for users -> Look at count aswell
 SELECT
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
     COUNT(i.id) as total_intent_count,
     COUNT(CASE WHEN i.settlement_status = 'SETTLED' THEN 1 END) as settled_count,
-    100 * COUNT(CASE WHEN i.settlement_status = 'SETTLED' THEN 1 END) / COUNT(i.id) as prct_of_settled_count
+    100 * COUNT(CASE WHEN i.settlement_status = 'SETTLED' THEN 1 END) / NULLIF(COUNT(i.id), 0) as prct_of_settled_count
 FROM public.intents i
-GROUP BY 1
+-- filter for date of 6 and 7th sep
+WHERE DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
+
 
 
 -- Metric 2: Invoices_1h_Retention_Rate- Percentage of invoices that remain in the system for ~1h
@@ -23,14 +27,16 @@ SELECT
     END) AS count_of_invoices_within_1h,
     COUNT(id) AS total_count_of_invoices
 FROM public.intents i
+-- filter for date of 6 and 7th sep
+WHERE DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
 GROUP BY 1
 )
 SELECT 
-    settlement_hour,
-    time_in_system,
-    total_count_of_invoices,
-    count_of_invoices_within_1h,
-    100 * count_of_invoices_within_1h / total_count_of_invoices AS retention_rate
+    -- settlement_hour,
+    AVG(time_in_system) AS avg_time_in_system,
+    SUM(total_count_of_invoices) AS total_count_of_invoices,
+    SUM(count_of_invoices_within_1h) AS count_of_invoices_within_1h,
+    100 * SUM(count_of_invoices_within_1h) / SUM(total_count_of_invoices) AS retention_rate
 FROM tis
 
 
@@ -45,41 +51,49 @@ FROM tis
 -- 3.1. EPOCH AMOUNT DISCOUNT: same as metric 5.
 -- 3.2. EPOCH TIME DISCOUNT:
 -- This is calculated based on hub entry and settlement epoch and only for those intents that are not netted ie origin_ttl > 0
+-- discount is decided by hub
+-- use the hub timestamp -> Settlement_enqueued_timestamp -> its the timestamp where the settlement is finalized
+
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
-    AVG(i.origin_amount::float - i.settlement_amount::float) as discount_value,
-    AVG(i.settlement_timestamp -i.origin_timestamp) as discount_epoch,
+    -- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
+    -- AVG(i.origin_amount::float - i.settlement_amount::float) as discount_value,
+    AVG(hi.settlement_enqueued_timestamp -i.origin_timestamp) as discount_epoch
     -- ??? making sure that invoice created doesn't alter the entry epoch time ie can a intent enter twice if not pickedup
-    AVG(i.hub_settlement_epoch::integer - hi.entry_epoch::integer) as discount_epoch_alt
+    -- AVG(i.hub_settlement_epoch::integer - hi.entry_epoch::integer) as discount_epoch_alt
  FROM public.intents i
- LEFT JOIN public.hub_invoices hi ON i.id = hi.intent_id
+ LEFT JOIN public.hub_intents hi ON i.id = hi.id
  -- filter out the netted invoices
  WHERE i.origin_ttl > 0 AND i.settlement_status = 'SETTLED'
- GROUP BY 1
+ AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
+--  GROUP BY 1
 
 
 -- Metric 4: volume by market maker- Trading_Volume
 -- ??? which amount to use origin_amount or hub_invoice_amount
 -- ??? How to identify market maker
 SELECT 
- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
- SUM(i.origin_amount) as volume_by_market_maker
- FROM public.invoices i
+--  DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
+i.origin_input_asset,
+i.origin_output_asset,
+ SUM(i.origin_amount::float) as volume_by_market_maker
+FROM public.invoices i
  -- filter out the netted invoices
- WHERE i.origin_ttl > 0 AND i.settlement_status = 'SETTLED'
- GROUP BY 1
+WHERE i.origin_ttl > 0 AND i.hub_status = 'DISPATCHED'
+ GROUP BY 1,2
 
 -- Metric 5: Discount_value- The daily average discount applied to invoices
 -- todo: remove fee from the amount
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
+    -- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
     -- gas fee + protocol fee
     -- protcol fee based on token- event: TokenConfigsSet | AssetConfigSet
     -- function that is called for protcol fee:
-    AVG(i.origin_amount::float - i.settlement_amount::float) as discount_value
+  i.origin_input_asset,
+  i.origin_output_asset,
+    AVG(i.origin_amount::float - i.hub_invoice_amount::float) as discount_value
  FROM public.invoices i
- WHERE i.origin_ttl > 0 AND i.settlement_status = 'SETTLED'
- GROUP BY 1
+ WHERE i.origin_ttl > 0 AND i.hub_status = 'DISPATCHED'
+ GROUP BY 1,2
 
 -- Metric 6: 
 
@@ -128,7 +142,7 @@ SELECT
 -- Settled event is emmitted 
 -- when hub intent is settled that message is sent to destination, settled on destination then received the money
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
+    -- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
     COUNT(i.id) AS netted_count,
     COUNT(CASE
         WHEN i.settlement_timestamp - i.origin_timestamp <= 86400 THEN i.id
@@ -140,7 +154,8 @@ SELECT
 FROM public.intents i
 WHERE i.settlement_status = 'SETTLED' 
   AND i.origin_ttl = 0
-GROUP BY 1;
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
+-- GROUP BY 1;
 
 
 -- Metric 8: **KR3_Total_rebalancing_fee**: Total fee = Protocol fee + Discount
@@ -174,7 +189,7 @@ FROM raw;
 --Metric 9: **Settlement_Rate**: Percentage of transactions settled within 6 hours
 -- 9.1.6 hrs
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
+    -- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
     COUNT(i.id) AS total_intent_count,
     COUNT(CASE
         WHEN i.settlement_timestamp - i.origin_timestamp <= 21600 THEN i.id
@@ -184,11 +199,12 @@ SELECT
     END) * 100.0 / COUNT(i.id), 3) AS settlement_rate_percentage
 FROM public.intents i
 WHERE i.settlement_status = 'SETTLED'
-GROUP BY 1;
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
+-- GROUP BY 1;
 
 -- 9.2. 24 hrs
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
+    -- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
     COUNT(i.id) AS total_intent_count,
     COUNT(CASE
         WHEN i.settlement_timestamp - i.origin_timestamp <= 86400 THEN i.id
@@ -199,7 +215,8 @@ SELECT
     END) * 100.0 / COUNT(i.id), 3) AS settlement_rate_percentage
 FROM public.intents i
 WHERE i.settlement_status = 'SETTLED'
-GROUP BY 1;
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
+-- GROUP BY 1;
 
 
 
@@ -237,6 +254,7 @@ SELECT
     AVG(i.settlement_timestamp - i.origin_timestamp) AS avg_settlement_time
 FROM public.intents i
 WHERE i.settlement_status = 'SETTLED'
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= '2024-09-06' AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= '2024-09-07'
 GROUP BY 1;
 
 -- Metric 12: **Wallet_retention_rate**: Measures the frequency and consistency of user activity associated with specific wallet addresses over time
@@ -291,3 +309,16 @@ SELECT
 FROM public.intents i
 GROUP BY 1;
 SELECT 
+
+
+
+
+-- rebalancing:
+
+-- top players -> wallet address identifications
+    --users
+        -- Exchanges
+    -- activity 
+        -- volume
+    -- if they use the same path as what we support
+    -- cost for rebalancing

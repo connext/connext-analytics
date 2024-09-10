@@ -1,0 +1,92 @@
+name: Deploy Apache Superset
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Create Google Compute Engine instance
+        run: |
+          gcloud compute instances create superset-instance \
+            --project=${{ secrets.GCP_PROJECT_ID }} \
+            --zone=us-central1-a \
+            --machine-type=e2-medium \
+            --boot-disk-size=20GB \
+            --image-family=ubuntu-2204-lts \
+            --image-project=ubuntu-os-cloud \
+            --tags=http-server,https-server
+          sleep 30  # Wait for instance to start
+
+      - name: Install Docker and Docker Compose on the VM
+        run: |
+          gcloud compute ssh superset-instance --zone=us-central1-a --command="
+            sudo apt update &&
+            sudo apt install apt-transport-https ca-certificates curl software-properties-common -y &&
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add - &&
+            sudo add-apt-repository 'deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable' &&
+            sudo apt update &&
+            sudo apt install docker-ce docker-ce-cli containerd.io -y &&
+            sudo curl -L 'https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose &&
+            sudo chmod +x /usr/local/bin/docker-compose
+          "
+
+      - name: Clone Superset repository and start Docker Compose
+        run: |
+          gcloud compute ssh superset-instance --zone=us-central1-a --command="
+            git clone https://github.com/apache/superset.git &&
+            cd superset/contrib/docker &&
+            echo \"SUPERSET_SECRET_KEY=${{ secrets.SUPERSET_SECRET_KEY }}\" > .env &&
+            echo \"SQLALCHEMY_DATABASE_URI=${{ secrets.SQLALCHEMY_DATABASE_URI }}\" >> .env &&
+            echo \"REDIS_URL=${{ secrets.REDIS_URL }}\" >> .env &&
+            echo \"PYTHONPATH=/app/pythonpath\" >> .env &&
+            echo \"SUPERSET_LOAD_EXAMPLES=yes\" >> .env &&
+            echo \"SUPERSET_PORT=8088\" >> .env &&
+            docker-compose --env-file .env -f docker-compose-non-dev.yml up -d
+          "
+
+      - name: Wait for containers to be up
+        run: |
+          gcloud compute ssh superset-instance --zone=us-central1-a --command="
+            docker-compose -f superset/contrib/docker/docker-compose-non-dev.yml ps -q | xargs docker inspect -f '{{ .State.Health.Status }}' | grep -v healthy
+            while [ $? -eq 0 ]; do
+              sleep 5
+              docker-compose -f superset/contrib/docker/docker-compose-non-dev.yml ps -q | xargs docker inspect -f '{{ .State.Health.Status }}' | grep -v healthy
+            done
+          "
+
+      - name: Create Superset admin user and initialize database
+        run: |
+          gcloud compute ssh superset-instance --zone=us-central1-a --command="
+            docker exec superset_app superset fab create-admin \
+            --username admin --firstname Admin --lastname User --email admin@example.com --password admin &&
+            docker exec superset_app superset db upgrade &&
+            docker exec superset_app superset init
+          "
+
+      - name: Output Superset public IP address
+        run: |
+          gcloud compute instances describe superset-instance \
+            --zone=us-central1-a \
+            --format='get(networkInterfaces[0].accessConfigs[0].natIP)'

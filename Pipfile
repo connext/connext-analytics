@@ -28,10 +28,9 @@ streamlit = "*"
 plotly = "*"
 sqlfluff = "*"
 streamlit-date-picker = "*"
-"discord.py" = "*"
 apscheduler = "*"
-discord-py-interactions = "*"
 psycopg2-binary = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 black="*"

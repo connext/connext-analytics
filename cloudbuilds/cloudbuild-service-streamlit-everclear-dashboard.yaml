@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/streamlit/streamlit-everclear-dashboard",
+        "-f",
+        "Docker/Dockerfile.streamlit-everclear-dashboard",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/streamlit/streamlit-everclear-dashboard"

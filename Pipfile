@@ -31,6 +31,7 @@ streamlit-date-picker = "*"
 "discord.py" = "*"
 apscheduler = "*"
 discord-py-interactions = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 black="*"

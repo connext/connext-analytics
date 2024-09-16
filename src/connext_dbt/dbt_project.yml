@@ -38,3 +38,6 @@ models:
     ad_hoc:
       +materialized: view
       +schema: ad_hoc
+    bridges:
+      +materialized: view
+      +schema: bridges

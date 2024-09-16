@@ -10,6 +10,7 @@ class AllBridgeExplorerTransfer(BaseModel):
     from_chain_symbol: Optional[str] = None
     to_chain_symbol: Optional[str] = None
     from_amount: Optional[str] = None
+    to_amount: Optional[str] = None
     stable_fee: Optional[str] = None
     from_token_address: Optional[str] = None
     to_token_address: Optional[str] = None

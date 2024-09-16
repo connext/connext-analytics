@@ -31,6 +31,9 @@ streamlit-date-picker = "*"
 apscheduler = "*"
 psycopg2-binary = "*"
 sqlalchemy = "*"
+dbt = "*"
+dbt-core = "*"
+dbt-bigquery = "*"
 
 [dev-packages]
 black="*"

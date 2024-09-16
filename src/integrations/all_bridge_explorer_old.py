@@ -1,4 +1,5 @@
 import json
+import httpx
 import time
 import random
 import requests
@@ -26,32 +27,6 @@ TABLE_NAME_EXPLORER_TRANSFERS = "raw.source_all_bridge_explorer_transfers_v2"
 TABLE_NAME_EXPLORER_TOKENS_INFO = "raw.source_all_bridge_explorer_tokens_v2"
 
 
-# Utility
-def get_latest_metadata_from_bq_table() -> int:
-    """
-    Get the latest id from a BigQuery table
-    """
-    try:
-        with open(
-            "src/sql/get_latest_metadata_source_all_bridge_explorer_transfers.sql", "r"
-        ) as file:
-            sql = file.read()
-
-        data = gbq.read_gbq(sql)
-    except Exception as e:
-        logging.error(f"Error fetching data from BQ: {e}")
-        # if 404 not found, create empty dict
-        if "404" in str(e):
-            return {
-                "last_tx_timestamp": None,
-                "last_tx_hash": None,
-            }
-    return {
-        "last_tx_timestamp": int(data.iloc[0]["last_tx_timestamp"]),
-        "last_tx_hash": data.iloc[0]["last_tx_hash"],
-    }
-
-
 def get_all_bridge_explorer_transfers(
     all_bridge_explorer_transfers_url,
     max_retries=100,
@@ -65,17 +40,13 @@ def get_all_bridge_explorer_transfers(
 
     URL start date hy page: https://core.allbridge.io/explorer?status=Complete&page=85000
     from where to page 1.
-    
+
     """
     page = 1
     page_size = 20
     status = "Complete"
 
     page_txs = []
-
-    time_metadata = get_latest_metadata_from_bq_table()
-    last_tx_timestamp = time_metadata["last_tx_timestamp"]
-    last_tx_hash = time_metadata["last_tx_hash"]
 
     logging.info(
         f"Starting transfer fetch. Last processed timestamp: {last_tx_timestamp}, hash: {last_tx_hash}"

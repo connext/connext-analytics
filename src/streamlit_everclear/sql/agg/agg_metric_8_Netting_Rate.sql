@@ -9,7 +9,6 @@
 
 WITH raw AS (
 SELECT
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
     COUNT(i.id) AS total_intents,
     COUNT(CASE
         WHEN (i.settlement_timestamp - i.origin_timestamp <= 3600)
@@ -24,12 +23,12 @@ SELECT
         THEN i.id
     END) AS count_of_intents_within_24h
 FROM public.intents i
-GROUP BY 1
-)    
+WHERE DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')
+)
+
 SELECT
-    day,
     -- # netting rate 1h
     ROUND(count_of_intents_within_1h * 100.0 / total_intents, 2) AS netting_rate_1h_percentage,
     -- # netting rate 24h
     ROUND(count_of_intents_within_24h * 100.0 / total_intents, 2) AS netting_rate_24h_percentage
-FROM raw
+FROM raw;

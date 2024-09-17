@@ -1,7 +1,7 @@
--- **Metric 7: Clearing_Volume**: Clearing volume (settlement + netted)
-    -- settlement: sum of all settled amount in hub_intent table
-    -- netted: double cehck for settlement only
-    -- ttl is zero that is a netted order | Others are filled intent order or solver based order
+
+
+-- Metric 9: **Total_rebalancing_fee**: Total fee = Protocol fee + Discount
+-- CAL; from intents table, get discount and get protocol from the token tables that are then matched to settlement tokens
 
 WITH 
 token_decimals AS (
@@ -25,11 +25,22 @@ SELECT
 FROM public.assets a
 )
 
-SELECT
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
-    SUM(CASE WHEN CAST(i.origin_ttl AS INTEGER) = 0 THEN i.origin_amount::float / 10^td.decimals ELSE 0 END) as netted_volume,
-    SUM(CASE WHEN CAST(i.origin_ttl AS INTEGER) > 0 THEN i.origin_amount::float / 10^td.decimals ELSE 0 END) as market_maker_volume
-  FROM public.intents i
-  LEFT JOIN token_decimals td ON LOWER(i.origin_output_asset) = td.token_address
-  WHERE i.settlement_status = 'SETTLED'
-  GROUP BY 1
+,raw AS (
+SELECT 
+    -- discount   
+    ABS((i.origin_amount::float / POW(10, td.decimals)) - (i.settlement_amount::float / POW(10, td.decimals)))
+     AS discount,
+    -- [ ] TODO ??? protocol fee: check if the fee_amounts in token table is perct    
+    -- jsonb_array_elements_text(to_jsonb(t.fee_amounts))::float -> Fee amount by token -> 0.0001 is 1bps
+    ABS(((i.origin_amount::float / POW(10, td.decimals)) / 100 * 0.0001)::float) AS fee_amount
+FROM public.intents i
+LEFT JOIN token_decimals td ON LOWER(i.origin_output_asset) = td.token_address
+-- LEFT JOIN public.tokens t ON i.settlement_asset = t.id
+WHERE i.settlement_status = 'SETTLED'
+-- AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')
+)
+
+SELECT 
+    -- rebalancing_fee: Total fee = Protocol fee + Discount
+    SUM(fee_amount + discount) AS rebalancing_fee
+FROM raw

@@ -1,5 +1,6 @@
 # Adding the streamlit pages to the sidebar
 import json
+import os
 import numpy as np
 import pytz
 import pandas as pd
@@ -9,7 +10,8 @@ from sqlalchemy import create_engine
 from google.cloud import secretmanager
 from google.api_core.exceptions import DeadlineExceeded
 import logging
-
+from jinja2 import Template
+from sqlalchemy.exc import SQLAlchemyError
 
 logging.basicConfig(level=logging.INFO)
 
@@ -291,3 +293,88 @@ def get_latest_value_by_date(df, date_col="date"):
     Get the latest value by date -> filter the df by date and get the value of the metric_col
     """
     return df.loc[df[date_col] == df[date_col].max()]
+
+
+def sql_template_filter_date(sql_file_name, date_filter: dict) -> str:
+    """
+    Get SQL query from SQL file and apply Jinja2 templating.
+    date_filter -> x -> number of days to filter the data by
+    """
+
+    logging.info(f"Applying date filter to agg query {sql_file_name}")
+    sql_file_path = f"src/streamlit_everclear/sql/agg/{sql_file_name}.sql"
+
+    try:
+        with open(sql_file_path, "r") as sql_file:
+            file_content = sql_file.read()
+            query = Template(file_content).render(date_filter)
+            return query
+    except FileNotFoundError:
+        print(f"The file {sql_file_path} was not found.")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+
+@st.cache_data(ttl=3600)
+def get_agg_data_from_sql_template(
+    sql_file_name: str, date_filter: dict, mode: str = "prod"
+) -> pd.DataFrame:
+    """
+    Retrieve aggregated data by applying a SQL template with Jinja2 templating.
+
+    Parameters:
+        sql_file_name (str): Name of the SQL template file (without extension) located in src/streamlit_everclear/sql/agg/.
+        date_filter (dict): Dictionary containing date filtering parameters, e.g., {"from_date": "2024-01-01", "to_date": "2024-01-31"}.
+        mode (str, optional): Database mode, either "prod" for production or "test" for testing. Defaults to "prod".
+
+    Returns:
+        pd.DataFrame: DataFrame containing the query results.
+    """
+    try:
+        sql = sql_template_filter_date(sql_file_name, date_filter)
+        logging.info(f"Generated SQL: {sql}")
+        db_url = get_db_url(mode)
+        engine = create_engine(db_url)
+        with engine.connect() as connection:
+            df = pd.read_sql_query(sql, connection)
+        return df
+    except SQLAlchemyError as e:
+        logging.error(f"Database query failed: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        raise
+
+
+def apply_date_filter_to_df(df, date_col="day", from_date=None, to_date=None):
+    """
+    Apply universal sidebar filters to the dataframe
+    Filters applied and columns needed in dataframe:
+    - asset_group
+    - bridge
+    - chain
+    - date
+    """
+
+    if from_date and to_date:
+        start_date, end_date = from_date, to_date
+        if df[date_col].dtype == "O":
+            df["datetime"] = pd.to_datetime(df[date_col])
+        else:
+            df["datetime"] = df[date_col]
+        df["day_part"] = df["datetime"].dt.date
+
+        df = df[(df["day_part"] >= start_date) & (df["day_part"] <= end_date)]
+    return df
+
+
+# if __name__ == "__main__":
+#     print(
+#         get_agg_data_from_sql_template(
+#             "agg_metric_1_Settlement_Rate_24h",
+#             {"from_date": "2024-01-01", "to_date": "2024-01-31"},
+#             mode="test",
+#         )
+#     )

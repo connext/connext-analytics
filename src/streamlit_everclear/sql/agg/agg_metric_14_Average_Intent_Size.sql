@@ -1,7 +1,4 @@
--- **Metric 7: Clearing_Volume**: Clearing volume (settlement + netted)
-    -- settlement: sum of all settled amount in hub_intent table
-    -- netted: double cehck for settlement only
-    -- ttl is zero that is a netted order | Others are filled intent order or solver based order
+-- Metric 14: **Average_intent_size**- Average value per intent on daily basis
 
 WITH 
 token_decimals AS (
@@ -25,11 +22,11 @@ SELECT
 FROM public.assets a
 )
 
-SELECT
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
-    SUM(CASE WHEN CAST(i.origin_ttl AS INTEGER) = 0 THEN i.origin_amount::float / 10^td.decimals ELSE 0 END) as netted_volume,
-    SUM(CASE WHEN CAST(i.origin_ttl AS INTEGER) > 0 THEN i.origin_amount::float / 10^td.decimals ELSE 0 END) as market_maker_volume
-  FROM public.intents i
-  LEFT JOIN token_decimals td ON LOWER(i.origin_output_asset) = td.token_address
-  WHERE i.settlement_status = 'SETTLED'
-  GROUP BY 1
+SELECT 
+    -- DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
+    AVG(i.origin_amount::float / POW(10, td.decimals)) AS avg_intent_size
+FROM public.intents i
+LEFT JOIN token_decimals td ON LOWER(i.origin_output_asset) = td.token_address
+WHERE i.settlement_status = 'SETTLED'
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')
+

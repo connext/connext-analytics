@@ -1,9 +1,7 @@
 
 -- Metric 12: **Settlement_Time**: Average time taken to settle the intent
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
     -- 3 values: all, by mm and by netting
-
     -- overall
     AVG(i.settlement_timestamp - i.origin_timestamp) / 3600 AS overall_avg_settlement_time,
     -- by mm
@@ -13,4 +11,4 @@ SELECT
 
 FROM public.intents i
 WHERE i.settlement_status = 'SETTLED'
-GROUP BY 1
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')

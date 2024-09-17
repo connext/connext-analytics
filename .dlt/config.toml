@@ -53,6 +53,8 @@ cannonical_bridges_hourly_flows_native_query_id=3753520
 arb_weth_deposit_transactions_query_id=3895717
 bridges_aggregate_flows_daily_query_id_list= [3908667, 3908109, 3908167, 3909186, 3909641]
 
+# tx level dune data sql link
+across_bridge_v3_tx_level_data_query_id=4025884
 
 [sources.all_bridge_explorer]
 all_bridge_explorer_transfers_url="https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"

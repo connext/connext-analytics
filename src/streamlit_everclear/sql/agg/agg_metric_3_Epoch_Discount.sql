@@ -13,24 +13,29 @@
 
 
 SELECT 
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
+    -- AVG(i.origin_amount::float - i.settlement_amount::float) as discount_value,
     -- each epoch is 30 mins so count avg epoch based on the time
     ROUND(AVG(i.hub_settlement_epoch - i.hub_invoice_entry_epoch), 0) as discount_epoch
  FROM public.invoices i
  -- filter out the netted invoices
 WHERE CAST(i.origin_ttl AS INTEGER) > 0 AND i.hub_status = 'DISPATCHED'
-GROUP BY 1
+AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')
 
+
+
+
+
+-- ALTERNATE 2:
 
 
 
 -- SELECT 
---     DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
 --     -- AVG(i.origin_amount::float - i.settlement_amount::float) as discount_value,
 --     -- each epoch is 30 mins so count avg epoch based on the time
---     ROUND(AVG(EXTRACT(EPOCH FROM (to_timestamp(hi.settlement_enqueued_timestamp) - to_timestamp(i.origin_timestamp))) / 1800), 0) as discount_epoch
+--     ROUND(AVG(EXTRACT(EPOCH FROM (to_timestamp(hi.settlement_enqueued_timestamp) - to_timestamp(hi.hub_invoice_enqueued_timestamp))) / 1800), 0) as discount_epoch
 --  FROM public.intents i
---  LEFT JOIN public.hub_intents hi ON i.id = hi.id
+--  LEFT JOIN public.hub_invoices hi ON i.id = hi.id
 --  -- filter out the netted invoices
 -- WHERE CAST(i.origin_ttl AS INTEGER) > 0 AND i.settlement_status = 'SETTLED'
---  GROUP BY 1
+
+-- -- AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')

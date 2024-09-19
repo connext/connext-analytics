@@ -1,0 +1,3 @@
+google-cloud-secret-manager
+google-api-core
+psycopg2-binary

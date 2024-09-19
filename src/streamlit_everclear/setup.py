@@ -364,10 +364,14 @@ def apply_date_filter_to_df(df, date_col="day", from_date=None, to_date=None):
             df["datetime"] = pd.to_datetime(df[date_col])
         else:
             df["datetime"] = df[date_col]
-        df["day_part"] = df["datetime"].dt.date
 
-        df = df[(df["day_part"] >= start_date) & (df["day_part"] <= end_date)]
-    return df
+        df["day_part"] = df["datetime"].dt.date
+        # return based on null or not
+        if df[date_col].isnull().all():
+            return df
+        else:
+            df = df[(df["day_part"] >= start_date) & (df["day_part"] <= end_date)]
+            return df
 
 
 # if __name__ == "__main__":

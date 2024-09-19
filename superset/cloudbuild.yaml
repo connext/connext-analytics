@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/dashboards/superset",
+        "-f",
+        "superset/Dockerfile",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/dashboards/superset"

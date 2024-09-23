@@ -34,6 +34,7 @@ sqlalchemy = "*"
 dbt = "*"
 dbt-core = "*"
 dbt-bigquery = "*"
+bs4 = "*"
 
 [dev-packages]
 black="*"

@@ -49,3 +49,10 @@ SELECT
 FROM raw
 GROUP BY 1
 ORDER BY 1 DESC;
+
+
+-- missing rewrds in the above query:
+-- amounts from the hub invoice amount is thr rewards
+-- rewards = origin_amount - hub_invoiced_amount -> accurate for intents that become invoices
+-- discounts = hub_invoiced_amount - settlement_amount
+-- rebalancing_fee = protocol_fee + discounts

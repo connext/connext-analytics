@@ -14,3 +14,7 @@ SELECT
 FROM public.intents i
 WHERE i.settlement_status = 'SETTLED'
 GROUP BY 1
+
+
+
+-- filter MM by origin intitiators

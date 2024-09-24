@@ -1,0 +1,12 @@
+chain,native_token,token_for_fee,chain_id
+Ethereum,ETH,ETH,1
+Arbitrum,ETH,ETH,42161
+Base,ETH,ETH,8453
+Optimism,ETH,ETH,10
+Polygon,POL,POL,137
+Mode,ETH,ETH,34433
+Linea,ETH,ETH,59144
+zkSync,ETH,ETH,324
+BSC,BNB,BNB,56
+Avalanche,AVAX,AVAX,43114
+Mantle,MNT,MNT,5000

@@ -1,0 +1,27 @@
+version: 2
+
+seeds:
+  - name: list_of_tokens_symbols
+    description: "A seed table containing a list of token symbols to pull."
+    columns:
+      - name: token_symbol
+        description: "The symbol of the token."
+        data_type: STRING
+      - name: price_symbol
+        description: "The symbol of the token that has a price associated with the token symbol."
+        data_type: STRING
+  - name: chains
+    description: "A seed table containing a list of chain names to pull."
+    columns:
+      - name: chain
+        description: "The name of the chain."
+        data_type: STRING
+      - name: native_token
+        description: "The native token of the chain."
+        data_type: STRING
+      - name: token_for_fee
+        description: "The token used to pay for fees on the chain."
+        data_type: STRING
+      - name: chain_id
+        description: "The chain id of the chain."
+        data_type: INT64

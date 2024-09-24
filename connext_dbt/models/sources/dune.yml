@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: dune
+    database: mainnet-bigq
+    schema: dune
+    tables:
+      - name: source_hourly_token_pricing_blockchain_eth
+        description: >
+          Contains hourly token pricing data for Ethereum blockchain.
+          Sample data:
+            - symbol: ALCX
+            - date: 2024-09-21 06:00:00.000 UTC
+            - average_price: 14.700833333333334
+            - max_price: 14.74
+            - _dlt_load_id: 1726905616.511291
+            - _dlt_id: zeDtHy6jPTvRpg
+        columns:
+          - name: symbol
+            description: "Ticker symbol of the token (e.g., ALCX)."
+            tests:
+              - not_null
+              - unique
+
+          - name: date
+            description: "Timestamp of the pricing data in UTC (e.g., 2024-09-21 06:00:00.000 UTC)."
+            tests:
+              - not_null
+
+          - name: average_price
+            description: "Average price of the token during the hour (e.g., 14.700833333333334)."
+            tests:
+              - not_null
+
+          - name: max_price
+            description: "Maximum price of the token during the hour (e.g., 14.74)."
+            tests:
+              - not_null
+
+          - name: _dlt_load_id
+            description: "Load identifier from DLT (e.g., 1726905616.511291)."
+            tests:
+              - not_null
+
+          - name: _dlt_id
+            description: "DLT identifier (e.g., zeDtHy6jPTvRpg)."
+            tests:
+              - not_null

@@ -1,2 +1,0 @@
--- Filter out tokens that pre-selected
--- TODO: 1. get gas and USD values by tokens

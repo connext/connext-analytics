@@ -51,58 +51,6 @@ AND i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status != 'DISPATCHED_UNSUPPORTE
 GROUP BY 1,2,3,4,5
 
 
-
---3. Settlement_Rate(1,3,6,24)
--- Definition:
-WITH raw AS (
-SELECT
-    DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) as day,
-    COUNT(i.id) as total_intents,
-    -- 1hr in seconds
-    COUNT(CASE
-        WHEN i.status = 'SETTLED_AND_COMPLETED' AND (i.settlement_timestamp - i.origin_timestamp) < 3600
-        AND i.hub_status = 'DISPATCHED'
-        THEN id 
-    END) as settled_in_1_hr,
-    -- 3hrs in seconds
-    COUNT(CASE
-        WHEN i.status = 'SETTLED_AND_COMPLETED' AND (i.settlement_timestamp - i.origin_timestamp) < 10800
-        AND i.hub_status = 'DISPATCHED'
-        THEN id 
-    END) as settled_in_3_hrs,
-    --  6 hr in seconds
-    COUNT(CASE
-        WHEN i.status = 'SETTLED_AND_COMPLETED' AND (i.settlement_timestamp - i.origin_timestamp) < 21600
-        AND i.hub_status = 'DISPATCHED'
-        THEN id 
-    END) as settled_in_6_hrs,
-    -- 24 hr in seconds
-    COUNT(CASE
-        WHEN i.status = 'SETTLED_AND_COMPLETED' AND (i.settlement_timestamp - i.origin_timestamp) < 86400
-        AND i.hub_status = 'DISPATCHED'
-        THEN id 
-    END) as settled_in_24_hrs
-
-    
-FROM public.intents i
-WHERE hub_status != 'DISPATCHED_UNSUPPORTED'
-GROUP BY 1)
-
--- settlement rate
-SELECT 
-    day,
-    total_intents,
-    settled_in_1_hr AS intents_settled_in_1_hr,
-    settled_in_3_hrs AS intents_settled_in_3_hrs,
-    settled_in_6_hrs AS intents_settled_in_6_hrs,
-    settled_in_24_hrs AS intents_settled_in_24_hrs,
-    ROUND(settled_in_1_hr * 100.0 / NULLIF(total_intents, 0), 2) AS settlement_rate_1h_percentage,
-    ROUND(settled_in_3_hrs * 100.0 / NULLIF(total_intents, 0), 2) AS settlement_rate_3h_percentage,
-    ROUND(settled_in_6_hrs * 100.0 / NULLIF(total_intents, 0), 2) AS settlement_rate_6h_percentage,
-    ROUND(settled_in_24_hrs * 100.0 / NULLIF(total_intents, 0), 2) AS settlement_rate_24h_percentage
-FROM raw;
-
-
 -- MARKET MAKER KPIs
 
 -- 5. Settlement_Volume -> Volume settled by market makers
@@ -110,8 +58,6 @@ FROM raw;
 -- 14. Net profit: APY for Market Makers
 -- 15. Average amount of epochs
     -- each epoch is 30 mins so count avg epoch based on the time
--- 17. Settlement_Rate_1h
--- 18. Settlement_Rate_3h
 -- 19. Trading_Volume
 
 WITH raw AS (
@@ -132,46 +78,16 @@ SELECT
     -- fees paid by MM for the invoices
     SUM(i.origin_gas_limit::float * i.origin_gas_price::float) as fees_paid_by_mm,
 
-    AVG(CASE 
-        WHEN inv.hub_status IN ('DISPATCHED', 'SETTLED') 
+    AVG(CASE
         THEN ROUND((inv.hub_settlement_epoch - inv.hub_invoice_entry_epoch), 0)
         ELSE NULL
-    END ) AS avg_discount_epoch,
-
-
-    -- settlement Rate: 1hr, 3hr, 6hr, 24hr
-
-    -- 1hr in seconds
-    COUNT(CASE
-        WHEN (i.settlement_timestamp - i.origin_timestamp) < 3600
-        AND inv.hub_status IN ('DISPATCHED', 'SETTLED')
-        THEN id 
-    END) as settled_in_1_hr,
-    -- 3hrs in seconds
-    COUNT(CASE
-        WHEN (i.settlement_timestamp - i.origin_timestamp) < 10800
-        AND inv.hub_status IN ('DISPATCHED', 'SETTLED')
-        THEN id 
-    END) as settled_in_3_hrs,
-    --  6 hr in seconds
-    COUNT(CASE
-        WHEN (i.settlement_timestamp - i.origin_timestamp) < 21600
-        AND inv.hub_status IN ('DISPATCHED', 'SETTLED')
-        THEN id 
-    END) as settled_in_6_hrs,
-    -- 24 hr in seconds
-    COUNT(CASE
-        WHEN (i.settlement_timestamp - i.origin_timestamp) < 86400
-        AND inv.hub_status IN ('DISPATCHED', 'SETTLED')
-        THEN id 
-    END) as settled_in_24_hrs
-
+    END ) AS avg_discount_epoch
 
 
 FROM public.intents i
 INNER JOIN public.invoices inv
 ON i.id = inv.id
-AND i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status != 'DISPATCHED_UNSUPPORTED'
+AND i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status IN ('DISPATCHED', 'SETTLED')
 GROUP BY 1,2,3,4,5
 )
 
@@ -186,7 +102,13 @@ SELECT
     avg_time_in_hrs AS avg_settlement_time_in_hrs_by_mm,
     -- APY calculation as (fee/volume) * 365 based on daily fee to MM
     ((fee_by_market_maker - fees_paid_by_mm) / volume_settled_by_mm) * 365 * 100 AS apy,
-    avg_discount_epoch AS avg_discount_epoch_by_mm
+    avg_discount_epoch AS avg_discount_epoch_by_mm,
+
+    -- settlement rate
+    ROUND(settled_in_1_hr * 100.0 / NULLIF(total_invoices_by_mm, 0), 2) AS settlement_rate_1h_percentage,
+    ROUND(settled_in_3_hrs * 100.0 / NULLIF(total_invoices_by_mm, 0), 2) AS settlement_rate_3h_percentage,
+    ROUND(settled_in_6_hrs * 100.0 / NULLIF(total_invoices_by_mm, 0), 2) AS settlement_rate_6h_percentage,
+    ROUND(settled_in_24_hrs * 100.0 / NULLIF(total_intents, 0), 2) AS settlement_rate_24h_percentage
 FROM raw
 
 
@@ -303,3 +225,50 @@ SELECT
     (inv.hub_invoice_enqueued_timestamp::float - inv.origin_timestamp::float) AS time_2_settle,
     60 *30 * (inv.hub_settlement_epoch - inv.hub_invoice_entry_epoch)
 FROM invoices inv
+
+
+
+
+
+
+
+
+
+-- Settlement rate
+-- for all intents
+-- 4. Settlement_Rate_6h
+-- 5. Settlement_Rate_24h
+
+
+
+-- for Market Maker intents
+-- 17. Settlement_Rate_1h
+-- 18. Settlement_Rate_3h
+
+    -- 1hr in seconds
+    COUNT(CASE
+        WHEN (i.settlement_timestamp - i.origin_timestamp) < 3600
+        THEN id 
+    END) as settled_in_1_hr,
+    -- 3hrs in seconds
+    COUNT(CASE
+        WHEN (i.settlement_timestamp - i.origin_timestamp) < 10800
+        THEN id 
+    END) as settled_in_3_hrs,
+    --  6 hr in seconds
+    COUNT(CASE
+        WHEN (i.settlement_timestamp - i.origin_timestamp) < 21600
+        
+        THEN id 
+    END) as settled_in_6_hrs,
+    -- 24 hr in seconds
+    COUNT(CASE
+        WHEN (i.settlement_timestamp - i.origin_timestamp) < 86400
+        THEN id 
+    END) as settled_in_24_hrs
+
+
+
+
+--3. Settlement_Rate(1,3,6,24)
+-- Definition:

@@ -2,17 +2,17 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 from setup import (
+    get_db_url,
+    create_engine,
     get_raw_data_from_postgres_by_sql,
     get_agg_data_from_sql_template,
     apply_date_filter_to_df,
 )
+from jinja2 import Template
 from datetime import datetime, timedelta
 import pytz
 import logging
 from sqlalchemy.exc import SQLAlchemyError
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def create_weekly_cohort_plot(df: pd.DataFrame) -> None:
@@ -41,6 +41,92 @@ def create_weekly_cohort_plot(df: pd.DataFrame) -> None:
     )
 
     st.plotly_chart(fig)
+
+
+@st.cache_data(ttl=3600)
+def get_metric_8_netting_rate(mode: str) -> pd.DataFrame:
+    sql_query = """
+        SELECT
+            DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) AS day,
+            COUNT(i.id) AS netted_count,
+            COUNT(CASE
+                WHEN i.settlement_timestamp - i.origin_timestamp <= 3600 THEN i.id
+            END) AS count_of_intents_within_1h,
+            -- Calculating the percentage of invoices netted within 24 hour
+            ROUND(COUNT(CASE
+                WHEN i.settlement_timestamp - i.origin_timestamp <= 3600 THEN i.id
+            END) * 100.0 / COUNT(i.id), 3) AS netting_rate_1h_percentage,
+            -- Calculating the percentage of invoices netted within 24 hour
+            ROUND(COUNT(CASE
+                WHEN i.settlement_timestamp - i.origin_timestamp <= 86400 THEN i.id
+            END) * 100.0 / COUNT(i.id), 3) AS netting_rate_24h_percentage
+        FROM public.intents i
+        WHERE i.settlement_status = 'SETTLED'
+        AND i.origin_ttl = 0
+        GROUP BY 1;
+    """
+    # Database connection settings
+    if mode == "prod":
+        db_url = get_db_url(mode="prod")
+    else:
+        db_url = get_db_url(mode="test")
+
+    # Create a database connection
+    engine = create_engine(db_url)
+
+    # Execute the query and return the result as a DataFrame
+    with engine.connect() as connection:
+        df = pd.read_sql_query(sql_query, connection)
+
+    return df
+
+
+@st.cache_data(ttl=3600)
+def get_metric_8_agg_netting_rate(mode: str, date_filter: dict) -> pd.DataFrame:
+    sql_query = """
+        WITH raw AS (
+            SELECT
+            COUNT(i.id) AS total_intents,
+            COUNT(CASE
+                WHEN (i.settlement_timestamp - i.origin_timestamp <= 3600)
+                AND i.settlement_status = 'SETTLED' 
+                AND CAST(i.origin_ttl AS INTEGER) = 0
+                THEN i.id
+            END) AS count_of_intents_within_1h,
+            COUNT(CASE
+                WHEN (i.settlement_timestamp - i.origin_timestamp <= 86400)
+                AND i.settlement_status = 'SETTLED' 
+                AND CAST(i.origin_ttl AS INTEGER) = 0
+                THEN i.id
+            END) AS count_of_intents_within_24h
+        FROM public.intents i
+        WHERE DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  >= DATE('{{ from_date }}') AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp))  <= DATE('{{ to_date }}')
+        )
+
+        SELECT
+            -- # netting rate 1h
+            ROUND(count_of_intents_within_1h * 100.0 / total_intents, 2) AS netting_rate_1h_percentage,
+            -- # netting rate 24h
+            ROUND(count_of_intents_within_24h * 100.0 / total_intents, 2) AS netting_rate_24h_percentage
+        FROM raw;
+    """
+
+    try:
+
+        query = Template(sql_query).render(date_filter)
+
+        logging.info(f"Generated SQL: {query}")
+        db_url = get_db_url(mode)
+        engine = create_engine(db_url)
+        with engine.connect() as connection:
+            df = pd.read_sql_query(query, connection)
+        return df
+    except SQLAlchemyError as e:
+        logging.error(f"Database query failed: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        raise
 
 
 def metric_dashboard(mode: str) -> None:

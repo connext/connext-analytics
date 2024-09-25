@@ -10,7 +10,7 @@ SELECT
     i.origin_input_asset AS from_asset_address,
     CAST(i.settlement_domain AS INTEGER) AS to_chain_id,
     i.settlement_asset AS to_asset_address,
-    0.001 AS fee_value,
+    0.0001 AS fee_value,
     i.origin_amount::FLOAT AS origin_amount,
     CASE 
         WHEN inv.id IS NOT NULL 
@@ -19,7 +19,7 @@ SELECT
     END AS discounts_by_mm
 FROM public.intents i
 LEFT JOIN public.invoices inv ON i.id = inv.id
-AND i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status != 'DISPATCHED_UNSUPPORTED'
+WHERE i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status != 'DISPATCHED_UNSUPPORTED'
 )
 
 SELECT

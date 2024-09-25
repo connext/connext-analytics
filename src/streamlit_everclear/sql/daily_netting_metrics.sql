@@ -12,7 +12,7 @@ SELECT
     ) AS avg_netting_time_in_hrs
 
 FROM public.intents i
-LEFT JOIN public.invoices inv 
+LEFT JOIN public.invoices inv
     ON i.id = inv.id
 WHERE inv.id IS NULL
 AND i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status != 'DISPATCHED_UNSUPPORTED'

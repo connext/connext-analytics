@@ -45,18 +45,16 @@ class ChainsAssetsMetadata:
                 table_data.append(cols_text)
 
         # Step 5: Convert the data to a pandas DataFrame
-        df = pd.DataFrame(
-            table_data,
-            columns=[
-                "asset_name",
-                "symbol",
-                "decimals",
-                "domain_id",
-                "address",
-                "faucet",
-                "faucet_limit",
-            ],
-        )
+        df = pd.DataFrame(table_data)
+        df.columns = [
+            "asset_name",
+            "symbol",
+            "decimals",
+            "domain_id",
+            "address",
+            "faucet",
+            "faucet_limit",
+        ]
 
         return df
 
@@ -72,15 +70,9 @@ class ChainsAssetsMetadata:
         print(f"Data has been saved to '{filepath}'.")
 
 
-if __name__ == "__main__":
-
-    # Initialize the class with the target URL
-    metadata_scraper = ChainsAssetsMetadata(
-        url="https://docs.everclear.org/resources/contracts/mainnet"
-    )
-
-    # Pull the registered assets data into a DataFrame
-    df_assets = metadata_scraper.pull_registered_assets_data()
-
-    # Save the DataFrame to a CSV file
-    metadata_scraper.save_to_csv(df_assets, "data/chains_assets_metadata.csv")
+# if __name__ == "__main__":
+#     metadata_scraper = ChainsAssetsMetadata(
+#         url="https://docs.everclear.org/resources/contracts/mainnet"
+#     )
+#     df_assets = metadata_scraper.pull_registered_assets_data()
+#     print(df_assets)

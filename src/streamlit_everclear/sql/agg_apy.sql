@@ -137,40 +137,11 @@ WITH metadata AS (
         CAST(i.settlement_domain AS INTEGER) AS to_chain_id,
         i.settlement_asset AS to_asset_address,
         tm.symbol AS to_asset_symbol,
-        AVG(
-            (CAST(inv.hub_invoice_amount AS FLOAT) / 10^18) - (CAST(i.settlement_amount AS FLOAT) / 10 ^ tm.decimal)
-        ) AS avg_discounts_by_mm,
         SUM(
             (CAST(inv.hub_invoice_amount AS FLOAT) / 10^18) - (CAST(i.settlement_amount AS FLOAT) / 10 ^ tm.decimal)
-        ) AS discounts_by_mm,
-        -- rewards
-        AVG(
-            CAST(inv.hub_invoice_amount AS FLOAT) / 10^18 - CAST(i.origin_amount AS FLOAT) / 10^18
-        ) AS avg_rewards_by_invoices,
-        -- when cal rewards, we take fee that out the baked in protocol_fee: SUM(fee_value * origin_amount)
-        SUM(
-            CAST(inv.hub_invoice_amount AS FLOAT) / 10^18 - CAST(i.origin_amount AS FLOAT) / 10^18 - (0.0001 * CAST(i.origin_amount AS FLOAT)) / 10^18
-        ) AS rewards_for_invoices,
-        SUM(i.origin_amount::float / 10^18) AS volume_settled_by_mm,
-        COUNT(i.id) AS total_invoices_by_mm,
-        -- spoke to hub -> 10 to 30 mins(proxy for)
-        AVG(
-            (
-                i.hub_settlement_enqueued_timestamp::FLOAT - i.hub_added_timestamp::FLOAT
-            ) / 3600
-        ) AS alt_avg_time_in_hrs,
-        -- proxy for system to settle invoices
-        AVG(
-            (
-                i.hub_settlement_enqueued_timestamp::FLOAT - i.hub_added_timestamp::FLOAT
-            ) / 3600
-        ) AS avg_time_in_hrs,
-        ROUND(
-            AVG(
-                inv.hub_settlement_epoch - inv.hub_invoice_entry_epoch
-            ),
-            0
-        ) AS avg_discount_epoch
+        ) AS discounts_by_mm
+        SUM(i.origin_amount::float / 10^18) AS volume_settled_by_mm
+
     FROM public.intents i
     INNER JOIN public.invoices inv ON i.id = inv.id
     LEFT JOIN metadata fm ON (
@@ -200,14 +171,8 @@ SELECT
     -- to_asset_address,
     to_asset_symbol,
     volume_settled_by_mm,
-    total_invoices_by_mm,
-    discounts_by_mm,
-    avg_discounts_by_mm,
-    rewards_for_invoices,
-    avg_rewards_by_invoices,
-    avg_time_in_hrs AS avg_settlement_time_in_hrs_by_mm,
-    alt_avg_time_in_hrs AS alt_avg_settlement_time_in_hrs_by_mm,
     -- APY calculation as (fee/volume) * 365 based on daily fee to MM
-    ((discounts_by_mm) / volume_settled_by_mm) * 365 * 100 AS apy,
-    avg_discount_epoch AS avg_discount_epoch_by_mm
+    discounts_by_mm,
+    volume_settled_by_mm,
+    ((discounts_by_mm) / volume_settled_by_mm) * 365 * 100 AS apy
 FROM raw

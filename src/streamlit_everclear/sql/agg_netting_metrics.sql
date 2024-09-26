@@ -126,11 +126,12 @@ WITH metadata AS (
                 )
         ) AS asset_data (AssetName, Symbol, Decimals, DomainID, Address)
 )
-SELECT CAST(i.origin_origin AS INTEGER) AS from_chain_id,
-    i.origin_input_asset AS from_asset_address,
+SELECT 
+    CAST(i.origin_origin AS INTEGER) AS from_chain_id,
+    -- i.origin_input_asset AS from_asset_address,
     fm.symbol AS from_asset_symbol,
     CAST(i.settlement_domain AS INTEGER) AS to_chain_id,
-    i.settlement_asset AS to_asset_address,
+    -- i.settlement_asset AS to_asset_address,
     tm.symbol AS to_asset_symbol,
     SUM(i.origin_amount::float / 10 ^ 18) AS netting_volume,
     AVG(
@@ -156,6 +157,4 @@ WHERE inv.id IS NULL
 GROUP BY 1,
     2,
     3,
-    4,
-    5,
-    6
+    4

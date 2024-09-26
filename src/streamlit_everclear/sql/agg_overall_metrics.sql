@@ -2,7 +2,7 @@
 -- 6. Total_rebalaicing fee
 -- 9. Avg. intent size
 -- 12. Total_Protocol_Revenue: Fee for the protocol
--- 13. Total_Rebalaicing_Fee: Rebalaicing fee for the protocol
+-- 13. Total_Rebalaicing_Fee: Rebalaicing fee for the protocol -> only decimlas for CAST(i.settlement_amount AS FLOAT) / 10 ^ tm.decimal
 -- 3. Netting_Volume
 -- 11. Netting_Time
 WITH metadata AS (
@@ -132,7 +132,9 @@ WITH metadata AS (
         ) AS asset_data (AssetName, Symbol, Decimals, DomainID, Address)
 ),
 raw AS (
-    SELECT CAST(i.origin_origin AS INTEGER) AS from_chain_id,
+    SELECT
+        i.id,
+        CAST(i.origin_origin AS INTEGER) AS from_chain_id,
         i.origin_input_asset AS from_asset_address,
         fm.symbol AS from_asset_symbol,
         CAST(i.settlement_domain AS INTEGER) AS to_chain_id,
@@ -142,7 +144,7 @@ raw AS (
         i.origin_amount::FLOAT / 10 ^ 18 AS origin_amount,
         CASE
             WHEN inv.id IS NOT NULL THEN (
-                CAST(inv.hub_invoice_amount AS FLOAT) / 10 ^ 18 - CAST(i.settlement_amount AS FLOAT) / 10 ^ 18
+                CAST(inv.hub_invoice_amount AS FLOAT) / 10 ^ 18 - CAST(i.settlement_amount AS FLOAT) / 10 ^ tm.decimal
             )
             ELSE 0
         END AS discounts_by_mm
@@ -161,22 +163,20 @@ raw AS (
         AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= DATE('{{ from_date }}')
         AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= DATE('{{ to_date }}')
 )
-SELECT from_chain_id,
-    from_asset_address,
+SELECT 
+    from_chain_id,
+    -- from_asset_address,
     from_asset_symbol,
     to_chain_id,
-    to_asset_address,
+    -- to_asset_address,
     to_asset_symbol,
     SUM(origin_amount::float) AS clearing_volume,
     SUM(fee_value * origin_amount) AS protocol_revenue,
-    (
-        SUM(discounts_by_mm) + SUM(fee_value * origin_amount)
-    ) AS rebalancing_fee,
-    AVG(origin_amount::float) AS avg_intent_size
+    SUM(discounts_by_mm) + SUM(fee_value * origin_amount) AS rebalancing_fee,
+    AVG(origin_amount::float) AS avg_intent_size,
+    COUNT(id) AS total_intents
 FROM raw
 GROUP BY 1,
     2,
     3,
-    4,
-    5,
-    6
+    4

@@ -1,13 +1,13 @@
 # Adding the streamlit pages to the sidebar
-import json
 import pytz
+import logging
 import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from google.cloud import secretmanager
 from google.api_core.exceptions import DeadlineExceeded
-import logging
+import pandas_gbq as gbq
 from jinja2 import Template
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.util import immutabledict
@@ -82,71 +82,6 @@ def get_raw_data_from_postgres_by_sql(sql_file_name, mode="prod") -> pd.DataFram
     return df
 
 
-def apply_universal_sidebar_filters(df, date_col="date"):
-    """
-    Apply universal sidebar filters to the dataframe
-    Filters applied and columns needed in dataframe:
-    - asset_group
-    - bridge
-    - chain
-    - date
-    """
-    st.sidebar.header("Filters")
-
-    selected_asset = st.sidebar.multiselect(
-        "Tokens/Assets:",
-        options=df["asset_group"].unique(),
-        default=["WETH", "USDC", "USDT", "DAI"],
-        key="asset",
-    )
-
-    selected_bridges = st.sidebar.multiselect(
-        "Bridges:", options=df["bridge"].unique(), default=[], key="bridge"
-    )
-
-    st.sidebar.subheader("Time Range Picker")
-
-    # last 30 days
-    default_start, default_end = (
-        datetime.now(pytz.utc) - timedelta(days=31),
-        datetime.now(pytz.utc) - timedelta(days=1),
-    )
-
-    from_date = st.sidebar.date_input(
-        "Start Date", value=default_start, max_value=default_end, key="start_date"
-    )
-    to_date = st.sidebar.date_input(
-        "End Date",
-        value=default_end,
-        min_value=default_start,
-        max_value=default_end,
-        key="end_date",
-    )
-
-    if from_date and to_date:
-        start_date, end_date = from_date, to_date
-        if df[date_col].dtype == "O":
-            df["datetime"] = pd.to_datetime(df[date_col])
-        else:
-            df["datetime"] = df[date_col]
-        df["day"] = df["datetime"].dt.date
-        df["hour"] = df["datetime"].dt.hour
-        df = df[(df["day"] >= start_date) & (df["day"] <= end_date)]
-
-    selected_chain = st.sidebar.multiselect(
-        "Chains:", options=df["chain"].unique(), default=[], key="chain"
-    )
-
-    if selected_chain:
-        df = df[df["chain"].isin(selected_chain)]
-    if selected_bridges:
-        df = df[df["bridge"].isin(selected_bridges)]
-    if selected_asset:
-        df = df[df["asset_group"].isin(selected_asset)]
-
-    return df
-
-
 def get_latest_value_by_date(df, date_col="date"):
     """
     Get the latest value by date -> filter the df by date and get the value of the metric_col
@@ -176,7 +111,7 @@ def sql_template_filter_date(sql_file_name, date_filter: dict) -> str:
         return None
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=86400)
 def get_agg_data_from_sql_template(
     sql_file_name: str, date_filter: dict, mode: str = "prod"
 ) -> pd.DataFrame:
@@ -207,30 +142,37 @@ def get_agg_data_from_sql_template(
         raise
 
 
-def apply_date_filter_to_df(df, date_col="day", from_date=None, to_date=None):
+def apply_sidebar_filters(
+    old_df: pd.DataFrame, selected_chain, selected_asset, is_agg, from_date, to_date
+):
     """
-    Apply universal sidebar filters to the dataframe
-    Filters applied and columns needed in dataframe:
-    - asset_group
-    - bridge
-    - chain
-    - date
+    Apply sidebar filters to the DataFrame based on selected chains, assets, and date range.
     """
+    df = old_df.copy()
+    try:
 
-    if from_date and to_date:
-        start_date, end_date = from_date, to_date
-        if df[date_col].dtype == "O":
-            df["datetime"] = pd.to_datetime(df[date_col])
-        else:
-            df["datetime"] = df[date_col]
+        if not is_agg:
+            # add a datepart col
+            df["datepart"] = pd.to_datetime(df["day"]).dt.date
+            df = df[(df["datepart"] >= from_date) & (df["datepart"] <= to_date)]
+        # Apply chain and asset filters if necessary
+        if selected_chain:
+            df = df[
+                df["from_chain_name"].isin(selected_chain)
+                | df["to_chain_name"].isin(selected_chain)
+            ]
 
-        df["day_part"] = df["datetime"].dt.date
-        # return based on null or not
-        if df[date_col].isnull().all():
-            return df
-        else:
-            df = df[(df["day_part"] >= start_date) & (df["day_part"] <= end_date)]
-            return df
+        if selected_asset:
+            df = df[
+                df["from_asset_symbol"].isin(selected_asset)
+                | df["to_asset_symbol"].isin(selected_asset)
+            ]
+
+        # st.write(df)
+
+        return df
+    except Exception as e:
+        logging.error(f"Error in apply_sidebar_filters: {e}")
 
 
 def convert_to_token_address(padded_address: str) -> str:
@@ -265,3 +207,42 @@ def get_chains_assets_metadata():
     df_assets = metadata_scraper.pull_registered_assets_data()
     print(df_assets)
     return df_assets
+
+
+@st.cache_data(ttl=86400)
+def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
+    """
+    Get raw data from BigQuery
+    Cols included are
+    - date
+    - router_address
+    - chain
+    - asset
+    - tvl
+    - daily_fee_earned
+    - total_fee_earned
+    - daily_liquidity_added
+    - router_locked_total
+    - calculated_router_locked_total
+    - total_balance
+    - daily_apr
+    """
+    with open(f"src/streamlit_everclear/sql/{sql_file_name}.sql", "r") as file:
+        sql = file.read()
+    return gbq.read_gbq(sql)
+
+
+def get_pricing_data_from_bq():
+    """
+    Get the pricing data from BigQuery
+    """
+    df = get_raw_data_from_bq_df("daily_price")
+    return df
+
+
+def get_chain_id_to_chain_name_data_from_bq():
+    """
+    Get the chain id to chain name data from BigQuery
+    """
+    df = get_raw_data_from_bq_df("chainids_metadata")
+    return df

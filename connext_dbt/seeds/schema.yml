@@ -10,6 +10,12 @@ seeds:
       - name: price_symbol
         description: "The symbol of the token that has a price associated with the token symbol."
         data_type: STRING
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - token_symbol
+            - price_symbol
+
   - name: chains
     description: "A seed table containing a list of chain names to pull."
     columns:
@@ -25,3 +31,10 @@ seeds:
       - name: chain_id
         description: "The chain id of the chain."
         data_type: INT64
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - chain
+            - chain_id
+            - native_token
+            - token_for_fee

@@ -1,5 +1,5 @@
 SELECT DISTINCT
-    r.transferid AS transfer_id,
+    r.transferid AS id,
     TIMESTAMP_SECONDS(CAST(r.timestamp AS INT64)) AS from_timestamp,
     TIMESTAMP_SECONDS(CAST(r.bondtimestamp AS INT64)) AS to_timestamp,
     accountaddress AS from_address,
@@ -21,10 +21,16 @@ SELECT DISTINCT
     CAST(CAST(REGEXP_REPLACE(amountusddisplay, r'\$|,', '') AS FLOAT64) - CAST(bonderfeeusd AS FLOAT64) AS FLOAT64) AS to_amount_usd,
     
     -- fees
-    NULL AS gas_fee,
     token AS relayer_fee_symbol,
     CAST(bonderfeedisplay AS FLOAT64) AS relayer_fee,
     CAST(REGEXP_REPLACE(bonderfeeusddisplay, r'\$|,', '') AS FLOAT64) AS relayer_fee_in_usd
     
-    
-FROM `mainnet-bigq.stage.source_hop_explorer__transfers` r
+FROM {{ source('stage', 'source_hop_explorer__transfers') }} r
+WHERE r.id NOT IN (
+    '207960',
+    '110530',
+    '132995',
+    '88441',
+    '126748',
+    '126615'
+)

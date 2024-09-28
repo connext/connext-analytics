@@ -18,31 +18,21 @@ sources:
         columns:
           - name: symbol
             description: "Ticker symbol of the token (e.g., ALCX)."
+            data_type: string
             tests:
               - not_null
-              - unique
-
           - name: date
             description: "Timestamp of the pricing data in UTC (e.g., 2024-09-21 06:00:00.000 UTC)."
+            data_type: timestamp
             tests:
               - not_null
-
           - name: average_price
             description: "Average price of the token during the hour (e.g., 14.700833333333334)."
+            data_type: float
             tests:
               - not_null
-
           - name: max_price
             description: "Maximum price of the token during the hour (e.g., 14.74)."
-            tests:
-              - not_null
-
-          - name: _dlt_load_id
-            description: "Load identifier from DLT (e.g., 1726905616.511291)."
-            tests:
-              - not_null
-
-          - name: _dlt_id
-            description: "DLT identifier (e.g., zeDtHy6jPTvRpg)."
+            data_type: float
             tests:
               - not_null

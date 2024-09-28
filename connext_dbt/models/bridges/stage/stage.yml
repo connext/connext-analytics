@@ -1,0 +1,326 @@
+version: 2
+
+models:
+  - name:  stg_synapse_txs
+    description: >
+      Extracts distinct transfer records from `source_synapsois_explorer_transactions` for the staging layer in the Connext DBT model.
+      Converts `from_time` and `to_time` from seconds to `from_timestamp` and `to_timestamp` respectively.
+      This table captures cross-chain transaction data from the Synapse Protocol Explorer.
+      
+      **Sample Data:**
+        - id: "2045919"
+        - from_timestamp: "2024-06-26 03:33:15.000000 UTC"
+        - to_timestamp: "2024-06-26 03:33:36.000000 UTC"
+        - from_address: "0xF5114106A5D52060Be898B184A64818C20557BC9"
+
+    columns:
+      - name: id
+        description: "The unique ID of the transaction (eg: \"2045919\")."
+        data_type: "STRING"
+        tests:
+          - not_null
+          - unique
+      - name: from_timestamp
+        description: "The timestamp of when the transaction was created (eg: \"2024-06-26 03:33:15.000000 UTC\")."
+  
+  - name: stg_symbiosis_txs
+    description: >
+      Extracts distinct transfer records from `source_symbiosis_bridge_explorer_transactions` for the staging layer in the Connext DBT model.
+      Converts `created_at` to `from_timestamp` and `success_at` to `to_timestamp`.
+      
+      **Includes specific transfer records on logic `state = 0 AND type = 0 AND event_type IN (1, 3)`**
+      
+      **Sample Data:**
+        - id: "2045919"
+        - from_timestamp: "2024-06-26 03:33:15.000000 UTC"
+        - from_address: "0xF5114106A5D52060Be898B184A64818C20557BC9"
+        - to_address: "0xF5114106A5D52060Be898B184A64818C20557BC9"
+        - from_hash: "0x20f4ee22dcca40ec04b506a34229ccb7d4dd01f4fbe48cedc748b99a8ede0c3c"
+        - to_timestamp: "2024-06-26 03:33:36.000000 UTC"
+        - from_chain_id: "324.0"
+        - from_amount_raw: "166540590000000.0"
+        - from_amount: "0.00016654059"
+        - from_amount_usd: "3.4537919"
+        - from_token_symbol: "ETH"
+        - from_token_name: "Ether"
+        - from_token_address: "0x000000000000000000000000000000000000800a"
+        - from_token_decimals: "18.0"
+        - to_chain_id: "42161.0"
+        - to_amount_raw: "415428134575682.0"
+        - to_amount: "0.000415428134575682"
+        - to_token_symbol: "WETH"
+        - to_token_name: "Wrapped Ether"
+        - to_token_address: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+        - to_token_decimals: "18.0"
+        - from_chain_name: "zkSync Mainnet"
+        - from_amount_usd: "3.4537919"
+        - to_hash: "0x882ac7c7cb1decd2a0fe1b89659d18d562014cad50f93ed168e43e7559d74386"
+        - to_chain_name: "Arbitrum One"
+        - to_amount_usd: "1.4120735"
+        - fee_token_symbol: "ETH"
+        - gas_fee: null
+        - gas_fee_usd: null
+        - fee_amount_usd: "2.0417184"
+
+    columns:
+      - name: id
+        description: "The unique ID of the transaction (eg: \"999243\")."
+        data_type: "STRING"
+        tests:
+          - not_null
+          - unique
+      - name: from_timestamp
+        description: "The timestamp of when the transaction was created (eg: \"2024-01-24 23:45:37.000000 UTC\")."
+        data_type: "TIMESTAMP"
+      - name: to_timestamp
+        description: "The timestamp of when the transaction was marked as successful (eg: \"2024-01-24 23:48:33.000000 UTC\")."
+        data_type: "TIMESTAMP"
+      - name: from_address
+        description: "The address from which the transfer originated (eg: \"0x777Ded5253A1a6d6934d524480fE994950f1FB99\")."
+        data_type: "STRING"
+      - name: to_address
+        description: "The address to which the transfer is directed (eg: \"0x777Ded5253A1a6d6934d524480fE994950f1FB99\")."
+        data_type: "STRING"
+      - name: from_hash
+        description: "The transaction hash from the source chain (eg: \"0xbb61ceea7567ef60b37d9aa5a0a7c7438291e997b4b344c495e3ef461ed5b1ba\")."
+        data_type: "STRING"
+      - name: to_chain_id
+        description: "The ID of the destination chain (eg: \"43114\")."
+        data_type: "INTEGER"
+      - name: to_chain_name
+        description: "The name of the destination chain (eg: \"Avalanche C-Chain\")."
+        data_type: "STRING"
+      - name: from_token_address
+        description: "The token address on the source chain (eg: \"0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4\")."
+        data_type: "STRING"
+      - name: from_token_symbol
+        description: "The symbol of the token being transferred from the source chain (eg: \"USDC\")."
+        data_type: "STRING"
+      - name: from_token_decimals
+        description: "The number of decimal places for the token on the source chain (eg: \"6\")."
+        data_type: "FLOAT"
+      - name: from_amount_raw
+        description: "The amount of tokens transferred from the source chain, in raw format, no token decimals (eg: \"166540590000000.0\")."
+        data_type: "FLOAT"
+      - name: from_amount
+        description: "The amount of tokens transferred from the source chain (eg: null)."
+        data_type: "FLOAT"
+      - name: from_amount_usd
+        description: "The USD value of the amount transferred from the source chain (eg: \"37187.152\")."
+        data_type: "FLOAT"
+      - name: to_hash
+        description: "The transaction hash on the destination chain (eg: \"0x2b0410360e8c633de466261f92667e24bd0e6f49e87124422928055d52640b2a\")."
+        data_type: "STRING"
+      - name: to_token_decimals
+        description: "The number of decimal places for the token on the destination chain (eg: \"18\")."
+        data_type: "FLOAT"
+      - name: to_token_address
+        description: "The token address on the destination chain (eg: \"0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4\")."
+        data_type: "STRING"
+      - name: to_token_symbol
+        description: "The symbol of the token being transferred to the destination chain (eg: \"USDC\")."
+        data_type: "STRING"
+      - name: to_amount_raw
+        description: "The amount of tokens transferred to the destination chain, in raw format, no token decimals (eg: \"415428134575682.0\")."
+        data_type: "FLOAT"
+      - name: to_amount
+        description: "The amount of tokens transferred to the destination chain (eg: \"0.000415428134575682\")."
+        data_type: "FLOAT"
+      - name: to_amount_usd
+        description: "The USD value of the amount transferred to the destination chain (eg: \"37156.562\")."
+        data_type: "FLOAT"
+      - name: fee_token_symbol
+        description: "The symbol of the native token used for transaction fees on the source chain (eg: \"ETH\")."
+        data_type: "STRING"
+      - name: gas_fee
+        description: "The amount of gas fees paid for the transaction (eg: null)."
+        data_type: "FLOAT"
+      - name: gas_fee_usd
+        description: "The USD value of the gas fees paid for the transaction (eg: null, not available in the explorer)."
+        data_type: "FLOAT"
+      - name: fee_amount_usd
+        description: "The fee amount in USD for the transaction, calculated as the difference between the from and to amounts (eg: \"30.590000000003783\"). The gas fee and protocol fee are baked into this fee."
+        data_type: "FLOAT"
+  - name: stg_hop_txs
+    description: >
+      Extracts distinct transfer records from `source_hop_explorer__transfers` for the staging layer in the Connext DBT model.
+      Converts `timestamp` and `bondtimestamp` from seconds to `from_timestamp` and `to_timestamp` respectively.
+      Excludes specific transfer records based on a predefined list of `id` values to ensure data relevancy and accuracy.
+      
+      **Sample Data:**
+        - id: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+        - from_timestamp: "2024-02-13 15:21:09.000000 UTC"
+        - to_timestamp: "2024-02-13 15:21:38.000000 UTC"
+        - from_address: "0xa1b2224199188538012d6777a8377fbd646438ca"
+        - to_address: "0xa1b2224199188538012d6777a8377fbd646438ca"
+        - from_hash: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+        - from_chain_id: "8453"
+        - from_chain_name: "base"
+        - from_token_symbol: "ETH"
+        - from_amount: "0.003"
+        - from_amount_usd: "8.009"
+        - to_hash: "0xa5b79e3aef2c7b5b4eeff91df2f0e21455560f44a4f108767d5d80735f2977b9"
+        - to_chain_id: "42161"
+        - to_chain_name: "arbitrum"
+        - to_token_symbol: "ETH"
+        - to_amount: "0.0026"
+        - to_amount_usd: "8.009"
+        - gas_fee: null
+        - relayer_fee_symbol: "ETH"
+        - relayer_fee: "0.0004"
+        - relayer_fee_in_usd: "0.962"
+
+    columns:
+      - name: id
+        description: "Unique identifier for each transaction (e.g., '0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51')."
+        data_type: STRING
+        tests:
+          - not_null
+          - unique
+      - name: from_timestamp
+        description: "Timestamp indicating when the transaction started (e.g., '2024-02-13 15:21:09.000000 UTC')."
+        data_type: TIMESTAMP
+      - name: to_timestamp
+        description: "Timestamp indicating when the transaction ended (e.g., '2024-02-13 15:21:38.000000 UTC')."
+        data_type: TIMESTAMP
+      - name: from_address
+        description: "Ethereum address from which the transaction originated (e.g., '0xa1b2224199188538012d6777a8377fbd646438ca')."
+        data_type: STRING
+      - name: to_address
+        description: "Ethereum address to which the transaction was sent (e.g., '0xa1b2224199188538012d6777a8377fbd646438ca')."
+        data_type: STRING
+      - name: from_hash
+        description: "Hash of the originating transaction (e.g., '0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51')."
+        data_type: STRING
+      - name: from_chain_id
+        description: "Identifier of the source blockchain (e.g., '8453')."
+        data_type: INTEGER
+      - name: from_chain_name
+        description: "Name of the source blockchain (e.g., 'base')."
+        data_type: STRING
+      - name: from_token_symbol
+        description: "Symbol of the token sent from the source blockchain (e.g., 'ETH')."
+        data_type: STRING
+      - name: from_amount
+        description: "Amount of tokens sent from the source blockchain (e.g., '0.003')."
+        data_type: FLOAT
+      - name: from_amount_usd
+        description: "USD value of tokens sent from the source blockchain (e.g., '8.009')."
+        data_type: FLOAT
+      - name: to_hash
+        description: "Hash of the destination transaction (e.g., '0xa5b79e3aef2c7b5b4eeff91df2f0e21455560f44a4f108767d5d80735f2977b9')."
+        data_type: STRING
+      - name: to_chain_id
+        description: "Identifier of the destination blockchain (e.g., '42161')."
+        data_type: INTEGER
+      - name: to_chain_name
+        description: "Name of the destination blockchain (e.g., 'arbitrum')."
+        data_type: STRING
+      - name: to_token_symbol
+        description: "Symbol of the token received on the destination blockchain (e.g., 'ETH')."
+        data_type: STRING
+      - name: to_amount
+        description: "Amount of tokens received on the destination blockchain (e.g., '0.0026')."
+        data_type: FLOAT
+      - name: to_amount_usd
+        description: "USD value of tokens received on the destination blockchain (e.g., '8.009')."
+        data_type: FLOAT
+      - name: gas_fee
+        description: "Amount of gas fees paid (e.g., null)."
+        data_type: FLOAT
+      - name: relayer_fee_symbol
+        description: "Symbol of the token used to pay the relayer fee (e.g., 'ETH')."
+        data_type: STRING
+      - name: relayer_fee
+        description: "Amount of relayer fees paid (e.g., '0.0004')."
+        data_type: FLOAT
+      - name: relayer_fee_in_usd
+        description: "USD value of relayer fees paid (e.g., '0.962')."
+        data_type: FLOAT
+      
+  - name: stg_debridge_txs
+    description: >
+      This staging model pulls raw DeBridge transaction data and prepares it for
+      further processing by cleaning and transforming the data.
+      In the stage process for DeBridge data, the following transformations have been applied:
+        - Rows filtered by state='ClaimedUnlock'
+        - Date: In timestamp format - UTC
+        - Values: Converted to Integer and Float types
+        - Converted the amounts from pre-decimal to actual value (with decimal precision)
+      
+      **Sample Data:**
+        - id: "0xa76481ef0c7d755c1771e3750294b15b0f73f72b906b04bc8cd9f35f5706abd3"
+        - date: "2024-09-21 02:06:19.000000 UTC"
+        - from_chain_id: "8453"
+        - from_chain_name: "Base"
+        - from_token_address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+        - from_token_symbol: "USDC"
+        - from_amount: "98.475012"
+        - user_address_out: "0x53323e9be41473e747001cde9076e6a2c29c1b3e"
+        - to_chain_id: "59144"
+        - to_chain_name: "Linea"
+        - to_token_symbol: "USDC"
+        - to_amount: "98.079526"
+        - fee_token_symbol: "ETH"
+        - gas_fee: "0.001"
+        - protocol_fee_token_symbol: "USDC"
+        - protocol_fee_value: "0.039405"
+    
+    columns:
+      - name: id
+        description: "Unique identifier for each transaction. (eg: '0xa76481ef0c7d755c1771e3750294b15b0f73f72b906b04bc8cd9f35f5706abd3')"
+        data_type: string
+        tests:
+          - not_null
+          - unique
+      - name: date
+        description: "Timestamp indicating when the transaction was processed. Timezone: UTC. (eg: '2024-09-21 02:06:19.000000 UTC')"
+        data_type: timestamp
+      - name: from_chain_id
+        description: "Identifier of the source blockchain. (eg: '8453')"
+        data_type: integer
+      - name: from_chain_name
+        description: "Name of the source blockchain. (eg: 'Base')"
+        data_type: string
+      - name: from_tx_hash
+        description: "Hash of the transaction on the source blockchain. (Currently null, not available in the explorer)"
+        data_type: string
+      - name: from_token_address
+        description: "Contract address of the token sent from the source blockchain. (eg: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913')"
+        data_type: string
+      - name: from_token_symbol
+        description: "Symbol of the token sent from the source blockchain. (eg: 'USDC')"
+        data_type: string
+      - name: from_amount
+        description: "Amount of tokens sent from the source blockchain. (eg: '98.475012')"
+        data_type: float
+      - name: user_address_out
+        description: "User address receiving the transaction on the destination blockchain. (eg: '0x53323e9be41473e747001cde9076e6a2c29c1b3e')"
+        data_type: string
+      - name: to_chain_id
+        description: "Identifier of the destination blockchain. (eg: '59144')"
+        data_type: integer
+      - name: to_chain_name
+        description: "Name of the destination blockchain. (eg: 'Linea')"
+        data_type: string
+      - name: to_tx_hash
+        description: "Hash of the transaction on the destination blockchain. (Currently null, not available in the explorer)" 
+        data_type: string
+      - name: to_token_symbol
+        description: "Symbol of the token received on the destination blockchain. (eg: 'USDC')"
+        data_type: string
+      - name: to_amount
+        description: "Amount of tokens received on the destination blockchain. (eg: '98.079526')"
+        data_type: float
+      - name: fee_token_symbol
+        description: "Symbol of the token used to pay gas fees. (eg: 'ETH')"
+        data_type: string
+      - name: gas_fee
+        description: "Amount of gas fees paid. (eg: '0.001')"
+        data_type: float
+      - name: protocol_fee_token_symbol
+        description: "Symbol of the token used for protocol fees. (eg: 'USDC')"
+        data_type: string
+      - name: protocol_fee_value
+        description: "Amount of protocol fees paid. (eg: '0.039405')"
+        data_type: float

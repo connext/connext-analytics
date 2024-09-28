@@ -1,0 +1,313 @@
+version: 2
+
+sources:
+  - name: stage
+    database: mainnet-bigq
+    schema: stage
+    tables:
+      - name: source_hop_explorer__transfers
+        description: >
+          Contains transaction data from the Hop Explorer.
+
+          **Sample Data:**
+            - id: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+            - transferid: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+            - transactionhash: "0xa5b79e3aef2c7b5b4eeff91df2f0e21455560f44a4f108767d5d80735f2977b9"
+            - sourcechainid: "8453"
+            - destinationchainid: "42161"
+            - accountaddress: "0xa1b2224199188538012d6777a8377fbd646438ca"
+            - amount: "2994878969262859"
+            - amountusd: "8.0"
+            - amountusddisplay: "$8.009"
+            - amountoutmin: "2620703020111882"
+            - deadline: "0"
+            - recipientaddress: "0xa1b2224199188538012d6777a8377fbd646438ca"
+            - bonderfee: "359774227929879"
+            - bonderfeeusd: "0.0"
+            - bonderfeeusddisplay: "$0.962"
+            - bonded: "true"
+            - bondtimestamp: "1707837698"
+            - bondtimestampiso: "2024-02-13T15:21:38.000+00:00"
+            - bondwithintimestamp: "29.0"
+            - bondtransactionhash: "0x67bac21fb703b1e9f98cb37451d49307bc7b755d42d33d42b267880a027b0e0d"
+            - bonderaddress: "0x710bda329b2a6224e4b44833de30f38e7f81d564"
+            - token: "ETH"
+            - tokenpriceusd: "2674.0"
+            - tokenpriceusddisplay: "$2,674.397"
+            - timestamp: "1707837669"
+            - preregenesis: "false"
+            - receivedhtokens: "false"
+            - unbondable: "false"
+            - amountreceived: null
+            - amountreceivedformatted: null
+            - origincontractaddress: "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae"
+            - integrationpartner: "lifi"
+            - integrationpartnercontractaddress: "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae"
+            - accountaddresstruncated: "0xa1b2…38ca"
+            - transactionhashtruncated: "0xa5b79e…2977b9"
+            - transferidtruncated: "0x256f0b…b22a51"
+            - timestampiso: "2024-02-13T15:21:09.000+00:00"
+            - relativetimestamp: "8 minutes ago"
+            - sourcechainslug: "base"
+            - destinationchainslug: "arbitrum"
+            - sourcechainname: "Base"
+            - destinationchainname: "Arbitrum One"
+            - sourcechainimageurl: "https://assets.hop.exchange/logos/base.svg"
+            - destinationchainimageurl: "https://assets.hop.exchange/logos/arbitrum.svg"
+            - transactionhashexplorerurl: "https://basescan.org/tx/0xa5b79e3aef2c7b5b4eeff91df2f0e21455560f44a4f108767d5d80735f2977b9"
+            - bondtransactionhashexplorerurl: "https://arbiscan.io/tx/0x67bac21fb703b1e9f98cb37451d49307bc7b755d42d33d42b267880a027b0e0d"
+            - accountaddressexplorerurl: "https://basescan.org/address/0xa1b2224199188538012d6777a8377fbd646438ca"
+            - recipientaddresstruncated: "0xa1b2…38ca"
+            - recipientaddressexplorerurl: "https://arbiscan.io/address/0xa1b2224199188538012d6777a8377fbd646438ca"
+            - bonderaddresstruncated: "0x710b…d564"
+            - bonderaddressexplorerurl: "https://arbiscan.io/address/0x710bda329b2a6224e4b44833de30f38e7f81d564"
+            - bondtransactionhashtruncated: "0x67bac2…7b0e0d"
+            - receivestatusunknown: "false"
+            - relativebondedtimestamp: "8 minutes ago"
+            - bondwithintimestamprelative: "1 minute"
+            - amountformatted: "0.0"
+            - amountdisplay: "0.0030"
+            - bonderfeeformatted: "0.0"
+            - bonderfeedisplay: "0.0004"
+            - tokenimageurl: "https://assets.hop.exchange/logos/eth.svg"
+            - i: "24"
+            - amountoutminformatted: "0.0"
+            - timestamprelative: "8 minutes ago"
+            - bondtimestamprelative: "8 minutes ago"
+            - sourcechaincolor: "#0052ff"
+            - destinationchaincolor: "#289fef"
+            - bondstatuscolor: "#81ff81"
+            - converthtokenurl: "https://app.hop.exchange/#/convert/amm?token=ETH&sourceNetwork=arbitrum&fromHToken=true"
+            - hopexplorerurl: "https://explorer.hop.exchange/?transferId=0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+            - integrationpartnername: "LI.FI"
+            - integrationpartnerimageurl: "https://assets.hop.exchange/logos/lifi.webp"
+            - estimatedunixtimeuntilbond: "0"
+            - estimatedsecondsuntilbond: "0"
+            - estimatedrelativetimeuntilbond: "0"
+            - request_url: "https://explorer-api.hop.exchange/v1/transfers?startDate=2024-02-13&endDate=2024-02-13&page=1"
+        columns:
+          - name: id
+            description: "Unique identifier for the transfer."
+            data_type: "string"
+          - name: transferid
+            description: "Transfer ID associated with the transaction."
+            data_type: "string"
+          - name: transactionhash
+            description: "Hash of the transaction."
+            data_type: "string"
+          - name: sourcechainid
+            description: "ID of the source blockchain."
+            data_type: "integer"
+          - name: destinationchainid
+            description: "ID of the destination blockchain."
+            data_type: "integer"
+          - name: accountaddress
+            description: "Address of the account initiating the transfer."
+            data_type: "string"
+          - name: amount
+            description: "Amount involved in the transfer."
+            data_type: "bigint"
+          - name: amountusd
+            description: "Amount in USD."
+            data_type: "decimal"
+          - name: amountusddisplay
+            description: "Formatted amount in USD."
+            data_type: "string"
+          - name: amountoutmin
+            description: "Minimum amount out required."
+            data_type: "bigint"
+          - name: deadline
+            description: "Deadline for the transfer."
+            data_type: "integer"
+          - name: recipientaddress
+            description: "Address of the transfer recipient."
+            data_type: "string"
+          - name: bonderfee
+            description: "Fee paid to the bonder."
+            data_type: "bigint"
+          - name: bonderfeeusd
+            description: "Bonder fee in USD."
+            data_type: "decimal"
+          - name: bonderfeeusddisplay
+            description: "Formatted bonder fee in USD."
+            data_type: "string"
+          - name: bonded
+            description: "Indicates if the transfer is bonded."
+            data_type: "boolean"
+          - name: bondtimestamp
+            description: "Unix timestamp when bonding occurred."
+            data_type: "integer"
+          - name: bondtimestampiso
+            description: "ISO formatted timestamp of bonding."
+            data_type: "timestamp"
+          - name: bondwithintimestamp
+            description: "Bonding within specified timestamp."
+            data_type: "decimal"
+          - name: bondtransactionhash
+            description: "Hash of the bonding transaction."
+            data_type: "string"
+          - name: bonderaddress
+            description: "Address of the bonder."
+            data_type: "string"
+          - name: token
+            description: "Token involved in the transfer."
+            data_type: "string"
+          - name: tokenpriceusd
+            description: "Price of the token in USD."
+            data_type: "decimal"
+          - name: tokenpriceusddisplay
+            description: "Formatted token price in USD."
+            data_type: "string"
+          - name: timestamp
+            description: "Unix timestamp of the transfer."
+            data_type: "integer"
+          - name: preregenesis
+            description: "Indicates if the transfer is pre-genesis."
+            data_type: "boolean"
+          - name: receivedhtokens
+            description: "Indicates if H tokens were received."
+            data_type: "boolean"
+          - name: unbondable
+            description: "Indicates if the transfer is unbondable."
+            data_type: "boolean"
+          - name: amountreceived
+            description: "Amount received in the transfer."
+            data_type: "bigint"
+          - name: amountreceivedformatted
+            description: "Formatted amount received."
+            data_type: "string"
+          - name: origincontractaddress
+            description: "Origin contract address."
+            data_type: "string"
+          - name: integrationpartner
+            description: "Integration partner name."
+            data_type: "string"
+          - name: integrationpartnercontractaddress
+            description: "Integration partner's contract address."
+            data_type: "string"
+          - name: accountaddresstruncated
+            description: "Truncated account address."
+            data_type: "string"
+          - name: transactionhashtruncated
+            description: "Truncated transaction hash."
+            data_type: "string"
+          - name: transferidtruncated
+            description: "Truncated transfer ID."
+            data_type: "string"
+          - name: timestampiso
+            description: "ISO formatted timestamp of the transfer."
+            data_type: "timestamp"
+          - name: relativetimestamp
+            description: "Relative time since the transfer."
+            data_type: "string"
+          - name: sourcechainslug
+            description: "Slug identifier for the source chain."
+            data_type: "string"
+          - name: destinationchainslug
+            description: "Slug identifier for the destination chain."
+            data_type: "string"
+          - name: sourcechainname
+            description: "Name of the source blockchain."
+            data_type: "string"
+          - name: destinationchainname
+            description: "Name of the destination blockchain."
+            data_type: "string"
+          - name: sourcechainimageurl
+            description: "URL to the source chain's image."
+            data_type: "string"
+          - name: destinationchainimageurl
+            description: "URL to the destination chain's image."
+            data_type: "string"
+          - name: transactionhashexplorerurl
+            description: "URL to the transaction hash on explorer."
+            data_type: "string"
+          - name: bondtransactionhashexplorerurl
+            description: "URL to the bond transaction hash on explorer."
+            data_type: "string"
+          - name: accountaddressexplorerurl
+            description: "URL to the account address on explorer."
+            data_type: "string"
+          - name: recipientaddresstruncated
+            description: "Truncated recipient address."
+            data_type: "string"
+          - name: recipientaddressexplorerurl
+            description: "URL to the recipient address on explorer."
+            data_type: "string"
+          - name: bonderaddresstruncated
+            description: "Truncated bonder address."
+            data_type: "string"
+          - name: bonderaddressexplorerurl
+            description: "URL to the bonder address on explorer."
+            data_type: "string"
+          - name: bondtransactionhashtruncated
+            description: "Truncated bond transaction hash."
+            data_type: "string"
+          - name: receivestatusunknown
+            description: "Indicates if the receive status is unknown."
+            data_type: "boolean"
+          - name: relativebondedtimestamp
+            description: "Relative time since bonding occurred."
+            data_type: "string"
+          - name: bondwithintimestamprelative
+            description: "Relative time within which bonding occurred."
+            data_type: "string"
+          - name: amountformatted
+            description: "Formatted amount."
+            data_type: "string"
+          - name: amountdisplay
+            description: "Display-friendly amount."
+            data_type: "string"
+          - name: bonderfeeformatted
+            description: "Formatted bonder fee."
+            data_type: "string"
+          - name: bonderfeedisplay
+            description: "Display-friendly bonder fee."
+            data_type: "string"
+          - name: tokenimageurl
+            description: "URL to the token's image."
+            data_type: "string"
+          - name: i
+            description: "Index or identifier."
+            data_type: "integer"
+          - name: amountoutminformatted
+            description: "Formatted minimum amount out."
+            data_type: "string"
+          - name: timestamprelative
+            description: "Relative time since the timestamp."
+            data_type: "string"
+          - name: bondtimestamprelative
+            description: "Relative time since bond timestamp."
+            data_type: "string"
+          - name: sourcechaincolor
+            description: "Color code for the source chain."
+            data_type: "string"
+          - name: destinationchaincolor
+            description: "Color code for the destination chain."
+            data_type: "string"
+          - name: bondstatuscolor
+            description: "Color code representing bond status."
+            data_type: "string"
+          - name: converthtokenurl
+            description: "URL to convert H tokens."
+            data_type: "string"
+          - name: hopexplorerurl
+            description: "URL to Hop Explorer for the transfer."
+            data_type: "string"
+          - name: integrationpartnername
+            description: "Name of the integration partner."
+            data_type: "string"
+          - name: integrationpartnerimageurl
+            description: "URL to the integration partner's image."
+            data_type: "string"
+          - name: estimatedunixtimeuntilbond
+            description: "Estimated Unix time until bonding."
+            data_type: "integer"
+          - name: estimatedsecondsuntilbond
+            description: "Estimated seconds until bonding."
+            data_type: "integer"
+          - name: estimatedrelativetimeuntilbond
+            description: "Estimated relative time until bonding."
+            data_type: "string"
+          - name: request_url
+            description: "API request URL for transfers."
+            data_type: "string"

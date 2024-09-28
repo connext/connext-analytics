@@ -1,3 +1,4 @@
+
 -- INFO
 -- This SQL script processes transaction data from the `mainnet-bigq.raw.source_de_bridge_explorer__transactions` table, 
 -- extracting and transforming various fields related to token swaps and fees. 
@@ -6,13 +7,17 @@
 
 
 WITH raw AS (
-  SELECT DISTINCT *
-  FROM `mainnet-bigq.raw.source_de_bridge_explorer__transactions`
+  SELECT *
+  FROM {{ source('raw', 'source_de_bridge_explorer__transactions') }}
+  WHERE state='ClaimedUnlock'
 )
 
 , semi AS (
-SELECT  
+  -- adding distinct to avoid duplicates in semi to avoid distinct on large raw data "*"
+SELECT DISTINCT
   orderid_stringvalue AS transfer_id,
+  NULL AS from_tx_hash,
+  NULL AS to_tx_hash,
   TIMESTAMP_SECONDS(CAST(creationtimestamp AS INT64)) AS date,
   unlockauthoritydst_stringvalue AS user_address_out,
   SAFE_CAST(preswapdata_chainid_bigintegervalue AS INT64) AS pre_swap_chain_id,
@@ -35,20 +40,22 @@ FROM raw r
 )
 
 SELECT 
-  transfer_id,
+  transfer_id AS id,
   date,
   
   -- from
-  COALESCE(pre_swap_chain_id, from_chain_id) AS from_chain_id,
+  CAST(COALESCE(pre_swap_chain_id, from_chain_id) AS INT64) AS from_chain_id,
   from_chain.name AS from_chain_name,
+  CAST(from_tx_hash AS STRING) AS from_tx_hash,
   from_actual_token_address AS from_token_address,
   from_actual_symbol AS from_token_symbol,
   from_actual_value / POW(10, from_actual_symbol_decimal) AS from_amount,
   
   -- to
   user_address_out AS user_address_out,
-  to_chain_id,
+  CAST(to_chain_id AS INT64) AS to_chain_id,
   to_chain.name AS to_chain_name,
+  CAST(to_tx_hash AS STRING) AS to_tx_hash,
   to_symbol AS to_token_symbol,
   to_value / POW(10, to_symbol_decimal) AS to_amount,
   

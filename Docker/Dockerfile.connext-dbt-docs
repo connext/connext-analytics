@@ -1,0 +1,9 @@
+# Dockerfile: Dockerfile.dbt-docs
+FROM fishtownanalytics/dbt:0.21.0
+
+WORKDIR /app
+COPY connext_dbt /app
+RUN dbt docs generate
+
+EXPOSE 8080
+CMD ["dbt", "docs", "serve", "--port", "9000", "--no-browser"]

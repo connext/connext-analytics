@@ -1,6 +1,4 @@
--- migrate:up
--- Create the materialized view `daily_metrics`
-CREATE MATERIALIZED VIEW daily_metrics AS WITH metadata AS (
+WITH metadata AS (
     SELECT Symbol AS symbol,
         CAST(Decimals AS INTEGER) AS decimal,
         CAST(DomainID AS INTEGER) AS domain_id,
@@ -188,12 +186,16 @@ settled_raw AS (
         i.settlement_asset AS to_asset_address,
         tm.symbol AS to_asset_symbol,
         AVG(
-            (CAST(inv.hub_invoice_amount AS FLOAT) / (10 ^ 18)) - (
+            (
+                CAST(inv.hub_invoice_amount AS FLOAT) / (10 ^ 18)
+            ) - (
                 CAST(i.settlement_amount AS FLOAT) / 10 ^ tm.decimal
             )
         ) AS avg_discounts_by_mm,
         SUM(
-            (CAST(inv.hub_invoice_amount AS FLOAT) / (10 ^ 18)) - (
+            (
+                CAST(inv.hub_invoice_amount AS FLOAT) / (10 ^ 18)
+            ) - (
                 CAST(i.settlement_amount AS FLOAT) / 10 ^ tm.decimal
             )
         ) AS discounts_by_mm,
@@ -298,18 +300,3 @@ FROM netted_final n
     AND n.to_chain_id = s.to_chain_id
     AND n.from_asset_address = s.from_asset_address
     AND n.to_asset_address = s.to_asset_address;
-
-
-GRANT SELECT ON public.daily_metrics TO reader;
-GRANT SELECT ON public.daily_metrics TO query;
-
--- Schedule a pg_cron job to refresh the materialized view daily at 00:00 UTC
-REFRESH MATERIALIZED VIEW daily_metrics;
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-SELECT cron.schedule('0 0 * * *', $$REFRESH MATERIALIZED VIEW daily_metrics;$$);
-
--- migrate:down
-SELECT cron.unschedule(jobid)
-FROM cron.job
-WHERE command = 'REFRESH MATERIALIZED VIEW daily_metrics;';
-DROP MATERIALIZED VIEW IF EXISTS daily_metrics;

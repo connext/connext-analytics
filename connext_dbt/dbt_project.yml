@@ -19,30 +19,9 @@ seeds:
       +schema: metadata
 models:
   connext_dbt:
-    metrics:
-      +materialized: view
-      +schema: metrics
-    stage:
-      +materialized: view
-      +schema: stage
-    raw:
-      +materialized: view
-      +schema: raw
     dune:
       +materialized: view
       +schema: dune
-    legacy:
-      +materialized: view
-      +schema: legacy
-    metrics_routers_lp_pools:
-      +materialized: view
-      +schema: metrics_routers_lp_pools
-    crypto_bridges_aggregate:
-      +materialized: view
-      +schema: crypto_bridges_aggregate
-    ad_hoc:
-      +materialized: view
-      +schema: ad_hoc
     bridges:
       +materialized: view
       +schema: bridges

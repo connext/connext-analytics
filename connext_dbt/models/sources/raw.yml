@@ -1,0 +1,350 @@
+version: 2
+
+sources:
+  - name: raw
+    database: mainnet-bigq
+    schema: raw
+    tables:
+      - name: source_chainlist_network__chains
+        description: >
+          Contains chain data from the Chainlist Network.
+          **Sample Data:**
+            - id: "db6f40ed-7420-5649-8de9-5d5e0a16a3f2"
+            - name: "Cascadia Testnet"
+            - chain: "Cascadia"
+            - chainId: "6102"
+            - rpc: "https://testnet.cascadia.foundation"
+            - icon: "/static/66d8f75e870aa648860b66dfa19d0307/cascadia.png"
+            - nativeCurrency_decimals: "18"
+            - nativeCurrency_name: "CC"
+            - nativeCurrency_symbol: "tCC"
+            - explorers: "https://explorer.cascadia.foundation, https://validator.cascadia.foundation"
+            - status: null
+            - faucets: "https://www.cascadia.foundation/faucet"
+        columns:
+          - name: id
+            description: "Unique identifier for the chain."
+          - name: name
+            description: "Name of the chain."
+          - name: chain
+            description: "Chain name."
+          - name: chainId
+            description: "Chain ID."
+          - name: rpc
+          - name: icon
+            description: "Icon for the chain."
+          - name: nativeCurrency_decimals
+            description: "Decimals for the native currency."
+          - name: nativeCurrency_name
+            description: "Name for the native currency."
+          - name: nativeCurrency_symbol
+            description: "Symbol for the native currency."
+          - name: explorers
+            description: "Explorers for the chain."
+          - name: status
+            description: "Status of the chain."
+          - name: faucets
+            description: "Faucets for the chain."
+      - name: source_synapseprotocol_explorer_transactions
+        description: >
+          Contains transaction data from the Synapse Protocol Explorer.
+          
+          **Sample Data:**
+            - from_chain_id: "10"
+            - from_client_id: "rubic" (assuming, replace with actual if needed)
+            - from_address: "0xAF653882C3a8eBf3454840303cFe15fC8Eb04AFe"
+            - from_hash: "0x6d4b6a257980ef9ae5d521dd1cc98d91f58903831e03a96ab08268accd115abd"
+            - from_value: "4997042"
+            - from_formatted_value: "4.997"
+            - from_token_address: "0x7F5c764cBc14f9669B88837ca1490cCa17c31607"
+            - from_token_symbol: "nUSD"
+            - from_time: "1726561709"
+            - from_event_type: "1"
+            - to_chain_id: "1313161554"
+            - to_address: "0xAF653882C3a8eBf3454840303cFe15fC8Eb04AFe"
+            - to_hash: "0x09ff6ae9f22b1829d9763b6a366072e909f0fc590b151713b7aacc94f596b08d"
+            - to_value: "4496962996266860410"
+            - to_formatted_value: "4.497"
+            - to_token_address: "0x07379565cD8B0CaE7c60Dc78e7f601b34AF2A21c"
+            - to_token_symbol: "nUSD"
+            - to_time: "1726562983"
+            - to_event_type: "3"
+            - kappa: "654812486134dd3ccb441b45309b4e6843ed49e1de1361fc622e7ffe1bb3e5f8"
+            - pending: "false"
+            - swap_success: "false"
+        columns:
+          - name: from_chain_id
+            description: "Chain ID from which the transaction originated."
+          - name: from_client_id
+            description: "Identifier for the client initiating the transaction."
+          - name: from_address
+            description: "Sender's address initiating the transaction."
+          - name: from_hash
+            description: "Hash of the originating transaction."
+          - name: from_value
+            description: "Value of the originating transaction."
+          - name: from_formatted_value
+            description: "Formatted value of the originating transaction."
+          - name: from_token_address
+            description: "Address of the originating transaction."
+          - name: from_token_symbol
+            description: "Symbol of the originating transaction."
+          - name: from_time
+            description: "Timestamp when the transaction was created."
+          - name: from_event_type
+            description: "Type of event associated with the transaction."
+          - name: to_chain_id
+            description: "Chain ID where the transaction is joined."
+          - name: to_address
+            description: "Recipient's address for the transaction."
+          - name: to_hash
+            description: "Hash of the destination transaction."
+          - name: to_value
+            description: "Value of the destination transaction."
+          - name: to_formatted_value
+            description: "Formatted value of the destination transaction."
+          - name: to_token_address
+            description: "Address of the destination transaction."
+          - name: to_token_symbol
+            description: "Symbol of the destination transaction."
+          - name: to_time
+            description: "Timestamp when the transaction was created."
+          - name: to_event_type
+            description: "Type of event associated with the transaction."
+          - name: kappa
+            description: "Unique identifier for the transaction."
+          - name: pending
+            description: "Indicator if the transaction is pending."
+          - name: swap_success
+            
+
+      - name: source_symbiosis_bridge_explorer_transactions
+        description: >
+          Contains transaction data from the Symbiosis Bridge Explorer.
+          
+          **Sample Data:**
+            - id: 2738053
+            - from_client_id: "rubic"
+            - from_chain_id: "59144"
+            - from_tx_hash: "0x4e7d38ca6cfd78072eeeb66983e8cefb38889ede0d2ba62c5c09e49f94960846"
+            - join_chain_id: "56288"
+            - join_tx_hash: "0xa5ef58c3f6ba17057a0c76de43876f6bb1ccd95d6ae6d9265c798ca88c667db1"
+            - to_chain_id: "728126428"
+            - to_tx_hash: "fe0be75e9aafbed97a49aa390e9b6da5711f26cd5c83e4355c0d9c3c28ab0ef6"
+            - event_type: "1"
+            - type: "0"
+            - hash: "0x4e7d38ca6cfd78072eeeb66983e8cefb38889ede0d2ba62c5c09e49f94960846"
+            - state: "0"
+            - created_at: "2024-09-13 00:36:12"
+            - mined_at: "2024-09-13 00:36:24"
+            - success_at: "2024-09-13 00:36:33"
+            - from_address: "0x909658C1973343E7d25889E1dC2D922f78bd06BA"
+            - from_sender: "0x909658C1973343E7d25889E1dC2D922f78bd06BA"
+            - duration: "12"
+            - to_address: "TJ3JtnvzKAkrRy2vHLoqCxyxP7MKuppj2u"
+            - to_sender: "TVoo21pxrVwQ6EyK6rkRuAo7oy5zJ9iKXG"
+            - amounts: "[235874614, 216873701]"
+            - tokens: "[{\"symbol\": \"USDC\", \"name\": \"USD//C\", \"address\": \"0x176211869ca2b568f2a7d4ee941e073a821ee1ff\", \"decimals\": 6}]"
+            - from_route: "[{\"chain_id\": 59144, \"amount\": 100000000000000000, \"token\": {\"symbol\": \"ETH\", \"name\": \"ETH\", \"address\": \"0x0000000000000000000000000000000000000000\", \"decimals\": 18}}, {\"chain_id\": 59144, \"amount\": 100000000000000000, \"token\": {\"symbol\": \"WETH\", \"name\": \"Wrapped Ether\", \"address\": \"0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f\", \"decimals\": 18}}, {\"chain_id\": 59144, \"amount\": 235874614, \"token\": {\"symbol\": \"USDC\", \"name\": \"USD//C\", \"address\": \"0x176211869ca2b568f2a7d4ee941e073a821ee1ff\", \"decimals\": 6}}]"
+            - to_route: "[{\"chain_id\": 728126428, \"amount\": 216873701, \"token\": {\"symbol\": \"USDT\", \"name\": \"Tether USD\", \"address\": \"0xa614f803b6fd780986a42c78ec9c7f77e6ded13c\", \"decimals\": 6}}, {\"chain_id\": 728126428, \"amount\": 1423566851, \"token\": {\"symbol\": \"WTRX\", \"name\": \"Wrapped TRX\", \"address\": \"0x891cdb91d149f23b1a45d9c5ca78a88d0cb44c18\", \"decimals\": 6}}, {\"chain_id\": 728126428, \"amount\": 1423566851, \"token\": {\"symbol\": \"TRX\", \"name\": \"TRX\", \"address\": \"0x0000000000000000000000000000000000000000\", \"decimals\": 6}}]",
+            - transit_token: "null"
+            - from_amount_usd: "235.87462"
+            - to_amount_usd: "216.07468"
+            - to_tx_id: "2738054"
+            - retry_active: "false"
+            - token_symbol: "USDC"
+            - token_name: "USD//C"
+            - token_address: "0x176211869ca2b568f2a7d4ee941e073a821ee1ff"
+            - token_decimals: "6"
+        columns:
+          - name: id
+            description: "Unique identifier for the transaction."
+          - name: from_client_id
+            description: "Identifier for the client initiating the transaction."
+          - name: from_chain_id
+            description: "Chain ID from which the transaction originated."
+          - name: from_tx_hash
+            description: "Hash of the originating transaction."
+          - name: join_chain_id
+            description: "Chain ID where the transaction is joined."
+          - name: join_tx_hash
+            description: "Hash of the joining transaction."
+          - name: to_chain_id
+            description: "Destination chain ID for the transaction."
+          - name: to_tx_hash
+            description: "Hash of the destination transaction."
+          - name: event_type
+            description: "Type of event associated with the transaction."
+          - name: type
+            description: "Type classification of the transaction."
+          - name: hash
+            description: "Unique hash identifier for the transaction."
+          - name: state
+            description: "Current state of the transaction."
+          - name: created_at
+            description: "Timestamp when the transaction was created."
+          - name: mined_at
+            description: "Timestamp when the transaction was mined."
+          - name: success_at
+            description: "Timestamp when the transaction was successfully completed."
+          - name: from_address
+            description: "Sender's address initiating the transaction."
+          - name: from_sender
+            description: "Sender's identifier for the transaction."
+          - name: duration
+            description: "Duration of the transaction in seconds."
+          - name: to_address
+            description: "Recipient's address for the transaction."
+          - name: to_sender
+            description: "Recipient's identifier for the transaction."
+          - name: amounts
+            description: "List of amounts transferred in the transaction."
+          - name: tokens
+            description: "List of tokens involved in the transaction with their details."
+          - name: from_route
+            description: "Route information detailing the path and tokens from the sender's side."
+          - name: to_route
+            description: "Route information detailing the path and tokens to the recipient's side."
+          - name: transit_token
+            description: "Token used during the transit of the transaction, if any."
+          - name: from_amount_usd
+            description: "Amount sent from the source in USD."
+          - name: to_amount_usd
+            description: "Amount received at the destination in USD."
+          - name: to_tx_id
+            description: "Identifier for the destination transaction."
+          - name: retry_active
+            description: "Indicator if a retry is active for the transaction."
+          - name: token_symbol
+            description: "Symbol of the primary token involved in the transaction."
+          - name: token_name
+            description: "Name of the primary token involved in the transaction."
+          - name: token_address
+            description: "Blockchain address of the primary token involved."
+          - name: token_decimals
+            description: "Decimal precision of the primary token involved."
+
+      - name: source_de_bridge_explorer__transactions
+        description: >
+          
+          Contains transaction data from the DeBridge Explorer.
+          
+          **Sample Data:**
+            - creationtimestamp: "1727380049"
+            - state: "ClaimedUnlock"
+            - externalcallstate: "NoExtCall"
+            - orderid_bytesvalue: "UanS7cx7Me4tbM+YCTC/eMpvsi2s43nnEaxmNoGn2DI="
+            - orderid_stringvalue: "0x51a9d2edcc7b31ee2d6ccf980930bf78ca6fb22dace379e711ac663681a7d832"
+            - giveofferwithmetadata_chainid_bigintegervalue: "8453"
+            - giveofferwithmetadata_tokenaddress_stringvalue: "0x0000000000000000000000000000000000000000"
+            - giveofferwithmetadata_amount_bigintegervalue: "1879530534040047681"
+            - giveofferwithmetadata_finalamount_bigintegervalue: "1879530534040047681"
+            - giveofferwithmetadata_metadata_decimals: "18"
+            - giveofferwithmetadata_metadata_name: "Ethereum"
+            - giveofferwithmetadata_metadata_symbol: "ETH"
+            - giveofferwithmetadata_decimals: "18"
+            - giveofferwithmetadata_name: "Ethereum"
+            - giveofferwithmetadata_symbol: "ETH"
+            - takeofferwithmetadata_chainid_bigintegervalue: "1"
+            - takeofferwithmetadata_amount_bigintegervalue: "1875449351378948912"
+            - takeofferwithmetadata_finalamount_bigintegervalue: "1879530534040047681"
+            - takeofferwithmetadata_metadata_decimals: "18"
+            - takeofferwithmetadata_metadata_name: "Ethereum"
+            - takeofferwithmetadata_metadata_symbol: "ETH"
+            - takeofferwithmetadata_decimals: "18"
+            - takeofferwithmetadata_name: "Ethereum"
+            - takeofferwithmetadata_symbol: "ETH"
+            - finalpercentfee_bigintegervalue: "752113058839554"
+            - fixfee_bigintegervalue: "1000000000000000"
+            - fixfee_stringvalue: "1000000000000000"
+            - unlockauthoritydst_stringvalue: "0x555ce236c0220695b68341bc48c68d52210cc35b"
+            - preswapdata_chainid_bigintegervalue: "8453.0"
+            - preswapdata_inamount_bigintegervalue: "5008901612861731292309"
+            - preswapdata_tokeninmetadata_name: "Dai Stablecoin"
+            - preswapdata_tokeninmetadata_symbol: "DAI"
+            - preswapdata_outamount_bigintegervalue: "1885985867924022987"
+            - preswapdata_tokenoutmetadata_name: "Ethereum"
+            - preswapdata_tokenoutmetadata_symbol: "ETH"
+            - ordermetadata_creationprocesstype: "SrcAmountSet"
+            - ordermetadata_origin: "DeSwap"
+            - ordermetadata_operatingexpensesamount: "8841160469792622832"
+            - ordermetadata_recommendedtakeamount: "1875449351378948912"
+        columns:
+          - name: creationtimestamp
+            description: "Timestamp of the transaction creation."
+          - name: state
+            description: "State of the transaction."
+          - name: externalcallstate
+            description: "State of the external call."
+          - name: orderid_bytesvalue
+            description: "Order ID in bytes value."
+          - name: orderid_stringvalue
+            description: "Order ID in string value."
+          - name: giveofferwithmetadata_chainid_bigintegervalue
+            description: "Chain ID for the give offer with metadata."
+          - name: giveofferwithmetadata_tokenaddress_stringvalue
+            description: "Token address for the give offer with metadata."
+          - name: giveofferwithmetadata_amount_bigintegervalue
+            description: "Amount for the give offer with metadata."
+          - name: giveofferwithmetadata_finalamount_bigintegervalue
+            description: "Final amount for the give offer with metadata."
+          - name: giveofferwithmetadata_metadata_decimals
+            description: "Decimals for the give offer with metadata."
+          - name: giveofferwithmetadata_metadata_name
+            description: "Name for the give offer with metadata."
+          - name: giveofferwithmetadata_metadata_symbol
+            description: "Symbol for the give offer with metadata."
+          - name: giveofferwithmetadata_decimals
+            description: "Decimals for the give offer."
+          - name: giveofferwithmetadata_name
+            description: "Name for the give offer."
+          - name: giveofferwithmetadata_symbol
+            description: "Symbol for the give offer."
+          - name: takeofferwithmetadata_chainid_bigintegervalue
+            description: "Chain ID for the take offer with metadata."
+          - name: takeofferwithmetadata_amount_bigintegervalue
+            description: "Amount for the take offer with metadata."
+          - name: takeofferwithmetadata_finalamount_bigintegervalue
+            description: "Final amount for the take offer with metadata."
+          - name: takeofferwithmetadata_metadata_decimals
+            description: "Decimals for the take offer with metadata."
+          - name: takeofferwithmetadata_metadata_name
+            description: "Name for the take offer with metadata."
+          - name: takeofferwithmetadata_metadata_symbol
+            description: "Symbol for the take offer with metadata."
+          - name: takeofferwithmetadata_decimals
+            description: "Decimals for the take offer."
+          - name: takeofferwithmetadata_name
+            description: "Name for the take offer."
+          - name: takeofferwithmetadata_symbol
+            description: "Symbol for the take offer."
+          - name: finalpercentfee_bigintegervalue
+            description: "Final percent fee."
+          - name: fixfee_bigintegervalue
+            description: "Fixed fee."
+          - name: fixfee_stringvalue
+            description: "Fixed fee in string value."
+          - name: unlockauthoritydst_stringvalue
+            description: "Unlock authority destination in string value."
+          - name: preswapdata_chainid_bigintegervalue
+            description: "Chain ID for the preswap data."
+          - name: preswapdata_inamount_bigintegervalue
+            description: "Input amount for the preswap data."
+          - name: preswapdata_tokeninmetadata_name
+            description: "Token in metadata name for the preswap data."
+          - name: preswapdata_tokeninmetadata_symbol
+            description: "Token in metadata symbol for the preswap data."
+          - name: preswapdata_outamount_bigintegervalue
+            description: "Output amount for the preswap data."
+          - name: preswapdata_tokenoutmetadata_name
+            description: "Token out metadata name for the preswap data."
+          - name: preswapdata_tokenoutmetadata_symbol
+            description: "Token out metadata symbol for the preswap data."
+          - name: ordermetadata_creationprocesstype
+            description: "Order metadata creation process type."
+          - name: ordermetadata_origin
+            description: "Order metadata origin."
+          - name: ordermetadata_operatingexpensesamount
+            description: "Order metadata operating expenses amount."
+          - name: ordermetadata_recommendedtakeamount
+            description: "Order metadata recommended take amount."

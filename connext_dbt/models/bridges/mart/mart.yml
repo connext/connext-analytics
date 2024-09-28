@@ -1,0 +1,30 @@
+version: 2
+models:
+  - name: all_combined_bridges_txs
+    description: >
+        This model combines data from two bridge models, `cln_debridge_txs` and `cln_hop_txs`, to create a comprehensive view of bridge transactions.
+        It uses the `UNION ALL` operator to concatenate the data from both sources, ensuring all records from both bridges are included.
+        The resulting dataset includes a unique identifier for each transaction, details from both the source and destination chains,
+        and fields for gas fees, relay fees, and token amounts in USD.
+
+        **Bridges:**
+            - cln_debridge_txs
+            - cln_hop_txs
+            - cln_connext_txs
+            - cln_stargate_txs
+            - cln_synapse_txs
+            - cln_symbiosis_txs
+            - cln_allbridge_txs
+            - cln_across_txs
+        **Sample Data:**
+        - same as clean models above
+    columns:
+      - name: bridge
+        description: "The bridge through which the transaction was made."
+        data_type: string
+      - name: id
+        description: "Unique identifier for each transaction."
+        data_type: string
+        tests:
+          - not_null
+          - unique

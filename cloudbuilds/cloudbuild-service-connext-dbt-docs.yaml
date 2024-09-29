@@ -1,0 +1,13 @@
+steps:
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      [
+        "build",
+        "-t",
+        "us-central1-docker.pkg.dev/mainnet-bigq/dbt/connext-dbt-docs",
+        "-f",
+        "Docker/Dockerfile.connext-dbt-docs",
+        "."
+      ]
+images:
+  - "us-central1-docker.pkg.dev/mainnet-bigq/dbt/connext-dbt-docs"

@@ -1,9 +1,25 @@
-# Dockerfile: Dockerfile.dbt-docs
-FROM fishtownanalytics/dbt:0.21.0
+FROM python:3.11.4
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONFAULTHANDLER 1
 
 WORKDIR /app
-COPY connext_dbt /app
-RUN dbt docs generate
+COPY Pipfile.lock Pipfile ./
+
+# Building dependencies
+RUN pip install pipenv
+RUN pipenv install --system --deploy
+
+# Copy the shell script into the Docker image
+COPY generate_dbt_docs.sh ./generate_dbt_docs.sh
+
+# Make the shell script executable
+RUN chmod +x ./generate_dbt_docs.sh
+
+COPY . .
 
 EXPOSE 8080
-CMD ["dbt", "docs", "serve", "--port", "9000", "--no-browser"]
+
+# Use the shell script as the Docker CMD
+CMD [ "./generate_dbt_docs.sh" ]

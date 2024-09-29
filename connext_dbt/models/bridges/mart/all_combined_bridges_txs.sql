@@ -5,3 +5,5 @@ UNION ALL
 SELECT * FROM {{ ref('cln_symbiosis_txs') }}
 UNION ALL
 SELECT * FROM {{ ref('cln_synapse_txs') }}
+UNION ALL
+SELECT * FROM {{ ref('cln_all_bridge_txs') }}

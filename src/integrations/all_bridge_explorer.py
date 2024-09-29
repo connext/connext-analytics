@@ -33,7 +33,8 @@ def get_latest_metadata_from_bq_table() -> int:
     """
     try:
         with open(
-            "src/sql/get_latest_metadata_source_all_bridge_explorer_transfers.sql") as file:
+            "src/sql/get_latest_metadata_source_all_bridge_explorer_transfers.sql"
+        ) as file:
             sql = file.read()
 
         data = gbq.read_gbq(sql)

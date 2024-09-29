@@ -26,7 +26,8 @@ WITH extracted_routes AS (
         COALESCE(tx.token_symbol, tx.token_address) AS from_token_symbol,
         (tx.from_amount_usd - tx.to_amount_usd) AS fee_amount_usd
     FROM
-        `mainnet-bigq.raw.source_symbiosis_bridge_explorer_transactions` AS tx
+        {{source('raw', 'source_symbiosis_bridge_explorer_transactions')}} AS tx
+        -- `mainnet-bigq.raw.source_symbiosis_bridge_explorer_transactions` AS tx
     LEFT JOIN {{ source('raw', 'source_chainlist_network__chains') }} AS from_chain
         ON tx.from_chain_id = from_chain.chainid
     LEFT JOIN {{ source('raw', 'source_chainlist_network__chains') }} AS to_chain

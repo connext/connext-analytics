@@ -1,17 +1,18 @@
 # Adding the streamlit pages to the sidebar
-import pytz
 import logging
-import pandas as pd
-import streamlit as st
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine
-from google.cloud import secretmanager
-from google.api_core.exceptions import DeadlineExceeded
+
+import pandas as pd
 import pandas_gbq as gbq
+import pytz
+import streamlit as st
+from chains_assets_metadata import ChainsAssetsMetadata
+from google.api_core.exceptions import DeadlineExceeded
+from google.cloud import secretmanager
 from jinja2 import Template
+from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.util import immutabledict
-from chains_assets_metadata import ChainsAssetsMetadata
 
 logging.basicConfig(level=logging.INFO)
 
@@ -54,7 +55,7 @@ def get_raw_data_from_postgres_by_sql(sql_file_name, mode="prod") -> pd.DataFram
     # Read SQL file
     try:
         logging.info(f"Fetching raw data for {sql_file_name}")
-        with open(f"src/streamlit_everclear/sql/{sql_file_name}.sql", "r") as file:
+        with open(f"src/streamlit_everclear/sql/{sql_file_name}.sql") as file:
             sql = file.read()
     except FileNotFoundError:
         logging.error(f"The file {sql_file_name}.sql was not found.")
@@ -99,7 +100,7 @@ def sql_template_filter_date(sql_file_name, date_filter: dict) -> str:
     sql_file_path = f"src/streamlit_everclear/sql/{sql_file_name}.sql"
 
     try:
-        with open(sql_file_path, "r") as sql_file:
+        with open(sql_file_path) as sql_file:
             file_content = sql_file.read()
             query = Template(file_content).render(date_filter)
             return query
@@ -150,7 +151,6 @@ def apply_sidebar_filters(
     """
     df = old_df.copy()
     try:
-
         if not is_agg:
             # add a datepart col
             df["datepart"] = pd.to_datetime(df["day"]).dt.date
@@ -227,7 +227,7 @@ def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
     - total_balance
     - daily_apr
     """
-    with open(f"src/streamlit_everclear/sql/{sql_file_name}.sql", "r") as file:
+    with open(f"src/streamlit_everclear/sql/{sql_file_name}.sql") as file:
         sql = file.read()
     return gbq.read_gbq(sql)
 

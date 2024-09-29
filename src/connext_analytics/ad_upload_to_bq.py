@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas_gbq
 
-
 PROJECT_ID = "mainnet-bigq"
 
 

@@ -1,17 +1,13 @@
-import streamlit as st
+import logging
+from datetime import datetime, timedelta
+
 import pandas as pd
 import plotly.express as px
-from setup import (
-    get_raw_data_from_postgres_by_sql,
-    get_agg_data_from_sql_template,
-    get_pricing_data_from_bq,
-    get_chain_id_to_chain_name_data_from_bq,
-    apply_sidebar_filters,
-)
-from datetime import datetime, timedelta
 import pytz
-import logging
-
+import streamlit as st
+from setup import (apply_sidebar_filters, get_agg_data_from_sql_template,
+                   get_chain_id_to_chain_name_data_from_bq,
+                   get_pricing_data_from_bq, get_raw_data_from_postgres_by_sql)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

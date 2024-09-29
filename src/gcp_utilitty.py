@@ -1,6 +1,7 @@
-from google.cloud import secretmanager
-from google.api_core.exceptions import DeadlineExceeded
 import logging
+
+from google.api_core.exceptions import DeadlineExceeded
+from google.cloud import secretmanager
 
 logging.basicConfig(level=logging.INFO)
 

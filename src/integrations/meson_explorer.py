@@ -1,5 +1,5 @@
-import requests
 import pandas as pd
+import requests
 
 # Base URL for the API
 base_url = "https://explorer.meson.fi/api/v1/swap"

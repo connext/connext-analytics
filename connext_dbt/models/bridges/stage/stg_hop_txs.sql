@@ -8,14 +8,14 @@ SELECT DISTINCT
     -- from
     r.transferid AS from_hash,
     sourcechainid AS from_chain_id,
-    sourcechainslug AS from_chain_name,
+    COALESCE(from_chain.name, sourcechainslug) AS from_chain_name,
     token AS from_token_symbol,
     CAST(amountdisplay AS FLOAT64) AS from_amount,
     CAST(REGEXP_REPLACE(amountusddisplay, r'\$|,', '') AS FLOAT64) AS from_amount_usd,
     -- to
     transactionhash AS to_hash,
     destinationchainid AS to_chain_id,
-    destinationchainslug AS to_chain_name,
+    COALESCE(to_chain.name, destinationchainslug) AS to_chain_name,
     token AS to_token_symbol,
     CAST(amountdisplay AS FLOAT64) - CAST(bonderfeedisplay AS FLOAT64) AS to_amount,
     CAST(CAST(REGEXP_REPLACE(amountusddisplay, r'\$|,', '') AS FLOAT64) - CAST(bonderfeeusd AS FLOAT64) AS FLOAT64) AS to_amount_usd,
@@ -34,3 +34,9 @@ WHERE r.id NOT IN (
     '126748',
     '126615'
 )
+
+LEFT JOIN {{source('raw', 'source_chainlist_network__chains')}} AS from_chain
+  ON r.sourcechainid = from_chain.chainId
+
+LEFT JOIN {{source('raw', 'source_chainlist_network__chains')}} AS to_chain
+  ON r.destinationchainid = to_chain.chainId

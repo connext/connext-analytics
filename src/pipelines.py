@@ -1,44 +1,35 @@
+import asyncio
 import json
 import logging
-from pprint import pprint
 import re
+from pprint import pprint
+
 import dlt
 import nest_asyncio
-import asyncio
-import pandas_gbq
 import pandas as pd
+import pandas_gbq
 from fastapi import FastAPI
-from src.integrations.lifi import (
-    PROJECT_ID,
-    get_connections,
-    all_chains,
-    get_tokens as get_tokens_lifi,
-    get_tools as get_tools_lifi,
-    get_upload_data_from_lifi_cs_bucket,
-    get_greater_than_date_from_bq_lifi_routes,
-)
-from src.integrations.socket import (
-    get_chains,
-    get_tokens as get_tokens_socket,
-    get_bridges,
-    get_upload_data_from_socket_cs_bucket,
-)
-from src.integrations.helpers_routes_aggreagators import (
-    get_greater_than_date_from_bq_table,
-)
+
+from src.integrations.arb_distribution_mode_metis_upload_2_bq import \
+    main as arb_distribution_mode_metis_upload_2_bq_main
 from src.integrations.connext_chains_ninja import get_chaindata_connext_df
-from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata
-from src.integrations.hop_explorer import get_transfers_data
-from src.integrations.utilities import (
-    read_sql_from_file_add_template,
-    run_bigquery_query,
-    convert_lists_and_booleans_to_strings,
-)
-from src.integrations.dune import dune_bridges, dune_daily_metrics
 from src.integrations.defilamma import defilamma_raw
-from src.integrations.arb_distribution_mode_metis_upload_2_bq import (
-    main as arb_distribution_mode_metis_upload_2_bq_main,
-)
+from src.integrations.dune import dune_bridges, dune_daily_metrics
+from src.integrations.helpers_routes_aggreagators import \
+    get_greater_than_date_from_bq_table
+from src.integrations.hop_explorer import get_transfers_data
+from src.integrations.lifi import (PROJECT_ID, all_chains, get_connections,
+                                   get_greater_than_date_from_bq_lifi_routes)
+from src.integrations.lifi import get_tokens as get_tokens_lifi
+from src.integrations.lifi import get_tools as get_tools_lifi
+from src.integrations.lifi import get_upload_data_from_lifi_cs_bucket
+from src.integrations.prd_ts_metadata import get_prod_mainmet_config_metadata
+from src.integrations.socket import get_bridges, get_chains
+from src.integrations.socket import get_tokens as get_tokens_socket
+from src.integrations.socket import get_upload_data_from_socket_cs_bucket
+from src.integrations.utilities import (convert_lists_and_booleans_to_strings,
+                                        read_sql_from_file_add_template,
+                                        run_bigquery_query)
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
@@ -159,7 +150,6 @@ def lifi_tools_pipeline():
 
 @app.get("/lifi/routes/upload_to_bq/")
 def lifi_routes_upload_to_bq():
-
     get_upload_data_from_lifi_cs_bucket(
         greater_than_date=get_greater_than_date_from_bq_lifi_routes()
     )
@@ -200,7 +190,6 @@ def socket_bridge_pipeline():
 
 @app.get("/socket/routes/upload_to_bq/")
 def socket_routes_upload_to_bq():
-
     output = get_upload_data_from_socket_cs_bucket(
         greater_than_date_routes=get_greater_than_date_from_bq_table(
             table_id="mainnet-bigq.raw.source_socket__routes",
@@ -263,7 +252,6 @@ def dune_pipeline():
 
 @app.get("/dune/daily_metrics/pipeline")
 def dune_daily_metrics_pipeline():
-
     logging.info("Running DLT Dune Bridges")
 
     p = dlt.pipeline(
@@ -284,7 +272,6 @@ def dune_daily_metrics_pipeline():
 
 @app.get("/defilamma/pipeline")
 def defilamma_pipeline():
-
     logging.info("Running DLT defilamma")
     p = dlt.pipeline(
         pipeline_name="defilamma",

@@ -1,11 +1,11 @@
-from pprint import pprint
-import pandas as pd
-from src.integrations.utilities import (
-    convert_lists_and_booleans_to_strings,
-)
-import json
 import itertools
+import json
+from pprint import pprint
+
+import pandas as pd
 from google.cloud import storage
+
+from src.integrations.utilities import convert_lists_and_booleans_to_strings
 
 
 def get_data():
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     print("Running ad_hoc_socket_routes.py")
     # json_blob = get_data()
 
-    with open("data/ad_hoc_socket_routes.json", "r") as f:
+    with open("data/ad_hoc_socket_routes.json") as f:
         json_blob = json.load(f)
 
     all_steps = []

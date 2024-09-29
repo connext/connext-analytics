@@ -1,13 +1,13 @@
-import json
 import asyncio
-import httpx
+import json
 import logging
-from src.integrations.utilities import (
-    get_raw_from_bq,
-    upload_to_gcs_via_folder,
-)
-import pandas_gbq
+
+import httpx
 import pandas as pd
+import pandas_gbq
+
+from src.integrations.utilities import (get_raw_from_bq,
+                                        upload_to_gcs_via_folder)
 
 PROJECT_ID = "mainnet-bigq"
 ARB_DEPOSITS_GCS_BUCKET_NAME = "arb-weth-deposits"
@@ -19,7 +19,6 @@ logging.basicConfig(level=logging.INFO)
 
 
 def convert_json_to_df_and_upload_to_bq(json_list: list) -> None:
-
     final = []
     for d in json_list:
         final.append(
@@ -110,7 +109,6 @@ async def main_fetch(parallel_fetch=10):
         await asyncio.sleep(10)
 
     if all_data:
-
         # backup data
         upload_to_gcs_via_folder(
             data=all_data,

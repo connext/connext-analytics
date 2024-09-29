@@ -1,11 +1,12 @@
-import pytz
+import json
 import logging
-import requests
-from requests.structures import CaseInsensitiveDict
+from datetime import datetime, timedelta
+
 import pandas as pd
 import pandas_gbq as gbq
-import json
-from datetime import datetime, timedelta
+import pytz
+import requests
+from requests.structures import CaseInsensitiveDict
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +20,6 @@ def to_snake_case(s):
 
 # Function to send the request and normalize the nested data
 def get_api(page_number, start_date, end_date):
-
     url = "https://api.orbiter.finance/explore/v3/yj6toqvwh1177e1sexfy0u1pxx5j8o47"
     headers = CaseInsensitiveDict()
     headers["Content-Type"] = "application/json"
@@ -56,7 +56,6 @@ def get_api(page_number, start_date, end_date):
 
 
 def get_orbiter_transactions():
-
     # Initialize the page number and the accumulated DataFrame
     all_orders_df = pd.DataFrame()
 
@@ -68,7 +67,6 @@ def get_orbiter_transactions():
     logging.info(f"Data pull from {start_date} - {final_date}")
     # Loop through each day
     while start_date <= final_date:
-
         # for every day, we need to fetch all pages, starting from page 0
         page_number = 1
         logging.info(f"Fetching data for {start_date} - {end_date}")
@@ -101,7 +99,6 @@ def get_orbiter_transactions():
 
 
 def orbiter_explorer_pipeline():
-
     df = get_orbiter_transactions()
     gbq.to_gbq(
         dataframe=df,

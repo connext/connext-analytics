@@ -1,9 +1,10 @@
 # Adding the streamlit pages to the sidebar
-import pytz
-import pandas as pd
-import streamlit as st
-import pandas_gbq as gbq
 from datetime import datetime, timedelta
+
+import pandas as pd
+import pandas_gbq as gbq
+import pytz
+import streamlit as st
 
 st.set_page_config(layout="wide")
 
@@ -27,7 +28,7 @@ def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
     - total_balance
     - daily_apr
     """
-    with open(f"src/streamlit/sql/{sql_file_name}.sql", "r") as file:
+    with open(f"src/streamlit/sql/{sql_file_name}.sql") as file:
         sql = file.read()
     return gbq.read_gbq(sql)
 
@@ -113,7 +114,6 @@ def clean_df(df):
 
 
 def clean_slow_volume_data(data):
-
     data["router_name"] = "slow_path"
     return data
 

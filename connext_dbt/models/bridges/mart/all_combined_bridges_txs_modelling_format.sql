@@ -1,5 +1,6 @@
-SELECT tx.bridge AS bridge,
-    tx.id AS id,
+SELECT
+    tx.bridge,
+    tx.id,
     tx.from_date AS timestamp_in,
     tx.to_date AS timestamp_out,
     tx.from_amount AS amount_in,
@@ -26,4 +27,4 @@ SELECT tx.bridge AS bridge,
     tx.to_chain_name AS chain_name_out,
     tx.from_user_address AS user_address_in,
     tx.to_user_address AS user_address_out
-FROM {{ ref('all_combined_bridges_txs') }} tx
+FROM {{ ref('all_combined_bridges_txs') }} AS tx

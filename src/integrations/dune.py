@@ -1,31 +1,31 @@
 import json
+import logging
+import pprint
 from ast import Dict
 from datetime import datetime, timedelta
-import pprint
-import dlt
-import pytz
-import pandas as pd
-import logging
 from typing import Iterator, Sequence
+
+import dlt
+import pandas as pd
+import pytz
+from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
 from dlt.common.typing import TDataItems
-from dune_client.types import QueryParameter
+from dlt.extract.source import DltResource
 from dune_client.client import DuneClient
 from dune_client.query import QueryBase
-from dlt.extract.source import DltResource
-from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
-from src.integrations.utilities import get_secret_gcp_secrete_manager
-from src.integrations.models.dune import (
-    BridgesNativeEvmEth,
-    BridgesTokensEvmEth,
-    StargateBridgesDailyAgg,
-    AcrossAggregatorDaily,
-    HourlyTokenPricingBlockchainEth,
-    CannonicalBridgesFlowsTokensHourly,
-    CannonicalBridgesFlowsNativeHourly,
-    ArbWethDepositTransaction,
-    BridgesAggregateFlowsDaily,
-)
-from src.integrations.utilities import get_latest_value_from_bq_table_by_col
+from dune_client.types import QueryParameter
+
+from src.integrations.models.dune import (AcrossAggregatorDaily,
+                                          ArbWethDepositTransaction,
+                                          BridgesAggregateFlowsDaily,
+                                          BridgesNativeEvmEth,
+                                          BridgesTokensEvmEth,
+                                          CannonicalBridgesFlowsNativeHourly,
+                                          CannonicalBridgesFlowsTokensHourly,
+                                          HourlyTokenPricingBlockchainEth,
+                                          StargateBridgesDailyAgg)
+from src.integrations.utilities import (get_latest_value_from_bq_table_by_col,
+                                        get_secret_gcp_secrete_manager)
 
 # Logging
 
@@ -130,7 +130,6 @@ def get_start_end_date(
 def get_native_evm_eth__bridges(
     native_evm_eth__bridges_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     # df = pd.read_csv("data/native_evM_bridge_txs_daily_1_jan_march_24.csv")
     # df["date"] = pd.to_datetime(df["date"])
     # yield df.to_dict("records")
@@ -158,7 +157,6 @@ def get_native_evm_eth__bridges(
 def get_tokens_evm_eth__bridges(
     tokens_evm_eth__bridges_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     # df = pd.read_csv("data/native_evM_bridge_txs_daily_1_jan_march_24.csv")
     # df["date"] = pd.to_datetime(df["date"])
     # yield df.to_dict("records")
@@ -186,7 +184,6 @@ def get_tokens_evm_eth__bridges(
 def get_stargate_bridges_daily_agg(
     stargate_daily_agg_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_stargate_bridges",
         start_date=DUNE_START_DATE,
@@ -215,7 +212,6 @@ def get_stargate_bridges_daily_agg(
 def get_across__aggregator_daily(
     across_aggregator_daily_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_across_aggregator_daily",
         start_date=DUNE_START_DATE,
@@ -239,7 +235,6 @@ def get_across__aggregator_daily(
 def get_hourly_token_pricing_blockchain_eth(
     hourly_token_pricing_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_hourly_token_pricing_blockchain_eth",
         start_date=1609459200,  # 2021-01-01
@@ -271,7 +266,6 @@ def get_hourly_token_pricing_blockchain_eth(
 def get_arb_weth_deposit_transactions(
     arb_weth_deposit_transactions_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_arb_weth_deposit_transactions",
         start_date=1718668800,
@@ -304,7 +298,6 @@ def get_arb_weth_deposit_transactions(
 def get_hourly_cannonical_bridges_hourly_flows_tokens(
     cannonical_bridges_hourly_flows_tokens_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_cannonical_bridges_flows_tokens_hourly",
         start_date=DUNE_START_DATE,
@@ -331,7 +324,6 @@ def get_hourly_cannonical_bridges_hourly_flows_tokens(
 def get_hourly_cannonical_bridges_hourly_flows_native(
     cannonical_bridges_hourly_flows_native_query_id=dlt.config.value,
 ) -> Iterator[TDataItems]:
-
     date_param = get_start_end_date(
         table_id="mainnet-bigq.dune.source_cannonical_bridges_flows_native_hourly",
         start_date=DUNE_START_DATE,

@@ -28,3 +28,122 @@ models:
         tests:
           - not_null
           - unique
+  - name: all_combined_bridges_txs_modelling_format
+    description: >
+      This model captures transaction data from various blockchain bridges.
+
+      **Sample Data:**
+        - bridge: symbiosis
+        - id: 1613013
+        - timestamp_in: 2024-05-23 20:27:41.000000 UTC
+        - timestamp_out: null
+        - amount_in: 1.3117
+        - amount_out: 1.3078689233521974
+        - gas_fee_symbol: ETH
+        - gas_fee: null
+        - gas_price_usd: null
+        - relay_fee_symbol: ETH
+        - relay_fee: null
+        - relay_fee_price_usd: 43.068599999999606
+        - token_in: 0x0000000000000000000000000000000000000000
+        - symbol_in: ETH
+        - token_out: 0x82af49447d8a07e3bd95bd0d56f35241523fbab1
+        - symbol_out: WETH
+        - price_in_usd: 4867.614
+        - price_out_usd: 4824.5454
+        - txn_hash_in: 0x1674cc9a89bed1ca8d80880cdcdaadce5a8ace5dbd5da7090d84f1a99c6ed42f
+        - txn_hash_out: 0xc86cf426d4bcb2c4162d150bbd44665004a82e9246a320185a59d1283f640fd0
+        - token_address_in: 0x0000000000000000000000000000000000000000
+        - token_address_out: 0x82af49447d8a07e3bd95bd0d56f35241523fbab1
+        - chain_in: 534352
+        - chain_name_in: Scroll
+        - chain_out: 42161
+        - chain_name_out: Arbitrum One
+        - user_address_in: 0x3D6060Cc0004dd57730B4B158405E2e100C866e5
+        - user_address_out: 0x3D6060Cc0004dd57730B4B158405E2e100C866e5
+      
+    columns:
+      - name: bridge
+        description: "The name of the bridge used in the transaction."
+        data_type: string
+      - name: id
+        description: "The unique identifier for the transaction."
+        data_type: string
+      - name: timestamp_in
+        description: "The timestamp when the transaction was initiated on the source chain."
+        data_type: timestamp
+      - name: timestamp_out
+        description: "The timestamp when the transaction was completed on the destination chain, if available."
+        data_type: timestamp
+      - name: amount_in
+        description: "The amount of tokens transferred on the source chain."
+        data_type: decimal
+      - name: amount_out
+        description: "The amount of tokens received on the destination chain."
+        data_type: decimal
+      - name: gas_fee_symbol
+        description: "The symbol of the token used to pay for gas fees (e.g., ETH)."
+        data_type: string
+      - name: gas_fee
+        description: "The amount of gas fees paid for the transaction."
+        data_type: decimal
+      - name: gas_price_usd
+        description: "The USD value of the gas fee paid for the transaction."
+        data_type: decimal
+      - name: relay_fee_symbol
+        description: "The symbol of the relay token used in the transaction."
+        data_type: string
+      - name: relay_fee
+        description: "The amount of relay fee tokens paid in the transaction."
+        data_type: decimal
+      - name: relay_fee_price_usd
+        description: "The USD value of the relay fee tokens paid."
+        data_type: decimal
+      - name: token_in
+        description: "The address of the token transferred from the source chain."
+        data_type: string
+      - name: symbol_in
+        description: "The symbol of the token transferred from the source chain."
+        data_type: string
+      - name: token_out
+        description: "The address of the token received on the destination chain."
+        data_type: string
+      - name: symbol_out
+        description: "The symbol of the token received on the destination chain."
+        data_type: string
+      - name: price_in_usd
+        description: "The USD value of the tokens transferred on the source chain."
+        data_type: decimal
+      - name: price_out_usd
+        description: "The USD value of the tokens received on the destination chain."
+        data_type: decimal
+      - name: txn_hash_in
+        description: "The transaction hash on the source chain."
+        data_type: string
+      - name: txn_hash_out
+        description: "The transaction hash on the destination chain."
+        data_type: string
+      - name: token_address_in
+        description: "The address of the token on the source chain."
+        data_type: string
+      - name: token_address_out
+        description: "The address of the token on the destination chain."
+        data_type: string
+      - name: chain_in
+        description: "The chain ID of the source chain."
+        data_type: string
+      - name: chain_name_in
+        description: "The name of the source chain (e.g., Scroll)."
+        data_type: string
+      - name: chain_out
+        description: "The chain ID of the destination chain."
+        data_type: string
+      - name: chain_name_out
+        description: "The name of the destination chain (e.g., Arbitrum One)."
+        data_type: string
+      - name: user_address_in
+        description: "The address of the user on the source chain."
+        data_type: string
+      - name: user_address_out
+        description: "The address of the user on the destination chain."
+        data_type: string

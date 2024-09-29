@@ -1,7 +1,8 @@
-import os
-from google.cloud import secretmanager
-from google.api_core.exceptions import DeadlineExceeded
 import logging
+import os
+
+from google.api_core.exceptions import DeadlineExceeded
+from google.cloud import secretmanager
 
 
 def get_secret_gcp_secrete_manager(secret_name: str):

@@ -1,10 +1,11 @@
 # Adding the streamlit pages to the sidebar
-import numpy as np
-import pytz
-import pandas as pd
-import streamlit as st
-import pandas_gbq as gbq
 from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
+import pandas_gbq as gbq
+import pytz
+import streamlit as st
 
 
 def page_settings():
@@ -31,7 +32,6 @@ def get_raw_data_from_bq_df(sql_file_name) -> pd.DataFrame:
     """
     with open(
         f"src/streamlit_arb_distribution/sql/{sql_file_name}.sql",
-        "r",
     ) as file:
         sql = file.read()
     return gbq.read_gbq(sql)

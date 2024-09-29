@@ -1,13 +1,11 @@
 import re
-import streamlit as st
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from setup import (
-    ROUTER_UTILIZATION_RAW,
-    apply_sidebar_filters,
-    ROUTER_UTILIZATION_RAW_SLOW,
-)
+import streamlit as st
+from setup import (ROUTER_UTILIZATION_RAW, ROUTER_UTILIZATION_RAW_SLOW,
+                   apply_sidebar_filters)
 
 
 def router_utlization_metrics(data):
@@ -124,7 +122,6 @@ def router_utlization_metrics(data):
 
 
 def clean_utilization_data(data, agg_freq):
-
     new_data = data[(data["asset_group"] != "") & (data["chain"] != "")]
     new_data = new_data[~new_data["router"].isna()]
 
@@ -266,7 +263,6 @@ def plot_daily_utilization(data, metric):
 
 
 def plot_capacity_levels(data):
-
     total_count_per_group = (
         data.groupby(["chain", "asset_group"]).size().reset_index(name="total_count")
     )

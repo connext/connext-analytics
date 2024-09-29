@@ -10,7 +10,6 @@ def display_data(filtered_data):
 
 
 def liquidity_gameplan():
-
     st.markdown(
         """
         #### Effective Utilization Metric Calculations

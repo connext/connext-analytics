@@ -1,17 +1,15 @@
-import os
-import pytz
+import json
 import logging
+import os
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 import pandas_gbq
-from google.cloud import secretmanager
-from google.cloud import storage
-import json
-from datetime import datetime
-from jinja2 import Template
-from google.cloud import bigquery
+import pytz
 from google.api_core.exceptions import DeadlineExceeded
-
+from google.cloud import bigquery, secretmanager, storage
+from jinja2 import Template
 
 logging.basicConfig(level=logging.INFO)
 
@@ -79,7 +77,7 @@ def read_sql_from_file_add_template(sql_file_name, template_data: dict) -> str:
     try:
         sql_dir = os.path.join("src", "sql", f"{sql_file_name}.sql")
 
-        with open(sql_dir, "r") as sql_file:
+        with open(sql_dir) as sql_file:
             file_content = sql_file.read()
             query = Template(file_content).render(template_data)
             return query
@@ -93,8 +91,7 @@ def read_sql_from_file_add_template(sql_file_name, template_data: dict) -> str:
 
 
 def get_raw_from_bq(sql_file_name) -> pd.DataFrame:
-
-    with open(f"src/sql/{sql_file_name}.sql", "r") as file:
+    with open(f"src/sql/{sql_file_name}.sql") as file:
         sql = file.read()
 
     return pandas_gbq.read_gbq(sql)
@@ -136,7 +133,6 @@ def run_bigquery_query(sql_query: str):
 
 
 def nearest_power_of_ten(value):
-
     log_value = np.log10(float(value))
     rounded_log = np.round(log_value)
     power_of_ten = np.power(10, rounded_log)
@@ -167,7 +163,6 @@ def get_latest_value_from_bq_table_by_col(
     The sql used is same as routes Helper module: get_latest_by_bq_table_and_date_col
     """
     try:
-
         sql = read_sql_from_file_add_template(
             sql_file_name="get_latest_by_bq_table_and_date_col",
             template_data={"date_col": col, "table_id": table_id},

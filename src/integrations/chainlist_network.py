@@ -1,7 +1,8 @@
-import requests
+import logging
+
 import pandas as pd
 import pandas_gbq as gbq
-import logging
+import requests
 
 PROJECT_ID = "mainnet-bigq"
 logging.basicConfig(level=logging.INFO)

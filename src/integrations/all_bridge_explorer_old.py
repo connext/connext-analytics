@@ -1,19 +1,19 @@
 import json
-import httpx
-import time
+import logging
 import random
-import requests
+import time
+from datetime import datetime
+from typing import Iterator, Sequence
+
+import httpx
 import pandas as pd
 import pandas_gbq as gbq
-from requests.exceptions import RequestException, Timeout, HTTPError
 import pytz
-from datetime import datetime
-import logging
-from typing import Iterator, Sequence
+import requests
+from requests.exceptions import HTTPError, RequestException, Timeout
+
 from src.integrations.models.all_bridge_explorer import (
-    AllBridgeExplorerTransfer,
-    AllBridgeExplorerTokenInfo,
-)
+    AllBridgeExplorerTokenInfo, AllBridgeExplorerTransfer)
 from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
 
 # Base URL for the API
@@ -70,7 +70,9 @@ def get_all_bridge_explorer_transfers(
                     logging.error(f"Bad request error for URL: {url}. Error: {str(e)}")
                     raise  # Don't retry on 400 errors
                 if attempt < max_retries - 1:
-                    delay = (base_delay * 2**attempt) + (random.randint(0, 1000) / 1000)
+                    delay = (base_delay * 2**attempt) + (
+                        random.randint(0, 1000) / 1000
+                    )
                     logging.warning(
                         f"Request failed. Retrying in {delay:.2f} seconds..."
                     )

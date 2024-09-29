@@ -1,10 +1,6 @@
-import streamlit as st
 import plotly.express as px
-from setup import (
-    ROUTER_DAILY_METRICS_RAW,
-    apply_sidebar_filters,
-    clean_df,
-)
+import streamlit as st
+from setup import ROUTER_DAILY_METRICS_RAW, apply_sidebar_filters, clean_df
 
 
 def weighted_mean(data, val_col, wt_col):
@@ -12,7 +8,6 @@ def weighted_mean(data, val_col, wt_col):
 
 
 def plot_line_metrics(df, metric_name):
-
     metric_selector = {
         "TVL": "total_balance_usd",
         "APR": "apr",
@@ -61,7 +56,6 @@ def plot_line_metrics(df, metric_name):
 
 
 def main():
-
     st.title("Router Metrics and Utilizations")
 
     filter_data = apply_sidebar_filters(ROUTER_DAILY_METRICS_RAW)

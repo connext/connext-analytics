@@ -1,14 +1,18 @@
-from datetime import datetime
 import json
 import logging
 import time
-import requests
+from datetime import datetime
+from typing import List
+
 import pandas as pd
 import pandas_gbq as gbq
-from typing import List
+import requests
 from requests.exceptions import Timeout
-from .models.symbiosis_bridge_explorer import SymbiosisBridgeExplorerTransaction
+
 from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
+
+from .models.symbiosis_bridge_explorer import \
+    SymbiosisBridgeExplorerTransaction
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

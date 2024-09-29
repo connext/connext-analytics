@@ -1,24 +1,19 @@
-import logging
 import asyncio
+import json
+import logging
 import os
 from datetime import datetime
-import json
+
 import pandas as pd
 import pandas_gbq
-from src.integrations.utilities import (
-    upload_json_to_gcs,
-)
+from google.cloud import storage
 
 from src.integrations.helpers_routes_aggreagators import (
-    get_top_routes_pathways_from_bq,
-    get_greater_than_date_from_bq_table,
-)
-from src.integrations.lifi import main_routes, convert_json_to_df
-from src.integrations.socket import (
-    get_all_routes,
-    convert_socket_routes_json_to_df,
-)
-from google.cloud import storage
+    get_greater_than_date_from_bq_table, get_top_routes_pathways_from_bq)
+from src.integrations.lifi import convert_json_to_df, main_routes
+from src.integrations.socket import (convert_socket_routes_json_to_df,
+                                     get_all_routes)
+from src.integrations.utilities import upload_json_to_gcs
 
 logging.basicConfig(level=logging.INFO)
 PROJECT_ID = "mainnet-bigq"
@@ -92,7 +87,6 @@ async def lifi_pipeline() -> dict:
     logging.info(f" lifi pathways: {len(pathways)}")
 
     try:
-
         routes = await main_routes(payloads=pathways)
     except Exception as e:
         logging.info(f"Error in lifi pipeline: {e}")

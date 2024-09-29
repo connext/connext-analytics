@@ -1,25 +1,25 @@
-import os
 import asyncio
-from pprint import pprint
-import httpx
-import pandas as pd
-import logging
 import json
-from jinja2 import Template
+import logging
+import os
+from asyncio import Semaphore
+from datetime import datetime
+from itertools import product
+from pprint import pprint
+
+import httpx
 import numpy as np
+import pandas as pd
 import pandas_gbq
 from dotenv import load_dotenv
-from itertools import product
-from datetime import datetime
-from asyncio import Semaphore
 from google.cloud import storage
-from src.integrations.utilities import (
-    get_raw_from_bq,
-    nearest_power_of_ten,
-    get_secret_gcp_secrete_manager,
-    upload_json_to_gcs,
-    convert_lists_and_booleans_to_strings,
-)
+from jinja2 import Template
+
+from src.integrations.utilities import (convert_lists_and_booleans_to_strings,
+                                        get_raw_from_bq,
+                                        get_secret_gcp_secrete_manager,
+                                        nearest_power_of_ten,
+                                        upload_json_to_gcs)
 
 # Configure the logging settings
 logging.basicConfig(
@@ -57,7 +57,6 @@ async def get_data(ext_url: str):
 
 # Handle JSON to Dataframe aswell as Great Expectations beforeHand
 async def all_chains(ext_url="/chains"):
-
     result = await get_data(ext_url=ext_url)
     if result is not None:
         result_j = json.loads(result)
@@ -164,7 +163,7 @@ def generate_alt_pathways_by_chain_key_inputs(chain_keys: list, tokens: list):
         sql_file_name = "generate_alternative_chains_ids_for_pathways"
         sql_dir = os.path.join("src", "sql", f"{sql_file_name}.sql")
 
-        with open(sql_dir, "r") as sql_file:
+        with open(sql_dir) as sql_file:
             file_content = sql_file.read()
             query = Template(file_content).render(
                 keys=", ".join(f'"{key}"' for key in chain_keys)
@@ -523,7 +522,6 @@ def get_upload_data_from_lifi_cs_bucket(greater_than_date, bucket_name="lifi_rou
 
 
 def convert_no_routes_success_calls_to_df(json_blob):
-
     all_calls = []
 
     for r in json_blob:

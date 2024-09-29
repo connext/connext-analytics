@@ -1,25 +1,18 @@
-import logging
 import asyncio
-from src.integrations.lifi import (
-    main_routes,
-)
-from src.integrations.socket import (
-    get_all_routes,
-    convert_socket_routes_steps_json_to_df,
-)
-
-from src.integrations.helpers_routes_aggreagators import (
-    get_routes_pathways_from_bq,
-)
-
-from src.integrations.utilities import (
-    upload_json_to_gcs,
-)
-from google.cloud import storage
-from datetime import datetime
 import json
+import logging
 import os
+from datetime import datetime
+
 import pandas_gbq
+from google.cloud import storage
+
+from src.integrations.helpers_routes_aggreagators import \
+    get_routes_pathways_from_bq
+from src.integrations.lifi import main_routes
+from src.integrations.socket import (convert_socket_routes_steps_json_to_df,
+                                     get_all_routes)
+from src.integrations.utilities import upload_json_to_gcs
 
 logging.basicConfig(level=logging.INFO)
 PROJECT_ID = "mainnet-bigq"
@@ -97,7 +90,6 @@ def push_socket_steps_from_cs_to_bq(
 
 
 async def run_lifi_socket_routes_jobs(reset: bool = False):
-
     response1, response2 = await asyncio.gather(
         lifi_pipeline(),
         socket_pipeline(),

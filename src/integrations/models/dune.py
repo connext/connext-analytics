@@ -1,10 +1,10 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class BridgesNativeEvmEth(BaseModel):
-
     date: Optional[datetime] = None
     from_address: Optional[str] = None
     to_address: Optional[str] = None
@@ -35,7 +35,6 @@ class BridgesTokensEvmEth(BaseModel):
 
 
 class StargateBridgesDailyAgg(BaseModel):
-
     date: Optional[datetime] = None
     source_chain_name: Optional[str] = None
     destination_chain_name: Optional[str] = None

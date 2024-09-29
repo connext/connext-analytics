@@ -1,24 +1,23 @@
-import json
-import os
-from pprint import pprint
-import nest_asyncio
 import asyncio
-import httpx
-import pandas as pd
+import json
 import logging
+import os
+from asyncio import Semaphore
+from datetime import datetime
+from pprint import pprint
+
+import httpx
+import nest_asyncio
 import numpy as np
+import pandas as pd
 import pandas_gbq
 from google.cloud import storage
-from datetime import datetime
-from asyncio import Semaphore
-from src.integrations.utilities import (
-    get_raw_from_bq,
-    convert_lists_and_booleans_to_strings,
-    get_secret_gcp_secrete_manager,
-)
-from src.integrations.helpers_routes_aggreagators import (
-    get_greater_than_date_from_bq_table,
-)
+
+from src.integrations.helpers_routes_aggreagators import \
+    get_greater_than_date_from_bq_table
+from src.integrations.utilities import (convert_lists_and_booleans_to_strings,
+                                        get_raw_from_bq,
+                                        get_secret_gcp_secrete_manager)
 
 nest_asyncio.apply()
 
@@ -58,7 +57,6 @@ async def get_data(ext_url: str, headers: dict = HEADERS):
 
 
 def get_chains(ext_url="/supported/chains"):
-
     chains_data = asyncio.run(get_data(ext_url=ext_url))
     if chains_data:
         chains_df = pd.json_normalize(chains_data["result"])
@@ -73,7 +71,6 @@ def get_chains(ext_url="/supported/chains"):
 
 
 def get_bridges(ext_url="/supported/bridges"):
-
     bridges_data = asyncio.run(get_data(ext_url=ext_url))
     if bridges_data:
         bridges_df = pd.json_normalize(bridges_data["result"])
@@ -95,7 +92,6 @@ def get_tokens(ext_url="/token-lists/all"):
 
     tokens_data = asyncio.run(get_data(ext_url=ext_url, headers=headers))
     if tokens_data:
-
         for item in tokens_data["result"].items():
             result = {
                 key: pd.json_normalize(value)
@@ -122,7 +118,6 @@ def get_tokens(ext_url="/token-lists/all"):
 
 
 async def get_routes(sem, url, payload, retries=MAX_RETRIES, delay=INITIAL_DELAY):
-
     async with sem:
         async with httpx.AsyncClient() as client:
             for attempt in range(retries):
@@ -165,7 +160,6 @@ async def get_routes(sem, url, payload, retries=MAX_RETRIES, delay=INITIAL_DELAY
 
 
 async def get_all_routes(payloads, max_concurrency=3, ext_url="/quote"):
-
     url = URL_SOCKET__BASE + ext_url
     sem = Semaphore(max_concurrency)
     tasks = []
@@ -274,7 +268,6 @@ def get_upload_data_from_socket_cs_bucket(
 
 
 def convert_socket_routes_json_to_df(json_blob):
-
     normalized_data_df = pd.DataFrame()
     for r in json_blob:
         if "result" in r:
@@ -328,7 +321,6 @@ def convert_socket_routes_steps_json_to_df(json_blob):
 
 
 def convert_no_routes_success_calls_to_df(json_blob):
-
     all_calls = []
 
     # file_name = "data/ad_hoc_socket_routes.json"

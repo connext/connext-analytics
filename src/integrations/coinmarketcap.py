@@ -1,13 +1,13 @@
-import requests
 import json
+import logging
 import os
+
 import pandas as pd
 import pandas_gbq as gbq
-import logging
-from src.integrations.utilities import (
-    get_secret_gcp_secrete_manager,
-    convert_lists_and_booleans_to_strings,
-)
+import requests
+
+from src.integrations.utilities import (convert_lists_and_booleans_to_strings,
+                                        get_secret_gcp_secrete_manager)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -125,7 +125,6 @@ def extract_contract_data_for_all_token_metadata(token_metadata: dict) -> dict:
 
 
 def get_cryptocurrency_metadata_by_token_ids(token_id_list: list) -> pd.DataFrame:
-
     # Set up the headers, including the API key
     comma_seperated_token_ids = ",".join(map(str, token_id_list))
     url = f"https://pro-api.coinmarketcap.com/v2/cryptocurrency/info?id={comma_seperated_token_ids}"

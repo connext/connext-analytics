@@ -1,9 +1,12 @@
 import asyncio
-import httpx
 import logging
+
+import httpx
 import pandas as pd
 import pandas_gbq as gbq
-from src.integrations.models.router_protocol import GraphQLResponseRouterProtocol
+
+from src.integrations.models.router_protocol import \
+    GraphQLResponseRouterProtocol
 
 PROJECT_ID = "mainnet-bigq"
 url = "https://api.pro-nitro-explorer.routernitro.com/graphql"

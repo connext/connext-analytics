@@ -5,6 +5,156 @@ sources:
     database: mainnet-bigq
     schema: raw
     tables:
+      - name: source_all_bridge_explorer_transfers_new
+        description: >
+          Contains transfer data from the All Bridge Explorer.
+          
+          **Sample Data:**
+          - id: 0x010732a72430203840ffa263687d8903c81e76c64295c52b0a5cbc844a3a9b00
+          - status: Complete
+          - timestamp: 1726950263000
+          - from_chain_symbol: ETH
+          - to_chain_symbol: SRB
+          - from_amount: 5000
+          - stable_fee: 0
+          - from_token_address: 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
+          - to_token_address: CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75
+          - from_address: 0x18d8b65f80454a74491a1265736a574973d9c781
+          - to_address: GC2WUS6TNTFY5EQAEJATFJPKWBZVLE2AP7KBMVIP336CVCUGRCXJSVOI
+          - messaging_type: Allbridge
+          - partner_id: 0
+          - from_gas: 0.000145907919651746
+          - to_gas: 0
+          - relayer_fee_in_native: 0.000145907919651746
+          - relayer_fee_in_tokens: 0
+          - send_transaction_hash: 0x21e256dcd67606ca348122ed3a7263cc3d680d4435523f2fec6a2c969e196051
+          - receive_transaction_hash: 2fee79436b6c223e385feb235bc0c6ff2d3ba2356b5bcd7472ebac943752fd53
+          - api_url: https://explorer-variant-filter.api.allbridgecoreapi.net/transfers?status\u003dComplete\u0026page\u003d17\u0026limit\u003d20
+        columns:
+          - name: id
+            description: "The unique identifier of the transaction. (e.g., 0x010732a72430203840ffa263687d8903c81e76c64295c52b0a5cbc844a3a9b00)"
+            data_type: STRING
+          - name: status
+            description: "Status of the transaction (e.g., Complete, Pending)."
+            data_type: STRING
+          - name: timestamp
+            description: "The timestamp when the transaction was recorded, represented in milliseconds since epoch (e.g., 1726950263000)."
+            data_type: INT64
+          - name: from_chain_symbol
+            description: "The symbol of the source blockchain (e.g., ETH)."
+            data_type: STRING
+          - name: to_chain_symbol
+            description: "The symbol of the destination blockchain (e.g., SRB)."
+            data_type: STRING
+          - name: from_amount
+            description: "The amount of tokens transferred from the source chain (e.g., 5000)."
+            data_type: FLOAT
+          - name: stable_fee
+            description: "Fee paid in stable tokens for the transaction (e.g., 0)."
+            data_type: FLOAT
+          - name: from_token_address
+            description: "The token address on the source chain (e.g., 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48)."
+            data_type: STRING
+          - name: to_token_address
+            description: "The token address on the destination chain (e.g., CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75)."
+            data_type: STRING
+          - name: from_address
+            description: "Address of the user initiating the transaction (e.g., 0x18d8b65f80454a74491a1265736a574973d9c781)."
+            data_type: STRING
+          - name: to_address
+            description: "Address of the user receiving the transaction (e.g., GC2WUS6TNTFY5EQAEJATFJPKWBZVLE2AP7KBMVIP336CVCUGRCXJSVOI)."
+            data_type: STRING
+          - name: messaging_type
+            description: "Type of messaging protocol used in the transaction (e.g., Allbridge)."
+            data_type: STRING
+          - name: partner_id
+            description: "Partner ID related to the transaction (e.g., 0)."
+            data_type: STRING
+          - name: from_gas
+            description: "Amount of gas used in the source blockchain (e.g., 0.000145907919651746)."
+            data_type: FLOAT
+          - name: to_gas
+            description: "Amount of gas used in the destination blockchain (e.g., 0)."
+            data_type: INTEGER
+          - name: relayer_fee_in_native
+            description: "Relayer fee in native token (e.g., 0.000145907919651746)."
+            data_type: FLOAT
+          - name: relayer_fee_in_tokens
+            description: "Relayer fee in tokens (e.g., 0)."
+            data_type: FLOAT
+          - name: send_transaction_hash
+            description: "Transaction hash for the transfer on the source chain (e.g., 0x21e256dcd67606ca348122ed3a7263cc3d680d4435523f2fec6a2c969e196051)."
+            data_type: STRING
+          - name: receive_transaction_hash
+            description: "Transaction hash for the transfer on the destination chain (e.g., 2fee79436b6c223e385feb235bc0c6ff2d3ba2356b5bcd7472ebac943752fd53)."
+            data_type: STRING
+
+      - name: source_all_bridge_explorer_tokens
+        description: >
+          Contains token data from the All Bridge Explorer.
+        
+          **Sample Data:**
+
+            - blockchain: ETH
+            - name: USD Coin
+            - pool_address: 0xa7062bbA94c91d565Ae33B893Ab5dFAF1Fc57C4d
+            - token_address: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+            - decimals: 6
+            - symbol: USDC
+            - fee_share: 0.0015
+            - apr: 0.05155796425754793216
+            - apr7d: 0.05155796425754793216
+            - apr30d: 0.07319734042503986404
+            - lp_rate: 0.50004282150792170825
+            - cctp_address: 0xC51397b75B783E31469bFaADE79913F3f82210d6
+            - cctp_fee_share: 0.001
+            - pool_info_a_value: null
+            - pool_info_d_value: null
+            - pool_info_token_balance: null
+            - pool_info_v_usd_balance: null
+            - pool_info_total_lp_amount: null
+            - pool_info_acc_reward_per_share_p: null
+            - pool_info_p: null
+            - api_url: https://core.api.allbridgecoreapi.net/token-info
+            - updated_at: 2024-08-29 06:52:50.141018 UTC
+            - _dlt_load_id: 1724856368.9649894
+            - _dlt_id: h7fT8GZ2SyI/TA
+        
+        columns:
+          - name: blockchain
+            description: "The blockchain where the token is deployed (e.g., ETH)."
+            data_type: STRING
+          - name: name
+            description: "The name of the token (e.g., USD Coin)."
+            data_type: STRING
+          - name: pool_address
+            description: "The address of the liquidity pool for the token (e.g., 0xa7062bbA94c91d565Ae33B893Ab5dFAF1Fc57C4d)."
+            data_type: STRING
+          - name: token_address
+            description: "The address of the token (e.g., 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48)."
+            data_type: STRING
+          - name: decimals
+            description: "The number of decimals the token uses (e.g., 6)."
+            data_type: INT64
+          - name: symbol
+            description: "The symbol of the token (e.g., USDC)."
+            data_type: STRING
+          - name: fee_share
+            description: "The fee share percentage for liquidity providers (e.g., 0.0015)."
+            data_type: FLOAT
+          - name: apr
+            description: "The annual percentage rate (APR) for the token pool (e.g., 0.05155796425754793216)."
+            data_type: FLOAT
+          - name: apr7d
+            description: "The 7-day APR for the token pool (e.g., 0.05155796425754793216)."
+            data_type: FLOAT
+          - name: apr30d
+            description: "The 30-day APR for the token pool (e.g., 0.07319734042503986404)."
+            data_type: FLOAT
+          - name: lp_rate
+            description: "The rate for liquidity providers in the pool (e.g., 0.50004282150792170825)."
+            data_type: FLOAT
+      
       - name: source_chainlist_network__chains
         description: >
           Contains chain data from the Chainlist Network.
@@ -45,6 +195,7 @@ sources:
             description: "Status of the chain."
           - name: faucets
             description: "Faucets for the chain."
+      
       - name: source_synapseprotocol_explorer_transactions
         description: >
           Contains transaction data from the Synapse Protocol Explorer.

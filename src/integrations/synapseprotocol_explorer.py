@@ -1,20 +1,20 @@
 import json
 import logging
-import pandas as pd
-import pandas_gbq as gbq
-import dlt
 import re
-from dlt.extract.source import DltResource
-from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
-from dlt.common.typing import TDataItems
-from dlt.sources.helpers import requests
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Sequence
 from urllib.parse import quote
-from datetime import datetime, timedelta, timezone, date, time
+
+import dlt
+import pandas as pd
+import pandas_gbq as gbq
+from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
+from dlt.common.typing import TDataItems
+from dlt.extract.source import DltResource
+from dlt.sources.helpers import requests
+
 from src.integrations.models.synapseprotocol_explorer import (
-    TransactionInfo,
-    FlattenedTransactionInfo,
-)
+    FlattenedTransactionInfo, TransactionInfo)
 from src.integrations.utilities import get_latest_value_from_bq_table_by_col
 
 PROJECT_ID = "mainnet-bigq"
@@ -68,7 +68,6 @@ def get_synapse_data(
         (datetime.now(timezone.utc) - timedelta(days=1)).date(), time.min, timezone.utc
     ),
 ):
-
     # Example usage
     query = """
     query GetBridgeTransactionsQuery($chainIDFrom: [Int], $chainIDTo: [Int], $addressFrom: String, $addressTo: String, $maxAmount: Int, $minAmount: Int, $maxAmountUsd: Int, $minAmountUsd: Int, $startTime: Int, $endTime: Int, $txnHash: String, $kappa: String, $pending: Boolean, $page: Int, $tokenAddressFrom: [String], $tokenAddressTo: [String], $useMv: Boolean) {
@@ -131,7 +130,6 @@ def get_synapse_data(
     all_txs = []
 
     for day in range(num_days):
-
         current_day_start = start_date + timedelta(days=day)
         current_day_end = current_day_start + timedelta(days=1)
         logging.info(
@@ -197,7 +195,6 @@ def get_synapse_data(
     max_table_nesting=0,
 )
 def synapse_explorer_source() -> Sequence[DltResource]:
-
     start_date = get_latest_value_from_bq_table_by_col(
         "mainnet-bigq.raw.source_synapseprotocol_explorer_transactions",
         "from_time",
@@ -218,7 +215,6 @@ def synapse_explorer_source() -> Sequence[DltResource]:
 
 
 if __name__ == "__main__":
-
     logging.info("Running DLT synapse_explorer")
     p = dlt.pipeline(
         pipeline_name="synapse_explorer",

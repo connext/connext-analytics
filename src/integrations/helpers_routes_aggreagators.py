@@ -1,9 +1,12 @@
-from pprint import pprint
-import pandas_gbq
-from datetime import datetime
-import numpy as np
 import logging
-from src.integrations.utilities import get_raw_from_bq, read_sql_from_file_add_template
+from datetime import datetime
+from pprint import pprint
+
+import numpy as np
+import pandas_gbq
+
+from src.integrations.utilities import (get_raw_from_bq,
+                                        read_sql_from_file_add_template)
 
 
 # 1. Greate than date from a big query table
@@ -15,7 +18,6 @@ def get_greater_than_date_from_bq_table(table_id, date_col):
         -- SELECT max(upload_datetime) AS latest_upload_datetime FROM `mainnet-bigq.raw.source_socket__routes`
     """
     try:
-
         sql = read_sql_from_file_add_template(
             sql_file_name="get_latest_by_bq_table_and_date_col",
             template_data={"date_col": date_col, "table_id": table_id},
@@ -35,7 +37,6 @@ def get_routes_pathways_from_bq(aggregator):
     stg_all_possible_pathways__routes__lifi_socket: These are approx 4k paths for LIFI, Socket
     """
     try:
-
         logging.info(
             f"sql_file_name: stg_all_possible_pathways__routes__lifi_socket, aggregator: {aggregator}"
         )
@@ -97,7 +98,6 @@ def get_top_routes_pathways_from_bq(aggregator):
     """
 
     try:
-
         sql = read_sql_from_file_add_template(
             sql_file_name="top_pathways_lifi_socket_hourly_pull",
             template_data={"aggregator": aggregator},

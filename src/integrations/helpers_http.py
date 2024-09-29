@@ -1,8 +1,9 @@
 import asyncio
-import httpx
 import logging
-from typing import Dict, Any, Optional, List
 from asyncio import Semaphore
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 # Configure logging
 logging.basicConfig(

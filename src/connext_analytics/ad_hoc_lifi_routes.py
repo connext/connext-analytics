@@ -1,26 +1,26 @@
-import os
 import asyncio
-from pprint import pprint
-import httpx
-import pandas as pd
-import logging
 import json
-from jinja2 import Template
+import logging
+import os
+from asyncio import Semaphore
+from datetime import datetime
+from itertools import product
+from pprint import pprint
+
+import httpx
 import numpy as np
+import pandas as pd
 import pandas_gbq
 from dotenv import load_dotenv
-from itertools import product
-from datetime import datetime
-from asyncio import Semaphore
 from google.cloud import storage
-from src.integrations.utilities import (
-    get_raw_from_bq,
-    nearest_power_of_ten,
-    get_secret_gcp_secrete_manager,
-    upload_json_to_gcs,
-    convert_lists_and_booleans_to_strings,
-)
+from jinja2 import Template
+
 from src.integrations.lifi import convert_routes_payload_to_df
+from src.integrations.utilities import (convert_lists_and_booleans_to_strings,
+                                        get_raw_from_bq,
+                                        get_secret_gcp_secrete_manager,
+                                        nearest_power_of_ten,
+                                        upload_json_to_gcs)
 
 PROJECT_ID = "mainnet-bigq"
 bucket_name = "lifi_routes"

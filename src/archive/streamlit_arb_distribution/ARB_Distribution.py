@@ -1,12 +1,9 @@
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
-from setup import (
-    apply_universal_sidebar_filters,
-    ARB_DISTRIBUTION_DATA,
-    ARB_HOURLY_PRICE_DATA,
-)
+from setup import (ARB_DISTRIBUTION_DATA, ARB_HOURLY_PRICE_DATA,
+                   apply_universal_sidebar_filters)
 
 
 def theory():
@@ -59,7 +56,6 @@ def clean_cal_data(df, arb_data):
 
 
 def aggregate_flow(df):
-
     df_agg = df.groupby(["origin_chain", "destination_chain"]).agg(
         {
             "total_fee_usd": "sum",
@@ -104,7 +100,6 @@ def user_weekly_distribution(df):
 
 
 def plot_sankey(df, col="usd_destination_amount"):
-
     # Prepare data for Sankey diagram
     all_nodes = list(set(df["origin_chain"]).union(set(df["destination_chain"])))
     node_indices = {node: idx for idx, node in enumerate(all_nodes)}
@@ -233,7 +228,6 @@ def main() -> None:
 
     c1, c2, c3 = st.columns([1, 1, 1])
     with c1:
-
         st.subheader(
             """
             Summary
@@ -248,12 +242,10 @@ def main() -> None:
         st.markdown("---")
 
     with c2:
-
         st.subheader("Flow of USD Destination Amount")
 
         plot_sankey(agg_flow, col=col)
     with c3:
-
         plot_daily_arb_distribution(df_clean, col=col)
 
     st.markdown("---")

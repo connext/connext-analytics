@@ -1,17 +1,14 @@
-import pandas as pd
-import streamlit as st
-import plotly.express as px
-from setup import (
-    get_db_url,
-    create_engine,
-    get_raw_data_from_postgres_by_sql,
-    get_agg_data_from_sql_template,
-    apply_date_filter_to_df,
-)
-from jinja2 import Template
-from datetime import datetime, timedelta
-import pytz
 import logging
+from datetime import datetime, timedelta
+
+import pandas as pd
+import plotly.express as px
+import pytz
+import streamlit as st
+from jinja2 import Template
+from setup import (apply_date_filter_to_df, create_engine,
+                   get_agg_data_from_sql_template, get_db_url,
+                   get_raw_data_from_postgres_by_sql)
 from sqlalchemy.exc import SQLAlchemyError
 
 
@@ -112,7 +109,6 @@ def get_metric_8_agg_netting_rate(mode: str, date_filter: dict) -> pd.DataFrame:
     """
 
     try:
-
         query = Template(sql_query).render(date_filter)
 
         logging.info(f"Generated SQL: {query}")
@@ -373,7 +369,6 @@ def metric_dashboard(mode: str) -> None:
 
     col1, col2 = st.columns(2)
     with col1:
-
         st.metric(
             "Netting Rate 1h",
             value=f"{agg_metric_8_Netting_Rate['netting_rate_1h_percentage'].values[0]}%",

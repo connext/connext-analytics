@@ -1,5 +1,6 @@
-from pydantic import BaseModel, validator
 from typing import Optional, Union
+
+from pydantic import BaseModel, validator
 
 
 class SingleSideInfo(BaseModel):

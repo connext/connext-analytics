@@ -1,18 +1,18 @@
 import json
-import time
+import logging
 import random
-import requests
+import time
+from datetime import datetime
+from typing import Iterator, Sequence
+
 import pandas as pd
 import pandas_gbq as gbq
-from requests.exceptions import RequestException, Timeout, HTTPError
 import pytz
-from datetime import datetime
-import logging
-from typing import Iterator, Sequence
+import requests
+from requests.exceptions import HTTPError, RequestException, Timeout
+
 from src.integrations.models.all_bridge_explorer import (
-    AllBridgeExplorerTransfer,
-    AllBridgeExplorerTokenInfo,
-)
+    AllBridgeExplorerTokenInfo, AllBridgeExplorerTransfer)
 from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
 
 # Base URL for the API
@@ -33,8 +33,7 @@ def get_latest_metadata_from_bq_table() -> int:
     """
     try:
         with open(
-            "src/sql/get_latest_metadata_source_all_bridge_explorer_transfers.sql", "r"
-        ) as file:
+            "src/sql/get_latest_metadata_source_all_bridge_explorer_transfers.sql") as file:
             sql = file.read()
 
         data = gbq.read_gbq(sql)
@@ -65,7 +64,7 @@ def get_all_bridge_explorer_transfers(
 
     URL start date hy page: https://core.allbridge.io/explorer?status=Complete&page=85000
     from where to page 1.
-    
+
     """
     page = 1
     page_size = 20
@@ -99,7 +98,9 @@ def get_all_bridge_explorer_transfers(
                     logging.error(f"Bad request error for URL: {url}. Error: {str(e)}")
                     raise  # Don't retry on 400 errors
                 if attempt < max_retries - 1:
-                    delay = (base_delay * 2**attempt) + (random.randint(0, 1000) / 1000)
+                    delay = (base_delay * 2**attempt) + (
+                        random.randint(0, 1000) / 1000
+                    )
                     logging.warning(
                         f"Request failed. Retrying in {delay:.2f} seconds..."
                     )

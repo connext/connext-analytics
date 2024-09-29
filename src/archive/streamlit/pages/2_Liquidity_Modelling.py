@@ -1,12 +1,9 @@
-import streamlit as st
 import pandas as pd
-from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from setup import (
-    apply_sidebar_filters,
-    clean_df,
-    ROUTER_DAILY_METRICS_RAW_SLOW,
-)
+import streamlit as st
+from plotly.subplots import make_subplots
+from setup import (ROUTER_DAILY_METRICS_RAW_SLOW, apply_sidebar_filters,
+                   clean_df)
 
 
 def simulate_apr(df, apr_target):
@@ -358,7 +355,6 @@ def simulate_apr_parameters(df, slow_df):
 
 
 def relationship_between_utilization_and_apr(df):
-
     st.subheader("Relationship Between Utilization and APR")
     st.markdown(
         """

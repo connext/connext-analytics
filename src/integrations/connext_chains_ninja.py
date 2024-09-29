@@ -1,7 +1,8 @@
 import asyncio
+import logging
+
 import httpx
 import pandas as pd
-import logging
 
 BASE_URL = "https://chaindata.connext.ninja/"
 HEADERS = {"Content-Type": "application/json"}

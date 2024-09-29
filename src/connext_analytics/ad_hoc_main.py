@@ -1,12 +1,12 @@
-import os
 import json
-from pprint import pprint
+import os
 from pathlib import Path, PurePath
+from pprint import pprint
+
 import pandas as pd
-from jinja2 import Template
 import pandas_gbq
 from google.oauth2 import service_account
-
+from jinja2 import Template
 
 PROJECT_ID = "mainnet-bigq"
 CURRENT_DIR = Path(__file__).parents[2]
@@ -21,7 +21,7 @@ def read_sql_from_file(sql_file_name, template_data) -> str:
         f"{str(PurePath(CURRENT_DIR))}/src/connext_analytics/sql/{sql_file_name}.sql"
     )
 
-    with open(data_dir, "r") as sql_file:
+    with open(data_dir) as sql_file:
         file = sql_file.read()
         query = Template(file).render(template_data)
         return query

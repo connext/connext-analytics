@@ -1,8 +1,9 @@
 import asyncio
-import aiohttp
 import logging
-import pandas_gbq as gbq
+
+import aiohttp
 import pandas as pd
+import pandas_gbq as gbq
 from requests.structures import CaseInsensitiveDict
 
 url = "https://stats-api.dln.trade/api/Orders/filteredList"
@@ -84,7 +85,6 @@ async def post_deexplorer_data_call(skip=0):
 
 
 def get_skip_count_from_bq():
-
     query = "SELECT COUNT(1) AS max FROM `mainnet-bigq.raw.source_de_bridge_explorer__transactions` "
     skip = gbq.read_gbq(query, project_id=PROJECT_ID).iloc[0]["max"]
     return skip

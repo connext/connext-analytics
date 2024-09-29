@@ -19,6 +19,10 @@ repos:
     rev: v3.9.0
     hooks:
     -   id: pyupgrade
+- repo: https://github.com/adrienverge/yamllint.git
+  rev: v1.26.3  
+  hooks:
+    - id: yamllint
 - repo: https://github.com/dbt-checkpoint/dbt-checkpoint
   rev: v1.1.1
   hooks:
@@ -26,11 +30,24 @@ repos:
   - id: check-script-has-no-table-name
   - id: dbt-test
   - id: dbt-docs-generate
-  - id: check-model-has-all-columns
-    name: Check columns - core
-    files: ^models/core
-  - id: check-model-has-all-columns
-    name: Check columns - mart
-    files: ^models/mart
-  - id: check-model-columns-have-desc
-    files: ^models/mart
+- repo: https://github.com/sqlfluff/sqlfluff
+  rev: 3.2.0
+  hooks:
+    - id: sqlfluff-lint
+      name: sqlfluff lint
+      entry: sqlfluff lint
+      language: python
+      types: [sql]
+      additional_dependencies:
+        - sqlfluff-templater-dbt
+        - dbt-bigquery==1.8.2
+      args: ["--dialect", "bigquery"]
+    - id: sqlfluff-fix
+      name: sqlfluff fix
+      entry: sqlfluff fix
+      language: python
+      types: [sql]
+      additional_dependencies:
+        - sqlfluff-templater-dbt
+        - dbt-bigquery==1.8.2
+      args: ["--dialect", "bigquery"]

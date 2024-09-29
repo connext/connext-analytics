@@ -1,16 +1,18 @@
-from cmath import log
-import time
-import random
 import asyncio
-import httpx
-import pandas as pd
-import logging
 import json
-import pandas_gbq
-from pprint import pp, pprint
-import numpy as np
-from src.integrations.utilities import get_raw_from_bq
+import logging
+import random
+import time
+from cmath import log
 from datetime import date, datetime, timedelta
+from pprint import pp, pprint
+
+import httpx
+import numpy as np
+import pandas as pd
+import pandas_gbq
+
+from src.integrations.utilities import get_raw_from_bq
 
 # Configure the logging settings
 logging.basicConfig(
@@ -63,7 +65,6 @@ async def get_data(ext_url: str, params: dict) -> list:
     url = URL_HOP_EXPLORER__BASE + ext_url
     try:
         async with httpx.AsyncClient() as client:
-
             delay = random.uniform(0.2, 10)
             time.sleep(delay)
             response = await client.get(url, params=params)
@@ -88,7 +89,6 @@ async def get_data(ext_url: str, params: dict) -> list:
 
 
 async def get_transfers_data(ext_url=URL_HOP_EXPLORER__TRANSFERS) -> pd.DataFrame:
-
     transfers_params = generate_date_logic(
         start_date=get_latest_date_from_hop_explorer__transfers()
     )

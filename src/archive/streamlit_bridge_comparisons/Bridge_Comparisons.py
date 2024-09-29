@@ -1,10 +1,8 @@
 import pandas as pd
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
-from setup import (
-    bridge_comparisons_raw,
-)
+from setup import bridge_comparisons_raw
 
 
 def format_millions(value):
@@ -54,7 +52,6 @@ def apply_filters(df):
 
 
 def get_clean_df(df):
-
     df.rename(
         columns={
             "currency_symbol": "token",
@@ -67,7 +64,6 @@ def get_clean_df(df):
 
 
 def aggregate_flow(df):
-
     df_agg = (
         df.groupby(["origin_chain", "destination_chain", "token"])
         .agg(

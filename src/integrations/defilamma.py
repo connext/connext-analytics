@@ -1,28 +1,26 @@
 import asyncio
-from datetime import datetime, timedelta
-import pytz
-import dlt
 import logging
-import pandas as pd
-from defillama2 import DefiLlama
+from datetime import datetime, timedelta
 from typing import Iterator, Sequence
+
+import dlt
+import pandas as pd
+import pytz
+from defillama2 import DefiLlama
 from dlt.common.libs.pydantic import pydantic_to_table_schema_columns
 from dlt.common.typing import TDataItems
 from dlt.extract.source import DltResource
 from dlt.sources.helpers import requests
-from src.integrations.models.defilamma import (
-    DefilammaChains,
-    DefilammaProtocols,
-    DefilammaStables,
-    DefilammaBridges,
-    DefilammaBridgesHistoryWallets,
-    DefilammaBridgesHistoryTokens,
-)
-from src.integrations.utilities import (
-    get_raw_from_bq,
-    get_latest_value_from_bq_table_by_col,
-)
+
 from src.integrations.helpers_http import AsyncHTTPClient
+from src.integrations.models.defilamma import (DefilammaBridges,
+                                               DefilammaBridgesHistoryTokens,
+                                               DefilammaBridgesHistoryWallets,
+                                               DefilammaChains,
+                                               DefilammaProtocols,
+                                               DefilammaStables)
+from src.integrations.utilities import (get_latest_value_from_bq_table_by_col,
+                                        get_raw_from_bq)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -36,7 +34,6 @@ dl = DefiLlama()
     columns=pydantic_to_table_schema_columns(DefilammaStables),
 )
 def defilamma_stables(stablecoins_list_url=dlt.config.value) -> Iterator[TDataItems]:
-
     req_datetime = pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S")
     resp = requests.get(stablecoins_list_url)
     resp.raise_for_status()
@@ -106,7 +103,6 @@ def defilamma_bridges(bridge_url=dlt.config.value) -> Iterator[TDataItems]:
 
 @staticmethod
 def convert_raw_bridgestats_to_df(res_data, upload_datetime):
-
     # Flattening the data into two DataFrames
     df1_data = []
     df2_data = []
@@ -169,7 +165,6 @@ def convert_raw_bridgestats_to_df(res_data, upload_datetime):
 
 @staticmethod
 def generate_daily_unix_timestamps(end_date=datetime.now(pytz.UTC)):
-
     # get latest upload date from Defilamma token history table
 
     # TODO: changes this on weekend

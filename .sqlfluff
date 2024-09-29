@@ -1,0 +1,9 @@
+[sqlfluff]
+dialect = bigquery
+templater = dbt
+lint_templated_tokens = True
+max_line_length = 120
+
+[sqlfluff:templater:dbt]
+project_dir = connext_dbt/
+profiles_dir = connext_dbt/

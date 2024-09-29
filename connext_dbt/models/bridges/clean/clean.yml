@@ -1,5 +1,120 @@
 version: 2
+
 models:
+  - name: cln_all_bridge_txs
+    description: |
+      This model captures transaction data across different blockchain bridges.
+      The accuracy of the data calculations with respect to to_amount is wrong.
+      As the amount goes -ve, most likely due to price diff, resulting from a different price data and aggregation. 
+      We are currently using Hourly rate for the same. Also, the calculation needs to be verified an someone on Engg. Team.
+
+      Steps Taken
+        - Price Grouping: Assigns tokens to their respective price groups based on the transaction’s token symbols and gas fees.
+        - Date Conversion: Truncates the transaction date to the hour level for price comparison.
+        - USD Conversion: Calculates the USD equivalent for the transaction amounts, gas fees, and relayer fees using token prices at the specific hour.
+        - Fee Calculation: Computes total gas and relayer fees in native tokens and USD.
+        - Amount Adjustments: Adjusts the final token amounts by subtracting relayer fees.
+        - Final Selection: Creates a final dataset with relevant transaction details, including amounts, fees, and USD conversions.
+      
+      **Sample Data:**
+        - bridge: all_bridges
+        - id: 0x0502558557c2b86709eee43a18ff785fded8d93974da09d45342029aef1d9bd7
+        - from_date: 2024-01-12 21:58:03.000000 UTC
+        - from_tx_hash: 0xe9078aed70a63fa5520248ae8ba143c2d73fb91a16942acb41883b8ff7784880
+        - from_chain_id: 137
+        - from_chain_name: Polygon Mainnet
+        - from_user_address: 0x0a7be8279297f0a611e41a9c957cc3292abec702
+        - from_token_symbol: USDC
+        - from_amount: 0.105
+        - from_amount_usd: 0.1051579725
+        - to_tx_hash: 0x6a6b944af69076ad606ac72a98ec8556238616076e1f7fb69fd49b3517969a81
+        - to_user_address: 0x0a7be8279297f0a611e41a9c957cc3292abec702
+        - to_chain_id: 56
+        - to_chain_name: BNB Smart Chain Mainnet
+        - to_token_symbol: USDT
+        - to_amount: -0.18874068677921851
+        - to_amount_usd: -0.15389345095583609
+        - gas_symbol: MATIC
+        - gas_amount: 2.3552525325235325
+        - gas_amount_usd: 2.6734928596375998
+        - relay_symbol: MATIC
+        - relay_amount: 0.2937406867792185
+        - relay_amount_usd: 0.25905142345583609
+
+    columns:
+      - name: bridge
+        description: "The bridge used in the transaction (e.g., all_bridges)."
+        data_type: STRING
+      - name: id
+        description: "Unique identifier for the transaction (e.g., 0x0502558557c2b86709eee43a18ff785fded8d93974da09d45342029aef1d9bd7)."
+        data_type: STRING
+        tests:
+          - not_null
+          - unique
+      - name: from_date
+        description: "Timestamp of when the transaction was initiated (e.g., 2024-01-12 21:58:03.000000 UTC)."
+        data_type: TIMESTAMP
+      - name: from_tx_hash
+        description: "Transaction hash of the source transaction (e.g., 0xe9078aed70a63fa5520248ae8ba143c2d73fb91a16942acb41883b8ff7784880)."
+        data_type: STRING
+      - name: from_chain_id
+        description: "ID of the source blockchain (e.g., 137 for Polygon Mainnet)."
+        data_type: INTEGER
+      - name: from_chain_name
+        description: "Name of the source blockchain (e.g., Polygon Mainnet)."
+        data_type: STRING
+      - name: from_user_address
+        description: "Address of the user initiating the transaction (e.g., 0x0a7be8279297f0a611e41a9c957cc3292abec702)."
+        data_type: STRING
+      - name: from_token_symbol
+        description: "Symbol of the token used in the source chain (e.g., USDC)."
+        data_type: STRING
+      - name: from_amount
+        description: "Amount of tokens sent in the transaction (e.g., 0.105)."
+        data_type: FLOAT
+      - name: from_amount_usd
+        description: "Equivalent USD value of the tokens sent (e.g., 0.1051579725)."
+        data_type: FLOAT
+      - name: to_tx_hash
+        description: "Transaction hash of the destination transaction (e.g., 0x6a6b944af69076ad606ac72a98ec8556238616076e1f7fb69fd49b3517969a81)."
+        data_type: STRING
+      - name: to_user_address
+        description: "Address of the user receiving the transaction (e.g., 0x0a7be8279297f0a611e41a9c957cc3292abec702)."
+        data_type: STRING
+      - name: to_chain_id
+        description: "ID of the destination blockchain (e.g., 56 for BNB Smart Chain Mainnet)."
+        data_type: INTEGER
+      - name: to_chain_name
+        description: "Name of the destination blockchain (e.g., BNB Smart Chain Mainnet)."
+        data_type: STRING
+      - name: to_token_symbol
+        description: "Symbol of the token received in the destination chain (e.g., USDT)."
+        data_type: STRING
+      - name: to_amount
+        description: "Amount of tokens received in the transaction (e.g., -0.18874068677921851)."
+        data_type: FLOAT
+      - name: to_amount_usd
+        description: "Equivalent USD value of the tokens received (e.g., -0.15389345095583609)."
+        data_type: FLOAT
+      - name: gas_symbol
+        description: "Symbol of the gas token used for the transaction (e.g., MATIC)."
+        data_type: STRING
+      - name: gas_amount
+        description: "Amount of gas used in the transaction (e.g., 2.3552525325235325)."
+        data_type: FLOAT
+      - name: gas_amount_usd
+        description: "Equivalent USD value of the gas used (e.g., 2.6734928596375998)."
+        data_type: FLOAT
+      - name: relay_symbol
+        description: "Symbol of the relay token used (e.g., MATIC)."
+        data_type: STRING
+      - name: relay_amount
+        description: "Amount of relay tokens used in the transaction (e.g., 0.2937406867792185)."
+        data_type: FLOAT
+      - name: relay_amount_usd
+        description: "Equivalent USD value of the relay tokens used (e.g., 0.25905142345583609)."
+        data_type: FLOAT
+
   - name: cln_synapse_txs
     description: >
       Cleans and transforms data from the `stg_synapse_txs` table by renaming columns and converting data types where necessary.

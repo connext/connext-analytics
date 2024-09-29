@@ -1,19 +1,14 @@
 import pandas as pd
-import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
-
 # Raw Data
-from setup import (
-    ALL_BRIDGES_HOURLY_DATA,
-    apply_universal_sidebar_filters,
-    get_df_by_netting_window,
-)
+from setup import (ALL_BRIDGES_HOURLY_DATA, apply_universal_sidebar_filters,
+                   get_df_by_netting_window)
 
 
 def plot_netted_volume_by_asset_group(df, metric_col):
-
     fig = px.line(
         df,
         x="date",
@@ -38,7 +33,6 @@ def plot_netted_volume_by_chain(df):
 
 
 def plot_netted_volume_by_bridge(df, metric_col):
-
     # Calculate the difference between connext and router_protocol
     df_connext = (
         df[df["bridge"] == "connext"].groupby("date")[metric_col].mean().reset_index()

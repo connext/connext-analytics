@@ -1,9 +1,10 @@
-import requests
-import re
 import json
+import logging
+import re
+
 import pandas as pd
 import pandas_gbq
-import logging
+import requests
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,7 +26,6 @@ def fetch_url_content(url):
 
 def fetch_and_extract_allowlist_with_comments(url):
     try:
-
         typescript_code = fetch_url_content(url)
 
         pattern = r"routers:\s*{\s*allowlist:\s*\[([^\]]+)\]"
@@ -106,7 +106,6 @@ def fetch_and_extract_mainnet_production_init_config(url):
 
 def fetch_and_transform_supported_domains(url):
     try:
-
         content = fetch_url_content(url)
 
         # Adjusted pattern to match the supportedDomains section more accurately
@@ -144,14 +143,12 @@ def fetch_and_transform_supported_domains(url):
 
 
 def get_routes_allowed_list_with_names():
-
     allowlist_with_comments = fetch_and_extract_allowlist_with_comments(url)
     if allowlist_with_comments is not None:
         return allowlist_with_comments
 
 
 def get_mainnet_production_init_config():
-
     mainnet_production_init_config = fetch_and_extract_mainnet_production_init_config(
         url
     )
@@ -160,7 +157,6 @@ def get_mainnet_production_init_config():
 
 
 def get_supported_domains():
-
     supported_domains = fetch_and_transform_supported_domains(url)
     # if length of id is lessthan 6 remove it
 
@@ -171,7 +167,6 @@ def get_supported_domains():
 
 
 def get_prod_mainmet_config_metadata():
-
     # -------
     # Routers
     # -------
@@ -215,7 +210,6 @@ def get_prod_mainmet_config_metadata():
     # Flatten the representations into rows
     flattened_data = []
     for asset in assets:
-
         for k, v in asset["representations"].items():
             # Combine asset name and canonical information with each representation
             flattened_row = {

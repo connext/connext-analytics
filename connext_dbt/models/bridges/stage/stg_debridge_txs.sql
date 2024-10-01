@@ -41,28 +41,20 @@ semi AS (
 SELECT
     transfer_id AS id,
     date,
-
-    -- from
     from_chain.name AS from_chain_name,
     from_actual_token_address AS from_token_address,
     from_actual_symbol AS from_token_symbol,
     user_address_out,
     to_chain.name AS to_chain_name,
     to_symbol AS to_token_symbol,
-
-    -- to
     fee_chain.nativecurrency_symbol AS fee_token_symbol,
     from_actual_symbol AS protocol_fee_token_symbol,
     CAST(COALESCE(pre_swap_chain_id, from_chain_id) AS INT64) AS from_chain_id,
     CAST(from_tx_hash AS STRING) AS from_tx_hash,
-    from_actual_value / POW(10, from_actual_symbol_decimal) AS from_amount,
+    (from_actual_value + debridge_fee) / POW(10, from_actual_symbol_decimal) AS from_amount,
     CAST(to_chain_id AS INT64) AS to_chain_id,
-
-    -- fees
-    -- fee 1 token symbol is the origin chain native token
     CAST(to_tx_hash AS STRING) AS to_tx_hash,
     to_value / POW(10, to_symbol_decimal) AS to_amount,
-
     market_maker_gas_costs / POW(10, fee_chain.nativecurrency_decimals) AS gas_fee,
     debridge_fee / POW(10, from_actual_symbol_decimal) AS protocol_fee_value
 

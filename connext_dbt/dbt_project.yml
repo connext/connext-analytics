@@ -1,5 +1,5 @@
 name: 'connext_dbt'
-version: '1.0.0'
+version: '1.8.0'
 config-version: 2
 profile: 'connext_dbt'
 model-paths: ["models"]

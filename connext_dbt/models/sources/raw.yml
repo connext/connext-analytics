@@ -5,7 +5,7 @@ sources:
     database: mainnet-bigq
     schema: raw
     tables:
-      - name: source_all_bridge_explorer_transfers_new
+      - name: source_all_bridge_explorer_transfers_v2
         description: >
           Contains transfer data from the All Bridge Explorer.
           
@@ -48,10 +48,13 @@ sources:
             data_type: STRING
           - name: from_amount
             description: "The amount of tokens transferred from the source chain (e.g., 5000)."
-            data_type: FLOAT
+            data_type: STRING
+          - name: to_amount
+            description: "The amount of tokens transferred to the destination chain (e.g., 4895)."
+            data_type: STRING
           - name: stable_fee
             description: "Fee paid in stable tokens for the transaction (e.g., 0)."
-            data_type: FLOAT
+            data_type: STRING
           - name: from_token_address
             description: "The token address on the source chain (e.g., 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48)."
             data_type: STRING
@@ -72,16 +75,16 @@ sources:
             data_type: STRING
           - name: from_gas
             description: "Amount of gas used in the source blockchain (e.g., 0.000145907919651746)."
-            data_type: FLOAT
+            data_type: STRING
           - name: to_gas
             description: "Amount of gas used in the destination blockchain (e.g., 0)."
             data_type: INTEGER
           - name: relayer_fee_in_native
             description: "Relayer fee in native token (e.g., 0.000145907919651746)."
-            data_type: FLOAT
+            data_type: STRING
           - name: relayer_fee_in_tokens
             description: "Relayer fee in tokens (e.g., 0)."
-            data_type: FLOAT
+            data_type: STRING
           - name: send_transaction_hash
             description: "Transaction hash for the transfer on the source chain (e.g., 0x21e256dcd67606ca348122ed3a7263cc3d680d4435523f2fec6a2c969e196051)."
             data_type: STRING

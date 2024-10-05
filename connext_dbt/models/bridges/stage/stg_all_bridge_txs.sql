@@ -1,17 +1,8 @@
 -- Steps
 -- Pull all raw 
 WITH raw AS (
-    (
-        SELECT DISTINCT
-            *
-            EXCEPT (_dlt_load_id, _dlt_id)
-        FROM `mainnet-bigq.raw.source_all_bridge_explorer_transfers`
-    )
-    UNION ALL
-    (
-        SELECT DISTINCT *
-        FROM {{ source('raw', 'source_all_bridge_explorer_transfers_new') }}
-    )
+    SELECT DISTINCT *
+    FROM {{ source('raw', 'source_all_bridge_explorer_transfers_v2') }}
 ),
 
 semi AS (
@@ -64,7 +55,7 @@ semi AS (
         END AS to_chain_id,
         -- to_gas fee token
         COALESCE(tt.symbol, r.to_token_address) AS to_token_symbol,
-        CAST(NULL AS FLOAT64) AS to_amount,
+        CAST(r.to_amount AS FLOAT64) AS to_amount,
         -- relay fee
         CASE
             WHEN ft.blockchain = 'ETH' THEN 'ETH'
@@ -107,26 +98,32 @@ semi AS (
 SELECT DISTINCT
     s.id,
     s.date,
-    s.from_hash,
-    s.to_hash,
-    s.from_address,
-    s.to_address,
+    
     -- from
+    s.from_hash,
+    s.from_address,
     s.from_chain_id,
     s.from_token_symbol,
-    to_chain_id,
-    s.to_token_symbol,
-    -- to
-    s.from_native_token AS from_gas_native_token,
-    s.to_native_token AS to_gas_native_token,
-    s.from_native_token AS from_relayer_fee_native_symbol,
-    COALESCE(from_chain.name, s.from_chain_name) AS from_chain_name,
-    -- fees
     CAST(s.from_amount AS FLOAT64) AS from_amount,
+
+    -- to
+    to_chain_id,
     COALESCE(to_chain.name, s.to_chain_name) AS to_chain_name,
+    s.to_token_symbol,
+    s.to_hash,
+    s.to_address,
+    COALESCE(from_chain.name, s.from_chain_name) AS from_chain_name,
     CAST(s.to_amount AS FLOAT64) AS to_amount,
+    
+    -- fees
+    s.from_native_token AS from_gas_native_token,
     CAST(s.from_gas_amount AS FLOAT64) AS from_gas_amount,
+    s.to_native_token AS to_gas_native_token,
     CAST(s.to_gas_amount AS FLOAT64) AS to_gas_amount,
+    
+    
+    -- protocol fee
+    s.from_native_token AS from_relayer_fee_native_symbol,
     CAST(s.relayer_fee_in_native AS FLOAT64) AS from_relayer_fee_in_native,
     COALESCE(s.from_token_symbol, s.to_token_symbol) AS relayer_fee_token_symbol,
     CAST(s.relayer_fee_in_tokens AS FLOAT64) AS relayer_fee_in_tokens

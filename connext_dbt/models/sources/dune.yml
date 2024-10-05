@@ -5,6 +5,48 @@ sources:
     database: mainnet-bigq
     schema: dune
     tables:
+      - name: stargate_v2_txs_v0
+        description: >
+          Contains data about transactions on the Stargate v2 protocol.
+          Sample data: All columns are string in this raw data
+            - from_hash: "0x438583770d4312e04e705143f87b71e815e1bf2809a71c0f25ddf6786f2c0050"
+            - from_date: "2024-09-29 22:48:20.000 UTC"
+            - from_user: "0x471801ab22320f594318ceca39d0946fa6dc4ef9"
+            - from_chain_name: "bnb"
+            - to_chain_id: "184"
+            - to_chain_name: "base"
+            - from_token_symbol: "USDC"
+            - from_amount: "32909232000000000000"
+            - to_amount: "32859868000000000000"
+        columns:
+          - name: from_hash
+            description: "Hash of the transaction."
+            data_type: string
+          - name: from_date
+            description: "Timestamp of the transaction in UTC (e.g., 2024-09-29 22:48:20.000 UTC)."
+            data_type: string
+          - name: from_user
+            description: "Address of the user who sent the transaction."
+            data_type: string
+          - name: from_chain_name
+            description: "Name of the chain from which the transaction was sent."
+            data_type: string
+          - name: to_chain_id
+            description: "ID of the chain to which the transaction was sent."
+            data_type: string
+          - name: to_chain_name
+            description: "Name of the chain to which the transaction was sent."
+            data_type: string
+          - name: from_token_symbol
+            description: "Symbol of the token that was sent."
+            data_type: string
+          - name: from_amount
+            description: "Amount of the token that was sent."
+            data_type: string
+          - name: to_amount
+            description: "Amount of the token that was received."
+            data_type: string
+
       - name: source_hourly_token_pricing_blockchain_eth
         description: >
           Contains hourly token pricing data for Ethereum blockchain.
@@ -36,3 +78,166 @@ sources:
             data_type: float
             tests:
               - not_null
+      - name: across_v3_txs_v0
+        description: >
+          Contains data about transactions on the Across v3 protocol.
+          Sample data: All columns are string in this raw data
+  
+            - id: "0x3c035b2a2dc0dc857617e54eccd9ff01c6876c3f75531074ac39ad0d1e8fa70c"
+            - date: "2024-02-22 18:25:26.000 UTC"
+            - from_chain_id: "324"
+            - from_chain_name: "zksync"
+            - to_chain_id: "42161"
+            - to_chain_name: "arbitrum"
+            - from_user: "0xf1c35422d989e38eb8f5954b6fefc3e4b2286e44"
+            - to_user: "0xf1c35422d989e38eb8f5954b6fefc3e4b2286e44"
+            - from_token_address: "0x5aea5775959fbc2557cc8789bc1bf90a239d9a91"
+            - to_token_address: "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+            - gas_token_symbol: "ETH"
+            - from_amount: "3.8589631042445894e+17"
+            - to_amount: "3.8502479773770086e+17"
+            - gas_amount: "248180900000000"
+            - amount: "0.3850247977377009"
+            - relay_fee_usd: "2.589963983991538"
+        columns:
+          - name: id
+            description: "Unique identifier for the transaction."
+            data_type: string
+          - name: date
+            description: "Timestamp of the transaction in UTC (e.g., 2024-02-22 18:25:26.000 UTC)."
+            data_type: string
+          - name: from_chain_id
+            description: "ID of the chain from which the transaction was sent."
+            data_type: string
+          - name: from_chain_name
+            description: "Name of the chain from which the transaction was sent."
+            data_type: string
+          - name: to_chain_id
+            description: "ID of the chain to which the transaction was sent."
+            data_type: string
+          - name: to_chain_name
+            description: "Name of the chain to which the transaction was sent."
+            data_type: string
+          - name: from_user
+            description: "Address of the user who sent the transaction."
+            data_type: string
+          - name: to_user
+            description: "Address of the user who received the transaction."
+            data_type: string
+          - name: from_token_address
+            description: "Address of the token that was sent."
+            data_type: string
+          - name: to_token_address
+            description: "Address of the token that was received."
+            data_type: string
+          - name: gas_token_symbol
+            description: "Symbol of the gas token used for the transaction."
+            data_type: string
+          - name: from_amount
+            description: "Amount of the token that was sent."
+            data_type: string
+          - name: to_amount
+            description: "Amount of the token that was received."
+            data_type: string
+          - name: gas_amount
+            description: "Amount of the gas token used for the transaction."
+            data_type: string
+          - name: amount
+            description: "Amount of the token that was sent."
+            data_type: string
+          - name: relay_fee_usd
+            description: "Relay fee in USD."
+            data_type: string
+      - name: across_v2_txs_v0
+        description: >
+          Contains data about transactions on the Across v3 protocol.
+          
+          Sample data: All columns are string in this raw data
+          
+            - id: "0x47cfa4a6736a987ab8b5e19dda8e2952ac3066bfe928a0a865ec9fef3468d7d9"
+            - date: "2023-12-22 14:12:00.000 UTC"
+            - from_chain_id: "1"
+            - from_chain_name: "ethereum"
+            - to_chain_id: "42161"
+            - to_chain_name: "arbitrum"
+            - from_user: "0xca74f404e0c7bfa35b13b511097df966d5a65597"
+            - to_user: "0xca74f404e0c7bfa35b13b511097df966d5a65597"
+            - from_token_address: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8"
+            - to_token_address: "0x040d1edc9569d4bab2d15287dc5a4f10f56a56b8"
+            - from_amount: "2777148094831267878539"
+            - to_amount: "1"
+            - filled_amount: "3"
+            - applied_relayer_fee_pct: "335218728016894"
+            - realized_lp_fee_pct: "938712703111723"
+        columns:
+          - name: id
+            description: "Unique identifier for the transaction."
+            data_type: string
+          - name: date
+            description: "Timestamp of the transaction in UTC (e.g., 2023-12-22 14:12:00.000 UTC)."
+            data_type: string
+          - name: from_chain_id
+            description: "ID of the chain from which the transaction was sent."
+            data_type: string
+          - name: from_chain_name
+            description: "Name of the chain from which the transaction was sent."
+            data_type: string
+          - name: to_chain_id
+            description: "ID of the chain to which the transaction was sent."
+            data_type: string
+          - name: to_chain_name
+            description: "Name of the chain to which the transaction was sent."
+            data_type: string
+          - name: from_user
+            description: "Address of the user who sent the transaction."
+            data_type: string
+          - name: to_user
+            description: "Address of the user who received the transaction."
+            data_type: string
+          - name: from_token_address
+            description: "Address of the token that was sent."
+            data_type: string
+          - name: to_token_address
+            description: "Address of the token that was received."
+            data_type: string
+          - name: from_amount
+            description: "Amount of the token that was sent."
+            data_type: string
+          - name: to_amount
+            description: "Amount of the token that was received."
+            data_type: string
+          - name: filled_amount
+            description: "Amount of the token that was filled."
+            data_type: string
+          - name: applied_relayer_fee_pct
+            description: "Applied relayer fee percentage."
+            data_type: string
+          - name: realized_lp_fee_pct
+            description: "Realized LP fee percentage."
+            data_type: string
+      - name: evm_chains_token_metadata
+        description: >
+          Contains metadata about tokens on EVM chains.
+            Sample data:
+
+              - blockchain: "ethereum"
+              - contract_address: "0x0000000000004946c0e9f43f4dee607b0ef1fa1c"
+              - decimals: "0"
+              - symbol: "CHI"
+              - data_fetched_at: "2024-10-03T10:44:35.963571+00:00"
+            columns:
+              - name: blockchain
+                description: "Name of the blockchain."
+                data_type: string
+              - name: contract_address
+                description: "Address of the token contract."
+                data_type: string
+              - name: decimals
+                description: "Number of decimals of the token."
+                data_type: string
+              - name: symbol
+                description: "Symbol of the token."
+                data_type: string
+              - name: data_fetched_at
+                description: "Timestamp of the data fetching in UTC (e.g., 2024-10-03T10:44:35.963571+00:00)."
+                data_type: timestamp

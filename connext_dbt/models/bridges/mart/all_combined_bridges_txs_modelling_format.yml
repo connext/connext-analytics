@@ -1,0 +1,176 @@
+version: 2
+models:
+  - name: all_combined_bridges_txs_modelling_format
+    description: >
+      **Sample Data:**
+        - bridge
+        - id
+        - timestamp_in
+        - timestamp_out
+        - amount_in
+        - amount_out
+        - gas_fee_symbol
+        - gas_fee
+        - gas_price_usd
+        - relay_fee_symbol
+        - relay_fee
+        - relay_fee_price_usd
+        - token_in
+        - symbol_in
+        - token_out
+        - symbol_out
+        - price_in_usd
+        - price_out_usd
+        - txn_hash_in
+        - txn_hash_out
+        - token_address_in
+        - token_address_out
+        - chain_in
+        - chain_name_in
+        - chain_out
+        - chain_name_out
+        - user_address_in
+        - user_address_out
+    columns:
+      - name: bridge
+        description: "The bridge through which the transaction was made."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: id
+        description: "Unique identifier for each transaction."
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+      - name: timestamp_in
+        description: "The timestamp when the transaction was initiated on the source chain."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: timestamp_out
+        description: "The timestamp when the transaction was initiated on the source chain."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: amount_in
+        description: "The amount of tokens sent in on the source chain."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: amount_out
+        description: "The amount of tokens sent out on the destination chain."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_fee_symbol
+        description: "The symbol of the gas fee."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_fee
+        description: "The amount of gas fee paid."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_price_usd
+        description: "The price of the gas fee in USD."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: relay_fee_symbol
+        description: "The symbol of the relay fee."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: relay_fee
+        description: "The amount of relay fee paid."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: relay_fee_price_usd
+        description: "The price of the relay fee in USD."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: token_in
+        description: "The token sent in on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: symbol_in
+        description: "The symbol of the token sent in on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: token_out
+        description: "The token sent out on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: symbol_out
+        description: "The symbol of the token sent out on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist 
+      - name: price_in_usd
+        description: "The price of the token sent in on the source chain in USD."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: price_out_usd
+        description: "The price of the token sent out on the destination chain in USD."
+        data_type: float
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: txn_hash_in
+        description: "The transaction hash on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: txn_hash_out
+        description: "The transaction hash on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: token_address_in
+        description: "The token address on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: token_address_out
+        description: "The token address on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: chain_in
+        description: "The chain ID on the source chain."
+        data_type: integer
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: chain_name_in
+        description: "The chain name on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: chain_out
+        description: "The chain ID on the destination chain."
+        data_type: integer
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: chain_name_out
+        description: "The chain name on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: user_address_in
+        description: "The user address on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: user_address_out
+        description: "The user address on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist

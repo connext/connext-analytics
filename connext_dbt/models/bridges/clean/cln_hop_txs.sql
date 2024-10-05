@@ -9,6 +9,7 @@ SELECT
     s.from_chain_id,
     s.from_chain_name,
     s.from_address AS from_user_address,
+    CAST(NULL AS string) AS from_token_address,
     s.from_token_symbol,
     s.from_amount,
     s.from_amount_usd,
@@ -19,6 +20,7 @@ SELECT
     s.to_address AS to_user_address,
     s.to_chain_id,
     s.to_chain_name,
+    CAST(NULL AS string) AS to_token_address,
     s.to_token_symbol,
     s.to_amount,
     s.to_amount_usd,
@@ -27,8 +29,6 @@ SELECT
 
     -- fees + relay(protocol fee) -> usually gas fee is taken from the user at source chain
     s.relayer_fee_in_usd AS relay_amount_usd,
-    CAST(NULL AS string) AS from_token_address,
-    CAST(NULL AS string) AS to_token_address,
 
     -- relay(protocol fee)
     CAST(NULL AS string) AS gas_symbol,

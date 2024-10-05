@@ -4,6 +4,7 @@ WITH raw_tx AS (
     SELECT
         all_bridge.*,
         from_lts.price_symbol AS from_price_group,
+        to_lts.price_symbol AS to_price_group,
         from_gas_lts.price_symbol AS from_gas_native_and_relay_fee_native_price_group,
         to_gas_lts.price_symbol AS to_gas_native_price_group,
         relayer_fee_lts.price_symbol AS relayer_fee_token_price_group,
@@ -13,6 +14,8 @@ WITH raw_tx AS (
     FROM {{ ref('stg_all_bridge_txs') }} AS all_bridge
     -- from
     LEFT JOIN {{ ref('list_of_tokens_symbols') }} AS from_lts ON all_bridge.from_token_symbol = from_lts.token_symbol
+    -- to
+    LEFT JOIN {{ ref('list_of_tokens_symbols') }} AS to_lts ON all_bridge.to_token_symbol = to_lts.token_symbol
     -- from_gas_native_token+ relayer_fee_native_symbol
     LEFT JOIN
         {{ ref('list_of_tokens_symbols') }} AS from_gas_lts
@@ -34,6 +37,7 @@ semi_raw_tx AS (
 
         -- usd amounts
         rt.from_amount * from_price_group_p.price AS from_amount_usd,
+        rt.to_amount * to_price_group_p.price AS to_amount_usd,
         -- fees
         rt.from_gas_amount * from_gas_native_and_relay_fee_native_price_group_p.price AS from_gas_amount_usd,
         rt.to_gas_amount * to_gas_native_price_group_p.price AS to_gas_amount_usd,
@@ -45,6 +49,8 @@ semi_raw_tx AS (
 
     LEFT JOIN {{ ref('cln_token_prices') }} AS from_price_group_p
         ON rt.from_price_group = from_price_group_p.symbol AND rt.date_hour = from_price_group_p.date
+    LEFT JOIN {{ ref('cln_token_prices') }} AS to_price_group_p
+        ON rt.to_price_group = to_price_group_p.symbol AND rt.date_hour = to_price_group_p.date
     LEFT JOIN {{ ref('cln_token_prices') }} AS from_gas_native_and_relay_fee_native_price_group_p
         ON
             rt.from_gas_native_and_relay_fee_native_price_group
@@ -86,12 +92,8 @@ SELECT
     CAST(NULL AS timestamp) AS to_date,
     CAST(NULL AS string) AS to_token_address,
     --cal to amount: from - relay amount
-    s.from_amount - (COALESCE(s.relayer_fee_in_tokens, 0) + COALESCE(s.from_relayer_fee_in_native, 0)) AS to_amount,
-    (
-        COALESCE(s.from_amount_usd, 0)
-        - COALESCE(s.relayer_fee_in_tokens_usd, 0)
-        - COALESCE(s.from_relayer_fee_in_native_usd, 0)
-    ) AS to_amount_usd,
+    s.to_amount AS to_amount,
+    s.to_amount_usd,
 
     -- fees + relay(protocol fee) -> usually gas fee is taken from the user at source chain
     COALESCE(s.from_gas_native_token, s.to_gas_native_token) AS gas_symbol,

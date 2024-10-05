@@ -1,0 +1,141 @@
+version: 2
+models:
+  - name: all_combined_bridges_txs
+    description: >
+        This model combines data from two bridge models, `cln_debridge_txs` and `cln_hop_txs`, to create a comprehensive view of bridge transactions.
+        It uses the `UNION ALL` operator to concatenate the data from both sources, ensuring all records from both bridges are included.
+        The resulting dataset includes a unique identifier for each transaction, details from both the source and destination chains,
+        and fields for gas fees, relay fees, and token amounts in USD.
+
+        **Bridges:**
+            - cln_debridge_txs
+            - cln_hop_txs
+            - cln_connext_txs
+            - cln_stargate_txs
+            - cln_synapse_txs
+            - cln_symbiosis_txs
+            - cln_allbridge_txs
+            - cln_across_txs
+        **Sample Data:**
+        - same as clean models above
+    columns:
+      - name: bridge
+        description: "The bridge through which the transaction was made."
+        data_type: string
+      - name: id
+        description: "Unique identifier for each transaction."
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+      - name: from_date
+        description: "The timestamp when the transaction was initiated on the source chain."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_tx_hash
+        description: "The transaction hash on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_chain_id
+        description: "The chain ID of the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_chain_name
+        description: "The name of the source chain (e.g., Scroll)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_user_address
+        description: "The address of the user on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_token_address
+        description: "The address of the token on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_token_symbol
+        description: "The symbol of the token on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_amount
+        description: "The amount of tokens transferred on the source chain."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: from_amount_usd
+        description: "The amount of tokens transferred on the source chain in USD."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_date
+        description: "The timestamp when the transaction was completed on the destination chain."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_tx_hash
+        description: "The transaction hash on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_user_address
+        description: "The address of the user on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_token_address
+        description: "The address of the token on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_token_symbol
+        description: "The symbol of the token on the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_amount
+        description: "The amount of tokens received on the destination chain."  
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: to_amount_usd
+        description: "The amount of tokens received on the destination chain in USD."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: relay_symbol  
+        description: "The symbol of the relay token used in the transaction."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: relay_amount
+        description: "The amount of relay fee tokens paid in the transaction."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: relay_amount_usd
+        description: "The amount of relay fee tokens paid in the transaction in USD."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_symbol
+        description: "The symbol of the gas token used in the transaction."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_amount
+        description: "The amount of gas tokens used in the transaction."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_amount_usd
+        description: "The amount of gas tokens used in the transaction in USD."
+        data_type: FLOAT
+        tests:
+          - dbt_expectations.expect_column_to_exist

@@ -1,0 +1,227 @@
+version: 2
+
+models:
+  - name: cln_hop_txs
+    description: >
+      Cleans and transforms data from the `stg_hop_txs` table by renaming columns and converting data types where necessary.
+      This model prepares the data for further analysis by ensuring all necessary fields are correctly formatted and ready for consumption.
+
+      **Calculations**
+      - from_amount
+      - to_amount
+      - relay_amount
+      - gas_amount
+
+      **Sample Data:**
+        - bridge: "hop"
+        - id: "0xdb1fbb8528f3e26587ac243a0be0a43aa0e80047255170c8a0cd57ca1c4a2d6d"
+        - from_date: "2024-02-13 14:49:33.000000 UTC"
+        - from_txn_hash: "0xdb1fbb8528f3e26587ac243a0be0a43aa0e80047255170c8a0cd57ca1c4a2d6d"
+        - from_chain_id: "8453"
+        - from_chain_name: "base"
+        - from_user_address: "0xa2ca5fb3846a66ade1b7c8d4046e61c1935e4615"
+        - from_token_address: null
+        - from_token_symbol: "ETH"
+        - from_amount: "0.001"
+        - from_amount_usd: "2.651"
+        - to_date: "2024-02-13 14:49:44.000000 UTC"
+        - to_tx_hash: "0x89163b3aa1c90625dfcbd019ec0e947351179463f5da9d61c928a50592b2953b"
+        - to_user_address: "0xa2ca5fb3846a66ade1b7c8d4046e61c1935e4615"
+        - to_chain_id: "42161"
+        - to_chain_name: "arbitrum"
+        - to_token_address: null
+        - to_token_symbol: "ETH"
+        - to_amount: "0.0005"
+        - to_amount_usd: "1.6509999999999998"
+        - gas_symbol: null
+        - gas_amount: null
+        - gas_amount_usd: null
+        - relay_symbol: "ETH"
+        - relay_amount: "0.0005"
+        - relay_amount_usd: "1.371"
+
+    columns:
+      - name: bridge
+        description: "Name of the bridge used for the transaction. (eg: 'hop')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: id
+        description: "Unique identifier for each transaction. (eg: '0xdb1fbb8528f3e26587ac243a0be0a43aa0e80047255170c8a0cd57ca1c4a2d6d')"
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_date
+        description: "Timestamp indicating when the transaction originated. (eg: '2024-02-13 14:49:33.000000 UTC')"
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_tx_hash
+        description: "Transaction hash from the source chain. (eg: '0xdb1fbb8528f3e26587ac243a0be0a43aa0e80047255170c8a0cd57ca1c4a2d6d')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "Identifier of the source blockchain. (eg: '8453')"
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "Name of the source blockchain. (eg: 'base')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_user_address
+        description: "Address of the user initiating the transaction. (eg: '0xa2ca5fb3846a66ade1b7c8d4046e61c1935e4615')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_address
+        description: "Contract address of the source token. (eg: null)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_symbol
+        description: "Symbol of the source token. (eg: 'ETH', currently not available in the Hop explorer)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "Amount of tokens sent from the source chain. (eg: '0.001')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_amount_usd
+        description: "USD value of the tokens sent from the source chain. (eg: '2.651')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_date
+        description: "Timestamp indicating when the transaction was completed on the destination chain. (eg: '2024-02-13 14:49:44.000000 UTC')"
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_tx_hash
+        description: "Transaction hash on the destination chain. (eg: '0x89163b3aa1c90625dfcbd019ec0e947351179463f5da9d61c928a50592b2953b')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_user_address
+        description: "Address of the user receiving the transaction on the destination chain. (eg: '0xa2ca5fb3846a66ade1b7c8d4046e61c1935e4615')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_chain_id
+        description: "Identifier of the destination blockchain. (eg: '42161')"
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "Name of the destination blockchain. (eg: 'arbitrum')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_address
+        description: "Contract address of the destination token (if applicable). (eg: null, currently not available in the Hop explorer)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "Symbol of the destination token. (eg: 'ETH')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_amount
+        description: "Amount of tokens received on the destination blockchain. (eg: '0.0005')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_amount_usd
+        description: "USD value of the tokens received on the destination blockchain. (eg: '1.6509999999999998')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_symbol
+        description: "Symbol of the token used to pay gas fees. (eg: null)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: gas_amount
+        description: "Amount of gas fees paid. (eg: null)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_amount_usd
+        description: "USD value of the gas fees paid. (eg: null)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_symbol
+        description: "Symbol of the token used for relay fees. (eg: 'ETH')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relay_amount
+        description: "Amount of relay fees paid. (eg: '0.0005')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_amount_usd
+        description: "USD value of the relay fees paid. (eg: '1.371')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

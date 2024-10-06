@@ -19,22 +19,25 @@ seeds:
   - name: chains
     description: "A seed table containing a list of chain names to pull."
     columns:
-      - name: chain
-        description: "The name of the chain."
-        data_type: STRING
-      - name: native_token
-        description: "The native token of the chain."
-        data_type: STRING
-      - name: token_for_fee
-        description: "The token used to pay for fees on the chain."
-        data_type: STRING
       - name: chain_id
         description: "The chain id of the chain."
         data_type: INT64
-    data_tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - chain
-            - chain_id
-            - native_token
-            - token_for_fee
+        data_test:
+          - not_null
+          - unique
+      - name: name
+        description: "The name of the chain, short name."
+        data_type: STRING
+        data_test:
+          - not_null
+          - unique
+      - name: fee_token_symbol
+        description: "The symbol of the token used to pay for fees on the chain."
+        data_type: STRING
+        data_test:
+          - not_null
+      - name: fee_token_decimal
+        description: "The decimal of the token used to pay for fees on the chain."
+        data_type: INT64
+        data_test:
+          - not_null

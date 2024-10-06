@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: stg_stargate_txs
+    columns:
+      - name: id
+        description: "The ID of the transaction (eg: \"1\")."
+        data_type: string
+        tests:
+          - unique
+          - not_null
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string

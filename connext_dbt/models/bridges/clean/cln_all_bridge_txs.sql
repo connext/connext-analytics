@@ -43,7 +43,14 @@ semi_raw_tx AS (
         rt.to_gas_amount * to_gas_native_price_group_p.price AS to_gas_amount_usd,
         rt.from_relayer_fee_in_native
         * from_gas_native_and_relay_fee_native_price_group_p.price AS from_relayer_fee_in_native_usd,
-        rt.relayer_fee_in_tokens * relayer_fee_token_price_group_p.price AS relayer_fee_in_tokens_usd
+        rt.relayer_fee_in_tokens * relayer_fee_token_price_group_p.price AS relayer_fee_in_tokens_usd,
+
+        -- prices
+        from_price_group_p.price AS from_token_price,
+        to_price_group_p.price AS to_token_price,
+        from_gas_native_and_relay_fee_native_price_group_p.price AS from_gas_token_price,
+        to_gas_native_price_group_p.price AS to_gas_token_price,
+        relayer_fee_token_price_group_p.price AS relayer_fee_token_price
     FROM raw_tx AS rt
     -- get price for each token column
 
@@ -75,11 +82,11 @@ SELECT
     -- from
     s.date AS from_date,
     s.from_hash AS from_tx_hash,
-    s.from_chain_id,
+    CAST(s.from_chain_id AS INT64) AS from_chain_id,
     s.from_chain_name,
     s.from_address AS from_user_address,
     s.from_token_symbol,
-    s.from_amount,
+    CAST(s.from_amount AS FLOAT64) AS from_amount,
     s.from_amount_usd,
     s.to_hash AS to_tx_hash,
 
@@ -104,6 +111,13 @@ SELECT
     -- relay(protocol fee)
     COALESCE(s.from_relayer_fee_native_symbol, s.relayer_fee_token_symbol) AS relay_symbol,
     COALESCE(s.from_relayer_fee_in_native, 0) + COALESCE(s.relayer_fee_in_tokens, 0) AS relay_amount,
-    COALESCE(s.from_relayer_fee_in_native_usd, 0) + COALESCE(s.relayer_fee_in_tokens_usd, 0) AS relay_amount_usd
+    COALESCE(s.from_relayer_fee_in_native_usd, 0) + COALESCE(s.relayer_fee_in_tokens_usd, 0) AS relay_amount_usd,
+
+    -- prices
+    s.from_token_price,
+    s.to_token_price,
+    s.from_gas_token_price,
+    s.to_gas_token_price,
+    s.relayer_fee_token_price
 
 FROM semi_raw_tx AS s

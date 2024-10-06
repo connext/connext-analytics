@@ -19,10 +19,17 @@ LEFT JOIN {{ ref('list_of_tokens_symbols') }} AS gas_lts ON s.gas_token_symbol =
 semi_raw_tx AS (
 SELECT
     rt.*,
+    
     -- usd amounts
     rt.from_amount * from_price_group_p.price AS from_amount_usd,
     rt.to_amount * to_price_group_p.price AS to_amount_usd,
-    rt.gas_amount * gas_price_group_p.price AS gas_amount_usd
+    rt.relay_fee_amount * from_price_group_p.price AS relay_fee_amount_usd,
+    rt.gas_amount * gas_price_group_p.price AS gas_amount_usd,
+
+    -- prices
+    from_price_group_p.price AS from_token_price,
+    to_price_group_p.price AS to_token_price,
+    gas_price_group_p.price AS gas_token_price,
 
 FROM raw_tx AS rt
 -- from token prices
@@ -40,7 +47,6 @@ LEFT JOIN {{ ref('cln_token_prices') }} AS gas_price_group_p
 
 -- final table
 SELECT
-    --cal to amount: from - relay amount
     s.bridge AS bridge,
     s.id,
     -- from
@@ -51,8 +57,8 @@ SELECT
     s.from_user AS from_user_address,
     s.from_token_address AS from_token_address,
     s.from_token_symbol,
-    s.from_amount,
-    s.from_amount_usd,
+    s.from_amount AS from_amount,
+    s.from_amount_usd AS from_amount_usd,
 
     -- to
     s.to_hash AS to_tx_hash,
@@ -72,7 +78,12 @@ SELECT
 
     -- relay(protocol fee)
     s.relayer_fee_token_symbol AS relay_symbol,
-    CAST(NULL AS FLOAT64) AS relay_amount,
-    s.relay_fee_usd AS relay_amount_usd
+    s.relay_fee_amount AS relay_amount,
+    s.relay_fee_amount_usd AS relay_amount_usd,
+
+    -- prices
+    s.from_token_price,
+    s.to_token_price,
+    s.gas_token_price
 
 FROM semi_raw_tx AS s

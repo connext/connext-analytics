@@ -16,7 +16,7 @@ WITH extracted_routes AS (
         tx.to_chain_id,
         to_chain.name AS to_chain_name,
         tx.to_amount_usd,
-        from_chain.nativecurrency_symbol AS fee_token_symbol,
+        from_chain.fee_token_symbol AS fee_token_symbol,
         tx.state,
         tx.type,
         tx.event_type,
@@ -24,14 +24,13 @@ WITH extracted_routes AS (
         JSON_EXTRACT_ARRAY(tx.to_route) AS to_route_array,
         ARRAY_LENGTH(JSON_EXTRACT_ARRAY(tx.to_route)) AS to_route_length,
         COALESCE(tx.token_symbol, tx.token_address) AS from_token_symbol,
-        (tx.from_amount_usd - tx.to_amount_usd) AS fee_amount_usd
+        CAST(NULL AS FLOAT64) AS fee_amount_usd
     FROM
         {{source('raw', 'source_symbiosis_bridge_explorer_transactions')}} AS tx
-        -- `mainnet-bigq.raw.source_symbiosis_bridge_explorer_transactions` AS tx
-    LEFT JOIN {{ source('raw', 'source_chainlist_network__chains') }} AS from_chain
-        ON tx.from_chain_id = from_chain.chainid
-    LEFT JOIN {{ source('raw', 'source_chainlist_network__chains') }} AS to_chain
-        ON tx.to_chain_id = to_chain.chainid
+    LEFT JOIN {{ref('chains')}} AS from_chain
+    ON tx.from_chain_id = from_chain.chain_id
+    LEFT JOIN {{ref('chains')}} AS to_chain
+    ON tx.to_chain_id = to_chain.chain_id
 
 
     -- Keep only successful transfers
@@ -78,6 +77,7 @@ semi_cleaned AS (
         JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.token.address') AS to_token_address,
         CAST(JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.token.decimals') AS FLOAT64)
             AS to_token_decimals,
+        CAST(NULL AS STRING) AS gas_fee_symbol,
         CAST(NULL AS FLOAT64) AS gas_fee,
         CAST(NULL AS FLOAT64) AS gas_fee_usd
 
@@ -86,34 +86,38 @@ semi_cleaned AS (
 
 SELECT
     id,
+    -- from
     from_timestamp,
     from_address,
-    to_address,
     from_hash,
-    to_hash,
-    to_timestamp,
     from_chain_id,
     from_chain_name,
     from_token_symbol,
     from_token_name,
     from_token_address,
-    from_token_decimals,
+    from_amount / POW(10, from_token_decimals) AS from_amount,
+    from_amount_usd,
+    
+    -- to
+    to_address,
+    to_hash,
+    to_timestamp,
     to_chain_id,
     to_chain_name,
     to_token_symbol,
     to_token_name,
     to_token_address,
-    to_token_decimals,
-    from_amount AS from_amount_raw,
-    from_amount_usd,
-    to_amount AS to_amount_raw,
+    to_amount / POW(10, to_token_decimals) AS to_amount,
     to_amount_usd,
-    fee_token_symbol,
-    fee_amount_usd,
-    gas_fee,
-    gas_fee_usd,
-    from_amount / POW(10, from_token_decimals) AS from_amount,
-    to_amount / POW(10, to_token_decimals) AS to_amount
+    
+    -- fees
+    gas_fee_symbol AS gas_token_symbol,
+    gas_fee AS gas_amount,
+    gas_fee_usd AS gas_amount_usd,
+    fee_token_symbol AS relay_symbol,
+    CAST(NULL AS FLOAT64) AS relay_amount,
+    fee_amount_usd AS relay_amount_usd
+
 FROM semi_cleaned
 WHERE
     from_amount > 0

@@ -1,0 +1,194 @@
+version: 2
+
+models:
+  - name: stg_all_bridge_txs
+    description: >
+      Extracts distinct transfer records from `source_synapsois_explorer_transactions` for the staging layer in the Connext DBT model.
+
+      **Calclation and modification:**
+
+        - **Final Amounts Anchor Formulas:**
+        
+          - to_amount = As per the user in the destination side
+          - from_amount = As per the bridge on the source side
+          - relay_amount = As per the bridge
+            - if we do from_amount - to_amount, we get a larger amount, which could be potential fee or slippage!
+          - gas_amount is kept seperate, as it is not part of amounts sent and paid by user seperately!
+
+
+      Transforms the raw data as follows at the staging layer:
+        - **Data deduplication**: Removes duplicate records from combined datasets.
+        - **Date conversion**: Converts raw timestamps to a standard format.
+        - **Chain ID mapping**: Maps blockchain short names to corresponding chain IDs.
+        - **Token symbol resolution**: Resolves token symbols using available data, with fallbacks.
+        - **Amount calculation**: Computes final token amounts after fees.
+        - **Gas fee extraction**: Retrieves and maps gas fee amounts and associated tokens.
+        - **Metadata enrichment**: Adds additional metadata such as chain names and token symbols to the final output.
+      
+      **Sample Data:**
+        - id: 0x050b1abb5cf9347114785d2beb597e51eba48371f697541ea6166f1d56abdf70
+        - date: 2024-08-08 19:06:36.000000 UTC
+        - from_address: 0x7cd36094871e47c1003c52aabf14bec317dd635b
+        - to_address: 0x7cd36094871e47c1003c52aabf14bec317dd635b
+        - from_chain_id: 137
+        - from_chain_name: Polygon Mainnet
+        - from_token_symbol: USDT
+        - from_amount: 10.923
+        - to_chain_id: null
+        - to_chain_name: CEL
+        - to_token_symbol: USDT
+        - to_amount: 10.923
+        - from_gas_native_token: MATIC
+        - from_gas_amount: 0.068094149908592319
+        - to_gas_native_token: CEL
+        - to_gas_amount: 0.0
+        - from_relayer_fee_native_symbol: MATIC
+        - from_relayer_fee_in_native: 0.068094149908592319
+        - relayer_fee_token_symbol: USDT
+        - relayer_fee_in_tokens: 0.0
+      
+      **Unaviable Data:**
+
+    columns:
+      - name: id
+        description: "Unique transaction identifier (e.g., 1)"
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: date
+        description: "Timestamp of the transaction (e.g., 2024-08-08 19:06:36.000000 UTC)"
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_address
+        description: "Source address from which the transaction originates (e.g., 0x7cd36094871e47c1003c52aabf14bec317dd635b)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_address
+        description: "Destination address to which the transaction is sent (e.g., 0x7cd36094871e47c1003c52aabf14bec317dd635b)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "ID of the source chain (e.g., 137 for Polygon Mainnet)"
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "Name of the source blockchain (e.g., Polygon Mainnet)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_symbol
+        description: "Symbol of the token used in the source chain (e.g., USDT)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "Amount of tokens transferred from the source chain (e.g., 10.923)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_chain_id
+        description: "ID of the destination chain, if applicable (e.g., null)"
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "Name of the destination blockchain (e.g., CEL)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "Symbol of the token used in the destination chain (e.g., USDT)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_amount
+        description: "Amount of tokens transferred to the destination chain (e.g., 10.923)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_gas_native_token
+        description: "Gas token used for the transaction on the source chain (e.g., MATIC)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_gas_amount
+        description: "Amount of gas used in the source chain (e.g., 0.068094149908592319)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_gas_native_token
+        description: "Gas token used for the transaction on the destination chain (e.g., CEL)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_gas_amount
+        description: "Amount of gas used in the destination chain (e.g., 0.0)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_relayer_fee_native_symbol
+        description: "Symbol of the native token used for relayer fees on the source chain (e.g., MATIC)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_relayer_fee_in_native
+        description: "Amount of native tokens used for relayer fees (e.g., 0.068094149908592319)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relayer_fee_token_symbol
+        description: "Symbol of the token used for relayer fees (e.g., USDT)"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relayer_fee_in_tokens
+        description: "Amount of tokens used for relayer fees (e.g., 0.0)"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

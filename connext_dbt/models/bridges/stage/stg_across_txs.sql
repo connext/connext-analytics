@@ -19,7 +19,12 @@ WITH
     SELECT DISTINCT
       symbol, contract_address, decimals
     FROM (
-        SELECT symbol, blockchain, contract_address, decimals, rank() over (partition by blockchain, symbol order by contract_address) as rnk
+        SELECT 
+          symbol,
+          blockchain,
+          contract_address,
+          decimals,
+          rank() over (partition by blockchain, symbol order by contract_address) as rnk
         FROM {{source('dune', 'evm_chains_token_metadata')}}
     )
     WHERE rnk = 1
@@ -38,7 +43,7 @@ raw_v3 AS (
     a3.from_token_address AS from_token_address,
     -- even the from token address are based on the destination chain
     tm_from.symbol AS from_token_symbol,
-    SAFE_CAST(a3.from_amount AS FLOAT64) / pow(10, IFNULL(tm_from.decimals, 18)) AS from_amount,
+    SAFE_CAST(a3.from_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_from.decimals AS INT64), 18)) AS from_amount,
     -- to
     a3.id AS to_hash,
     a3.to_user AS to_user,
@@ -46,14 +51,13 @@ raw_v3 AS (
     a3.to_chain_name AS to_chain_name,
     a3.to_token_address AS to_token_address,
     tm_to.symbol AS to_token_symbol,
-    (SAFE_CAST(a3.amount AS FLOAT64) / pow(10, IFNULL(tm_to.decimals, 18))) AS to_amount,
+    (SAFE_CAST(a3.to_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_to.decimals AS INT64), 18))) AS to_amount,
     -- fees + protocol
     a3.gas_token_symbol AS gas_token_symbol,
     --TODO: fix the token for native tokens if there is a bug down the line
-    (SAFE_CAST(a3.gas_amount AS FLOAT64) / pow(10, 18)) AS gas_amount,
-    tm_to.symbol AS relayer_fee_token_symbol,
-    CAST(NULL AS FLOAT64) AS relay_fee_amount,
-    (SAFE_CAST(a3.relay_fee_usd AS FLOAT64)) AS relay_fee_usd
+    CAST(NULL AS FLOAT64) AS gas_amount,
+    CAST(tm_from.symbol AS STRING) AS relayer_fee_token_symbol,
+    CAST(NULL AS FLOAT64) AS relay_fee_usd
 
   FROM across_v3_txs a3
   -- from token metadata
@@ -78,7 +82,7 @@ raw_v2 AS (
     a2.from_chain_name,
     a2.from_token_address,
     tm_from.symbol AS from_token_symbol,
-    (SAFE_CAST(a2.from_amount AS FLOAT64) / pow(10, IFNULL(tm_from.decimals, 18))) AS from_amount,
+    (SAFE_CAST(a2.from_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_from.decimals AS INT64), 18))) AS from_amount,
     -- to
 
     a2.id AS to_hash,
@@ -87,14 +91,16 @@ raw_v2 AS (
     a2.to_chain_name,
     a2.to_token_address,
     tm_to.symbol AS to_token_symbol,
-    (SAFE_CAST(a2.to_amount AS FLOAT64) / pow(10, tm_to.decimals)) AS to_amount,
+    (
+      CAST(a2.from_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_to.decimals AS INT64), 18)) * 
+      ( 1 - CAST(a2.applied_relayer_fee_pct AS FLOAT64) / pow(10,18) - CAST(a2.realized_lp_fee_pct AS FLOAT64) / pow(10,18))
+    )  AS to_amount,
     
     -- fees + protocol
     CAST(NULL AS STRING) AS gas_token_symbol,
     CAST(NULL AS FLOAT64) AS gas_amount,
     tm_from.symbol AS relayer_fee_token_symbol,
-    CAST(NULL AS FLOAT64) AS relay_fee_amount,
-    (SAFE_CAST(a2.applied_relayer_fee_pct AS FLOAT64) / pow(10, tm_from.decimals)) AS relay_fee_usd
+    CAST(NULL AS FLOAT64)  AS relay_fee_usd
   FROM across_v2_txs a2
   -- from token metadata
   LEFT JOIN evm_chains_token_metadata AS tm_from
@@ -139,7 +145,7 @@ SELECT
     f.gas_token_symbol,
     CAST(f.gas_amount AS FLOAT64) AS gas_amount,
     f.relayer_fee_token_symbol,
-    CAST(f.relay_fee_amount AS FLOAT64) AS relay_fee_amount,
+    f.from_amount - f.to_amount AS relay_fee_amount,
     CAST(f.relay_fee_usd AS FLOAT64) AS relay_fee_usd
 FROM final f
 -- remove irregularities

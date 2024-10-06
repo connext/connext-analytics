@@ -1,0 +1,233 @@
+version: 2
+
+models:
+  - name: cln_across_txs
+    description: |
+      Cleans and transforms data from the `stg_across_txs` table by renaming columns and converting data types where necessary.
+      This model prepares the data for further analysis by ensuring all necessary fields are correctly formatted and ready for consumption.
+      
+      **Sample Data:**
+
+        - bridge: "across_v3"
+        - id: "0x0001c88e344abfe19a23dda3b1d677553f52d65898a9872ce7a0706740150b74_1"
+        - from_date: null
+        - from_tx_hash: null
+        - from_chain_id: "8453"
+        - from_chain_name: "base"
+        - from_user_address: "0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae"
+        - from_token_symbol: "WETH"
+        - from_amount: "0.030730277"
+        - from_amount_usd: "98.298319902365023"
+        - to_tx_hash: "0x0001c88e344abfe19a23dda3b1d677553f52d65898a9872ce7a0706740150b74"
+        - to_date: "2024-04-22 14:12:38.000000 UTC"
+        - to_user_address: "0x3948e506724bb35855303bbe3458fd86be050ef0"
+        - to_chain_id: "324"
+        - to_chain_name: "zksync"
+        - to_token_address: "0x5aea5775959fbc2557cc8789bc1bf90a239d9a91"
+        - to_token_symbol: "WETH"
+        - to_amount: "3.0604413907487597e-20"
+        - to_amount_usd: "9.7895715964506437e-17"
+        - gas_symbol: "ETH"
+        - gas_amount: "8.27145e-06"
+        - gas_amount_usd: "0.026458259330250006"
+        - relay_symbol: "WETH"
+        - relay_amount: null
+        - relay_amount_usd: "0.4021475207679685"
+        - from_token_price: "32000"
+        - to_token_price: "32000"
+        - gas_token_price: "32000"
+    columns:
+      - name: bridge
+        description: "The bridge used in the transaction (e.g., across_v3)."
+        data_type: string
+      - name: id
+        description: "Unique identifier for the transaction (e.g., 0x0001c88e344abfe19a23dda3b1d677553f52d65898a9872ce7a0706740150b74_1)."
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_date
+        description: "Timestamp of when the transaction was initiated (e.g., null)."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_tx_hash
+        description: "Transaction hash of the source transaction (e.g., null)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "ID of the source blockchain (e.g., 8453)."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "Name of the source blockchain (e.g., base)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_user_address
+        description: "Address of the user initiating the transaction (e.g., 0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_symbol
+        description: "Symbol of the token used in the source chain (e.g., WETH)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "Amount of tokens sent in the transaction (e.g., 0.030730277)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_amount_usd
+        description: "Equivalent USD value of the tokens sent (e.g., 98.298319902365023)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_tx_hash
+        description: "Transaction hash of the destination transaction (e.g., 0x0001c88e344abfe19a23dda3b1d677553f52d65898a9872ce7a0706740150b74)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_date
+        description: "Timestamp of when the transaction was completed on the destination chain (e.g., 2024-04-22 14:12:38.000000 UTC)."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_user_address
+        description: "Address of the user receiving the transaction (e.g., 0x3948e506724bb35855303bbe3458fd86be050ef0)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_chain_id
+        description: "ID of the destination blockchain (e.g., 324)."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "Name of the destination blockchain (e.g., zksync)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_address
+        description: "Address of the token received in the destination chain (e.g., 0x5aea5775959fbc2557cc8789bc1bf90a239d9a91)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "Symbol of the token received in the destination chain (e.g., WETH)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_amount
+        description: "Amount of tokens received in the transaction (e.g., 3.0604413907487597e-20)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_amount_usd
+        description: "Equivalent USD value of the tokens received (e.g., 9.7895715964506437e-17)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_symbol
+        description: "Symbol of the gas token used for the transaction (e.g., ETH)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: gas_amount
+        description: "Amount of gas used in the transaction (e.g., 8.27145e-06)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_amount_usd
+        description: "Equivalent USD value of the gas used (e.g., 0.026458259330250006)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_symbol
+        description: "Symbol of the relay token used (e.g., WETH)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relay_amount
+        description: "Amount of relay tokens used in the transaction (e.g., null)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_amount_usd
+        description: "Equivalent USD value of the relay tokens used (e.g., 0.4021475207679685)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_token_price
+        description: "Price of the token sent (e.g., 32000)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_token_price
+        description: "Price of the token received (e.g., 32000)."
+        data_type: float64
+        tests:
+            - dbt_expectations.expect_column_to_exist
+            - dbt_expectations.expect_column_values_to_be_of_type:
+                column_type: float64
+      - name: gas_token_price
+        description: "Price of the gas token used (e.g., 32000)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

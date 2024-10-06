@@ -1,0 +1,198 @@
+version: 2
+
+models:
+  - name: stg_hop_txs
+    description: >
+      Extracts distinct transfer records from `source_hop_explorer__transfers` for the staging layer in the Connext DBT model.
+      Converts `timestamp` and `bondtimestamp` from seconds to `from_timestamp` and `to_timestamp` respectively.
+      Excludes specific transfer records based on a predefined list of `id` values to ensure data relevancy and accuracy.
+
+      **Final Amounts Anchor Formulas:**
+      
+        - to_amount = As per the user in the destination side
+        - from_amount = As per the bridge on the source side
+        - relay_amount = from_amount - to_amount.
+          - As per the bridge- its bonder fee on the destination side. Gas is not included in this.          
+        - gas_amount is kept seperate, as it is not part of amounts sent and paid by user seperately!
+
+
+      **Sample Data:**
+        - id: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+        - from_timestamp: "2024-02-13 15:21:09.000000 UTC"
+        - to_timestamp: "2024-02-13 15:21:38.000000 UTC"
+        - from_address: "0xa1b2224199188538012d6777a8377fbd646438ca"
+        - to_address: "0xa1b2224199188538012d6777a8377fbd646438ca"
+        - from_hash: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"
+        - from_chain_id: "8453"
+        - from_chain_name: "base"
+        - from_token_symbol: "ETH"
+        - from_amount: "0.003"
+        - from_amount_usd: "8.009"
+        - to_hash: "0xa5b79e3aef2c7b5b4eeff91df2f0e21455560f44a4f108767d5d80735f2977b9"
+        - to_chain_id: "42161"
+        - to_chain_name: "arbitrum"
+        - to_token_symbol: "ETH"
+        - to_amount: "0.0026"
+        - to_amount_usd: "8.009"
+        - gas_fee: null
+        - relayer_fee_symbol: "ETH"
+        - relayer_fee: "0.0004"
+        - relayer_fee_in_usd: "0.962"
+
+    columns:
+      - name: id
+        description: "Unique identifier for each transaction (e.g., '0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51')."
+        data_type: STRING
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_timestamp
+        description: "Timestamp indicating when the transaction started (e.g., '2024-02-13 15:21:09.000000 UTC')."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_timestamp
+        description: "Timestamp indicating when the transaction ended (e.g., '2024-02-13 15:21:38.000000 UTC')."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_address
+        description: "Ethereum address from which the transaction originated (e.g., '0xa1b2224199188538012d6777a8377fbd646438ca')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_address
+        description: "Ethereum address to which the transaction was sent (e.g., '0xa1b2224199188538012d6777a8377fbd646438ca')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_hash
+        description: "Hash of the originating transaction (e.g., '0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "Identifier of the source blockchain (e.g., '8453')."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "Name of the source blockchain (e.g., 'base')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_symbol
+        description: "Symbol of the token sent from the source blockchain (e.g., 'ETH')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "Amount of tokens sent from the source blockchain (e.g., '0.003')."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_amount_usd
+        description: "USD value of tokens sent from the source blockchain (e.g., '8.009')."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_hash
+        description: "Hash of the destination transaction (e.g., '0xa5b79e3aef2c7b5b4eeff91df2f0e21455560f44a4f108767d5d80735f2977b9')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_chain_id
+        description: "Identifier of the destination blockchain (e.g., '42161')."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "Name of the destination blockchain (e.g., 'arbitrum')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "Symbol of the token received on the destination blockchain (e.g., 'ETH')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_amount
+        description: "Amount of tokens received on the destination blockchain (e.g., '0.0026')."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_amount_usd
+        description: "USD value of tokens received on the destination blockchain (e.g., '8.009')."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_token_symbol
+        description: "Symbol of the token used to pay gas fees (e.g., null)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: gas_amount
+        description: "Amount of gas fees paid (e.g., null)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relayer_fee_symbol
+        description: "Symbol of the token used to pay the relayer fee (e.g., 'ETH')."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relayer_fee
+        description: "Amount of relayer fees paid (e.g., '0.0004')."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relayer_fee_in_usd
+        description: "USD value of relayer fees paid (e.g., '0.962')."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

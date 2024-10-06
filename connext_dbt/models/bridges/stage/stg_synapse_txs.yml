@@ -1,0 +1,174 @@
+version: 2
+
+models:
+  - name:  stg_synapse_txs
+    description: >
+      Extracts distinct transfer records from `source_synapsois_explorer_transactions` for the staging layer in the Connext DBT model.
+      Converts `from_time` and `to_time` from seconds to `from_timestamp` and `to_timestamp` respectively.
+      This table captures cross-chain transaction data from the Synapse Protocol Explorer.
+      
+      **Potential Issues:**
+        - The `from_amount` and `to_amount` are the same for 275241 records till 2024-09-21.
+        - The most likely reason is same address transfer on both chains.
+          - out of 275241 records, only 16509 have different address for both chains.
+        - here is an eg: https://explorer.synapseprotocol.com/tx/94384e99988acb4b800b4b4a66fad921f061b8155cdbe0e6b524a519d5c32159?chainIdFrom=59144&chainIdTo=42161
+          - 4 eth to same address from linea to arb
+        
+
+      **Calculations to consider:**
+        - from_amount - to_amount = relayer_fee -> for synapse
+
+      **Sample Data:**
+        - id: "0032f6dbc522ef4fcb9e98362cd5949d67b04293ce7fa46ab96aafcde3b6e175"
+        - from_timestamp: "2023-06-23 03:08:45.000000 UTC"
+        - to_timestamp: "2023-06-23 03:09:05.000000 UTC"
+        - from_address: "0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac"
+        - to_address: "0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac"
+        - from_hash: "0x1dd99a746c00a37e0bca4fbead7b64cdbe4483fdefa879277f254362880abd42"
+        - from_chain_id: "42161"
+        - from_chain_name: "Arbitrum One"
+        - from_token_address: "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
+        - from_token_symbol: "nUSD"
+        - from_amount: "0.94"
+        - to_hash: "0xe48bdc1270beb1d22290310246eeb6ca05a0f0b4146a66befa11766bc852504c"
+        - to_chain_id: "53935"
+        - to_chain_name: "DFK Chain"
+        - to_token_address: "0x3AD9DFE640E1A9Cc1D9B0948620820D975c3803a"
+        - to_token_symbol: "nUSD"
+        - to_amount: "0.4385"
+        - fee_token_symbol: "ETH"
+        - gas_fee: null
+        - relayer_fee_symbol: "nUSD"
+        - relayer_fee: "0.5015"
+
+    columns:
+      - name: id
+        description: "The unique ID of the transaction (eg: \"2045919\")."
+        data_type: "STRING"
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_timestamp
+        description: "The timestamp of when the transaction was created (eg: \"2024-06-26 03:33:15.000000 UTC\")."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_hash
+        description: "The hash of the transaction on the source chain (eg: \"0x1dd99a746c00a37e0bca4fbead7b64cdbe4483fdefa879277f254362880abd42\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "The chain ID of the source chain (eg: \"42161\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "The name of the source chain (eg: \"Arbitrum One\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_address
+        description: "The address of the user sending the transaction (eg: \"0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_address
+        description: "The address of the token being transferred from the source chain (eg: \"0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_symbol
+        description: "The symbol of the token being transferred from the source chain (eg: \"nUSD\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "The amount of tokens transferred from the source chain (eg: \"0.94\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_hash
+        description: "The hash of the transaction on the destination chain (eg: \"0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_timestamp
+        description: "The timestamp of when the transaction was created (eg: \"2024-06-26 03:33:15.000000 UTC\")."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_chain_id
+        description: "The chain ID of the destination chain (eg: \"53935\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "The name of the destination chain (eg: \"DFK Chain\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_address
+        description: "The address of the user receiving the transaction (eg: \"0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_address
+        description: "The address of the token being transferred to the destination chain (eg: \"0xABA09A81a17476Be2a659a1087078c1E700Fd7Ac\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "The symbol of the token being transferred to the destination chain (eg: \"nUSD\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_amount
+        description: "The amount of tokens transferred to the destination chain (eg: \"0.4385\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: fee_token_symbol
+        description: "The symbol of the token being transferred to the destination chain (eg: \"nUSD\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+      - name: gas_amount
+        description: "The amount of gas fee paid for the transaction (eg: \"0.0001\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relayer_fee_symbol
+        description: "The symbol of the token being transferred to the destination chain (eg: \"nUSD\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relay_amount
+        description: "The amount of relayer fee paid for the transaction (eg: \"0.000\")."
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

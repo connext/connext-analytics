@@ -21,11 +21,17 @@ SELECT DISTINCT
     CAST(CAST(REGEXP_REPLACE(amountusddisplay, r'\$|,', '') AS FLOAT64) - CAST(bonderfeeusd AS FLOAT64) AS FLOAT64) AS to_amount_usd,
     
     -- fees
+    CAST(NULL AS STRING) AS gas_token_symbol,
+    CAST(NULL AS FLOAT64) AS gas_amount,
     token AS relayer_fee_symbol,
     CAST(bonderfeedisplay AS FLOAT64) AS relayer_fee,
     CAST(REGEXP_REPLACE(bonderfeeusddisplay, r'\$|,', '') AS FLOAT64) AS relayer_fee_in_usd
     
 FROM {{ source('stage', 'source_hop_explorer__transfers') }} r
+LEFT JOIN {{ref('chains')}} AS from_chain
+  ON r.sourcechainid = from_chain.chain_id
+LEFT JOIN {{ref('chains')}} AS to_chain
+  ON r.destinationchainid = to_chain.chain_id
 WHERE r.id NOT IN (
     '207960',
     '110530',
@@ -34,9 +40,3 @@ WHERE r.id NOT IN (
     '126748',
     '126615'
 )
-
-LEFT JOIN {{source('raw', 'source_chainlist_network__chains')}} AS from_chain
-  ON r.sourcechainid = from_chain.chainId
-
-LEFT JOIN {{source('raw', 'source_chainlist_network__chains')}} AS to_chain
-  ON r.destinationchainid = to_chain.chainId

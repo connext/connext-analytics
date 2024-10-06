@@ -1,15 +1,15 @@
 -- Steps
 -- Pull all raw 
 WITH raw AS (
-    SELECT DISTINCT *
+    SELECT DISTINCT * EXCEPT (api_url)
     FROM {{ source('raw', 'source_all_bridge_explorer_transfers_v2') }}
 ),
 
 semi AS (
-    SELECT
+    SELECT DISTINCT
         r.id,
-        r.send_transaction_hash AS from_hash,
-        r.receive_transaction_hash AS to_hash,
+        CAST(r.send_transaction_hash AS STRING) AS from_hash,
+        CAST(r.receive_transaction_hash AS STRING) AS to_hash,
         r.from_address,
         r.to_address,
         r.from_chain_symbol AS from_chain_name,
@@ -102,12 +102,12 @@ SELECT DISTINCT
     -- from
     s.from_hash,
     s.from_address,
-    s.from_chain_id,
+    CAST(s.from_chain_id AS INT64) AS from_chain_id,
     s.from_token_symbol,
     CAST(s.from_amount AS FLOAT64) AS from_amount,
 
     -- to
-    to_chain_id,
+    CAST(s.to_chain_id AS INT64) AS to_chain_id,
     COALESCE(to_chain.name, s.to_chain_name) AS to_chain_name,
     s.to_token_symbol,
     s.to_hash,

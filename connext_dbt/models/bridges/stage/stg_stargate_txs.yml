@@ -2,13 +2,169 @@ version: 2
 
 models:
   - name: stg_stargate_txs
+
+    description: >
+      **Raw Data**      
+        - bridge: "stargate_v2",
+        - id: "473277",
+        - from_hash: "0xa8fb8195ddc8d40d6c35edb5d2d5ec6f07ce601e1a31845cf1d1199dfde8be7c",
+        - from_date: "2024-06-05 10:20:31.000000 UTC",
+        - from_chain_id: "534352",
+        - from_chain_name: "scroll",
+        - from_token_address: null,
+        - from_address: "0xc8d13e22f3e75b1ac03ba1a97893d9bc5087f741",
+        - from_token_symbol: "ETH",
+        - from_token_decimals: null,
+        - from_amount: null,
+        - to_chain_id: "42161",
+        - to_chain_name: "arbitrum",
+        - to_token_address: null,
+        - to_address: null,
+        - to_token_symbol: "ETH",
+        - to_amount: null,
+        - gas_token_symbol: null,
+        - gas_amount: null,
+        - relay_fee_token_symbol: null,
+        - relay_fee_amount: null,
     columns:
-      - name: id
-        description: "The ID of the transaction (eg: \"1\")."
+      - name: bridge
+        description: "The bridge name (eg: \"stargate_v2\")."
         data_type: string
         tests:
-          - unique
-          - not_null
           - dbt_expectations.expect_column_to_exist
           - dbt_expectations.expect_column_values_to_be_of_type:
               column_type: string
+      - name: id          
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_date
+        description: "The timestamp of when the transaction was created (eg: \"2024-01-24 23:45:37.000000 UTC\")."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_date
+        description: "The timestamp of when the transaction was marked as successful (eg: \"2024-01-24 23:48:33.000000 UTC\")."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_address
+        description: "The address from which the transfer originated (eg: \"0xc8d13e22f3e75b1ac03ba1a97893d9bc5087f741\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_address
+        description: "The address to which the transfer is directed (eg: \"0xc8d13e22f3e75b1ac03ba1a97893d9bc5087f741\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "The ID of the source chain (eg: \"324\")."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_id
+        description: "The ID of the destination chain (eg: \"43114\")."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "The name of the source chain (eg: \"scroll\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_chain_name
+        description: "The name of the destination chain (eg: \"arbitrum\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_address
+        description: "The token address on the source chain (eg: null)."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_token_symbol
+        description: "The symbol of the token being transferred from the source chain (eg: \"ETH\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "The amount of tokens transferred from the source chain (eg: \"0.000000000000000001\")."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_hash
+        description: "The transaction hash on the destination chain (eg: \"0x2b0410360e8c633de466261f92667e24bd0e6f49e87124422928055d52640b2a\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_address
+        description: "The token address on the destination chain (eg: \"0x3355df6d4c9c3035724fd0e3914de96a5a83aaf4\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "The symbol of the token being transferred to the destination chain (eg: \"USDC\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: gas_token_symbol
+        description: "The symbol of the native token used for gas fees on the source chain (eg: \"ETH\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: gas_amount
+        description: "The amount of gas fees paid for the transaction (eg: null)."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_symbol
+        description: "The symbol of the native token used for transaction fees on the source chain (eg: \"ETH\")."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relay_amount
+        description: "The fee amount in USD for the transaction, calculated as the difference between the from and to amounts (eg: \"30.590000000003783\"). The gas fee and protocol fee are baked into this fee."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

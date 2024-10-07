@@ -15,6 +15,9 @@ models:
             - if we do from_amount - to_amount, we get a larger amount, which could be potential fee or slippage!
           - gas_amount is kept seperate, as it is not part of amounts sent and paid by user seperately!
 
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__stg_all_bridge_txs") }}
 
       Transforms the raw data as follows at the staging layer:
         - **Data deduplication**: Removes duplicate records from combined datasets.

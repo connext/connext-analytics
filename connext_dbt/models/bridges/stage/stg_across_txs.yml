@@ -24,6 +24,11 @@ models:
           - gas_amount -> Not available in raw data.
           - relay_fee_amount -> Calculated as `from_amount - to_amount`. Relay fee token is same as from token.
 
+      ## Data QA report
+      {{ doc("dbt_profiler__stg_across_txs") }}
+      
+
+
       **Sample Data:**
 
         - "bridge": "across_v2",

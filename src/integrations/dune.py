@@ -15,17 +15,21 @@ from dune_client.client import DuneClient
 from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
 
-from src.integrations.models.dune import (AcrossAggregatorDaily,
-                                          ArbWethDepositTransaction,
-                                          BridgesAggregateFlowsDaily,
-                                          BridgesNativeEvmEth,
-                                          BridgesTokensEvmEth,
-                                          CannonicalBridgesFlowsNativeHourly,
-                                          CannonicalBridgesFlowsTokensHourly,
-                                          HourlyTokenPricingBlockchainEth,
-                                          StargateBridgesDailyAgg)
-from src.integrations.utilities import (get_latest_value_from_bq_table_by_col,
-                                        get_secret_gcp_secrete_manager)
+from src.integrations.models.dune import (
+    AcrossAggregatorDaily,
+    ArbWethDepositTransaction,
+    BridgesAggregateFlowsDaily,
+    BridgesNativeEvmEth,
+    BridgesTokensEvmEth,
+    CannonicalBridgesFlowsNativeHourly,
+    CannonicalBridgesFlowsTokensHourly,
+    HourlyTokenPricingBlockchainEth,
+    StargateBridgesDailyAgg,
+)
+from src.integrations.utilities import (
+    get_latest_value_from_bq_table_by_col,
+    get_secret_gcp_secrete_manager,
+)
 
 # Logging
 
@@ -403,8 +407,7 @@ def get_bridges_aggregate_flows_daily(
 def dune_bridges() -> Sequence[DltResource]:
     return [
         # new:
-        get_hourly_token_pricing_blockchain_eth,
-        get_arb_weth_deposit_transactions,
+        get_hourly_token_pricing_blockchain_eth
     ]
 
 

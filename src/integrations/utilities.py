@@ -17,8 +17,9 @@ logging.basicConfig(level=logging.INFO)
 def get_secret_gcp_secrete_manager(secret_name: str):
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/mainnet-bigq/secrets/{secret_name}/versions/latest"
+
     try:
-        response = client.access_secret_version(request={"name": name})
+        response = client.access_secret_version(request={"name": name}, timeout=20)
         return response.payload.data.decode("UTF-8")
     except DeadlineExceeded:
         logging.error("Request to Secret Manager timed out.")
@@ -278,3 +279,8 @@ def pydantic_schema_to_list(schema):
 #             ],
 #         )
 #     )
+
+
+if __name__ == "__main__":
+    # print(get_secret_gcp_secrete_manager("AWS_DB_URL_EVERCLEAR_MAINNET"))
+    print(get_secret_gcp_secrete_manager("PROJECT_ID"))

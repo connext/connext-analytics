@@ -16,12 +16,24 @@ models:
             - cln_symbiosis_txs
             - cln_allbridge_txs
             - cln_across_txs
-        **Sample Data:**
-        - same as clean models above
+        
+        ## Amount Calculations
+        
+        {{ doc("amount_calculations") }}
+
+        ## Data Profile Report for all combined bridges txs
+
+        {{ doc("dbt_profiler__all_combined_bridges_txs") }}
+
+        
     columns:
       - name: bridge
         description: "The bridge through which the transaction was made."
         data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: id
         description: "Unique identifier for each transaction."
         data_type: string
@@ -34,108 +46,174 @@ models:
         data_type: timestamp
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
       - name: from_tx_hash
         description: "The transaction hash on the source chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: from_chain_id
         description: "The chain ID of the source chain."
-        data_type: string
+        data_type: int64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
       - name: from_chain_name
         description: "The name of the source chain (e.g., Scroll)."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: from_user_address
         description: "The address of the user on the source chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: from_token_address
         description: "The address of the token on the source chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: from_token_symbol
         description: "The symbol of the token on the source chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: from_amount
         description: "The amount of tokens transferred on the source chain."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
       - name: from_amount_usd
         description: "The amount of tokens transferred on the source chain in USD."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
       - name: to_date
         description: "The timestamp when the transaction was completed on the destination chain."
         data_type: timestamp
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_chain_id
+        description: "The chain ID of the destination chain."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "The name of the destination chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: to_tx_hash
         description: "The transaction hash on the destination chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: to_user_address
         description: "The address of the user on the destination chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: to_token_address
         description: "The address of the token on the destination chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: to_token_symbol
         description: "The symbol of the token on the destination chain."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: to_amount
         description: "The amount of tokens received on the destination chain."  
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
       - name: to_amount_usd
         description: "The amount of tokens received on the destination chain in USD."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
       - name: relay_symbol  
         description: "The symbol of the relay token used in the transaction."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: relay_amount
         description: "The amount of relay fee tokens paid in the transaction."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
       - name: relay_amount_usd
         description: "The amount of relay fee tokens paid in the transaction in USD."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
       - name: gas_symbol
         description: "The symbol of the gas token used in the transaction."
         data_type: string
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
       - name: gas_amount
         description: "The amount of gas tokens used in the transaction."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
       - name: gas_amount_usd
         description: "The amount of gas tokens used in the transaction in USD."
-        data_type: FLOAT
+        data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

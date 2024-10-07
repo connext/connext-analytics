@@ -181,7 +181,7 @@ WITH metadata AS (
         LOWER(i.settlement_asset) = tm.address
         AND CAST(i.settlement_domain AS INTEGER) = tm.domain_id
     )
-    WHERE i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status IN ('DISPATCHED', 'SETTLED')
+    WHERE i.status= 'SETTLED_AND_COMPLETED' AND i.hub_status IN ('DISPATCHED', 'SETTLED') AND inv.id IS NOT NULL
         -- AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) >= DATE('{{ from_date }}')
         -- AND DATE_TRUNC('day', to_timestamp(i.origin_timestamp)) <= DATE('{{ to_date }}')
 

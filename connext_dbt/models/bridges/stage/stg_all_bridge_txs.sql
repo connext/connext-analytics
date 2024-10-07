@@ -3,6 +3,7 @@
 WITH raw AS (
     SELECT DISTINCT * EXCEPT (api_url)
     FROM {{ source('raw', 'source_all_bridge_explorer_transfers_v2') }}
+    WHERE CAST(from_amount AS FLOAT64) > 0 AND CAST(to_amount AS FLOAT64) > 0
 ),
 
 semi AS (

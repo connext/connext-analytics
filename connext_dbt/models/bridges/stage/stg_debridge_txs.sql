@@ -1,9 +1,3 @@
--- INFO
--- This SQL script processes transaction data from the `mainnet-bigq.raw.source_de_bridge_explorer__transactions` table, 
--- extracting and transforming various fields related to token swaps and fees. 
--- It joins this data with chain metadata from `mainnet-bigq.raw.source_chainlist_network__chains` to enrich the transaction records with chain names and token symbols. 
--- The final output includes details about the transfer, such as chain IDs, token amounts, and associated fees.
-
 WITH 
 evm_chains_token_metadata AS (
     SELECT DISTINCT
@@ -52,8 +46,10 @@ semi AS (
         SAFE_CAST(fixfee_bigintegervalue AS FLOAT64) AS market_maker_gas_costs,
         SAFE_CAST(finalpercentfee_bigintegervalue AS FLOAT64) AS debridge_fee
     FROM raw
-)
+),
 
+
+semi_raw AS (
 SELECT
     transfer_id AS id,
     date,
@@ -68,6 +64,7 @@ SELECT
         CAST(pre_swap_in_amount AS FLOAT64) / IFNULL(POW(10, tm.decimals), POW(10,18)),
         CAST(from_actual_value AS FLOAT64) / IFNULL(POW(10, from_actual_symbol_decimal), POW(10,18))
     ) AS from_amount,
+    from_actual_symbol AS interim_symbol,
     CAST(from_actual_value AS FLOAT64) / IFNULL(POW(10, from_actual_symbol_decimal), POW(10,18)) AS interim_amount,
     -- to
     CAST(to_tx_hash AS STRING) AS to_tx_hash,
@@ -95,3 +92,6 @@ LEFT JOIN {{ref('chains')}} AS to_chain
 
 LEFT JOIN evm_chains_token_metadata AS tm
     ON s.pre_swap_in_token_symbol = tm.symbol AND CAST(s.from_chain_id AS INT64) = tm.chain_id
+)
+SELECT * FROM semi_raw
+WHERE from_amount > 0 AND to_amount > 0

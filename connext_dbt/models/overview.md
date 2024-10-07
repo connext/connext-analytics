@@ -1,7 +1,8 @@
 {% docs __overview__ %}
+
 # Everclear Data Warehouse
 
-**DOCS UPDATE DATE: 29th September 2024 | DOC VERSION: 0.0.1 | In Progress(Doc might not be up to date with the latest code/models)**
+**DOCS UPDATE DATE: 8th October 2024 | DOC VERSION: 0.0.1 | In Progress(Doc might not be up to date with the latest code/models)**
 
 Welcome to the Connext Analytics DBT Documentation. This landing page provides an overview of the project, its models, and useful resources.
 
@@ -14,7 +15,6 @@ The Connext DBT project is designed to transform and model data related to block
 ### Metrics Models- TBD
 
 Metrics models compute key performance indicators and aggregate data for analysis.
-
 
 ### Staging Models
 
@@ -35,12 +35,20 @@ Staging models handle the initial extraction and cleansing of raw data from vari
 
 Mart models are optimized for reporting and analytics, combining data from multiple sources.
 
-  - [`all_combined_bridges_txs`](models/bridges/mart/all_combined_bridges_txs.sql): Merges transactions from multiple bridge sources.
-  - [`all_combined_bridges_txs_modelling_format`](models/bridges/mart/all_combined_bridges_txs_modelling_format.sql): Formats combined transaction data for analysis.
+- [`all_combined_bridges_txs`](models/bridges/mart/all_combined_bridges_txs.sql): Merges transactions from multiple bridge sources.
+- [`all_combined_bridges_txs_modelling_format`](models/bridges/mart/all_combined_bridges_txs_modelling_format.sql): Formats combined transaction data for analysis.
 
 ## Resources
 
 - **Project Repository:** [GitHub](https://github.com/connext/connext-analytics)
 - **DBT Documentation:** [dbt Docs](https://github.com/connext/connext-analytics/tree/main/connext_dbt)
+
+### commands to run
+
+- to get stats for all bridges txs:
+
+```bash
+pipenv run dbt run-operation print_profile_docs --args '{"relation_name": "all_combined_bridges_txs", "schema": "bridges"}'
+```
 
 {% enddocs %}

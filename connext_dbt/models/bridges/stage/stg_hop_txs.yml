@@ -15,6 +15,9 @@ models:
           - As per the bridge- its bonder fee on the destination side. Gas is not included in this.          
         - gas_amount is kept seperate, as it is not part of amounts sent and paid by user seperately!
 
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__stg_hop_txs") }}
 
       **Sample Data:**
         - id: "0x256f0b3dac9ae0844330012d844b481cdbba68430d6f324dcb798ef5efb22a51"

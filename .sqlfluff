@@ -1,9 +1,20 @@
 [sqlfluff]
-dialect = bigquery
 templater = dbt
-lint_templated_tokens = True
-max_line_length = 120
+dialect = bigquery, postgres
 
 [sqlfluff:templater:dbt]
-project_dir = connext_dbt/
-profiles_dir = connext_dbt/
+project_dir = ${PWD}/connext_dbt/
+profiles_dir = ${PWD}/connext_dbt/
+profile = default
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = True
+
+[sqlfluff:rules:L010]
+capitalisation_policy = consistent
+
+[sqlfluff:rules:L014]
+unquoted_identifiers_policy = all
+
+[sqlfluff:rules:L030]
+extended_capitalisation_policy = consistent

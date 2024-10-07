@@ -31,7 +31,11 @@ models:
         - relay_symbol: USDC
         - relay_amount: 0.039405
         - relay_amount_usd: 0.03942477145875
+
+      ## Data QA report
       
+      {{ doc("dbt_profiler__cln_debridge_txs") }}
+
       This model processes and cleans DeBridge transaction data by joining with token symbols and prices,
       calculating USD amounts for various transaction fields, and preparing the final dataset for analysis
 

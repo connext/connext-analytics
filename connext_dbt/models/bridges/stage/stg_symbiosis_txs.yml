@@ -7,6 +7,16 @@ models:
       Converts `created_at` to `from_timestamp` and `success_at` to `to_timestamp`.
       
       **Includes specific transfer records on logic `state = 0 AND type = 0 AND event_type IN (1, 3)`**
+
+      **Final Amounts Anchor Formulas:**
+      
+        - to_amount = As per the user in the destination side
+        - from_amount = As per the bridge on the source side
+        - relay_amount = Not avialable in raw data.  calculated as the difference between the from and to amounts
+          - relay_amount = from_amount - to_amount.
+          - There are instances where the relay_amount is negative, which means positive slippage.
+            - eg: https://explorer.symbiosis.finance/transactions/1329/0xf984bd1213ba85dbb7b2521d3b96ca16dfdbe97d04e9b04f39b1a218e7e6cebf
+        - gas_amount: Not Aviable. Looking at the txs, it is excluded from the amount that user sends
       
       **Sample Data:**
         - id: "2045919"

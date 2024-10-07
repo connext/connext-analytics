@@ -120,4 +120,3 @@ The Bridges section of the Connext DBT project focuses on transforming and model
 ## Summary
 
 The Bridges models within the Connext DBT project are crucial for consolidating and preparing bridge transaction data from various sources. By staging, cleaning, and aggregating this data, the project ensures that stakeholders have access to reliable and comprehensive analytics on blockchain bridge activities.
-

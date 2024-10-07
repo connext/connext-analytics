@@ -16,7 +16,6 @@ WITH extracted_routes AS (
         tx.to_chain_id,
         to_chain.name AS to_chain_name,
         tx.to_amount_usd,
-        from_chain.fee_token_symbol AS fee_token_symbol,
         tx.state,
         tx.type,
         tx.event_type,
@@ -24,7 +23,8 @@ WITH extracted_routes AS (
         JSON_EXTRACT_ARRAY(tx.to_route) AS to_route_array,
         ARRAY_LENGTH(JSON_EXTRACT_ARRAY(tx.to_route)) AS to_route_length,
         COALESCE(tx.token_symbol, tx.token_address) AS from_token_symbol,
-        CAST(NULL AS FLOAT64) AS fee_amount_usd
+        -- SPLIT(TRIM(amounts, '[]'), ',')[OFFSET(0)] AS amount1,
+        -- SPLIT(TRIM(amounts, '[]'), ',')[OFFSET(1)] AS amount2
     FROM
         {{source('raw', 'source_symbiosis_bridge_explorer_transactions')}} AS tx
     LEFT JOIN {{ref('chains')}} AS from_chain
@@ -38,6 +38,7 @@ WITH extracted_routes AS (
         state = 0
         AND type = 0
         AND event_type IN (1, 3)
+        AND ARRAY_LENGTH(JSON_EXTRACT_ARRAY(tx.to_route)) > 0
 ),
 
 semi_cleaned AS (
@@ -53,25 +54,25 @@ semi_cleaned AS (
         -- from_route (first element of from_route_array)
         to_chain_name,
         to_amount_usd,
-        fee_token_symbol,
-        fee_amount_usd,
         CAST(id AS STRING) AS id,
         CAST(created_at AS TIMESTAMP) AS from_timestamp,
 
         -- to_route (last element of to_route_array)
         CAST(success_at AS TIMESTAMP) AS to_timestamp,
         CAST(JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.chain_id') AS INT64) AS from_chain_id,
-        CAST(JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.amount') AS FLOAT64) AS from_amount,
+        CAST((JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.amount')) AS FLOAT64) AS from_amount,
         JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.token.symbol') AS from_token_symbol,
         JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.token.name') AS from_token_name,
         JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.token.address') AS from_token_address,
 
         -- Existing fields
-        CAST(JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.token.decimals') AS FLOAT64)
-            AS from_token_decimals,
+        CAST(JSON_EXTRACT_SCALAR(from_route_array[SAFE_OFFSET(0)], '$.token.decimals') AS FLOAT64) AS from_token_decimals,
         CAST(JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.chain_id') AS INT64)
             AS to_chain_id,
-        CAST(JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.amount') AS FLOAT64) AS to_amount,
+        CAST(
+            JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.amount')
+            AS FLOAT64
+        ) AS to_amount,
         JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.token.symbol') AS to_token_symbol,
         JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.token.name') AS to_token_name,
         JSON_EXTRACT_SCALAR(to_route_array[SAFE_OFFSET(to_route_length - 1)], '$.token.address') AS to_token_address,
@@ -80,7 +81,6 @@ semi_cleaned AS (
         CAST(NULL AS STRING) AS gas_fee_symbol,
         CAST(NULL AS FLOAT64) AS gas_fee,
         CAST(NULL AS FLOAT64) AS gas_fee_usd
-
     FROM extracted_routes
 )
 
@@ -114,11 +114,10 @@ SELECT
     gas_fee_symbol AS gas_token_symbol,
     gas_fee AS gas_amount,
     gas_fee_usd AS gas_amount_usd,
-    fee_token_symbol AS relay_symbol,
+    from_token_symbol AS relay_symbol,
     CAST(NULL AS FLOAT64) AS relay_amount,
-    fee_amount_usd AS relay_amount_usd
+    CAST(NULL AS FLOAT64) AS relay_amount_usd
 
 FROM semi_cleaned
-WHERE
-    from_amount > 0
+WHERE from_amount > 0
     AND to_amount > 0

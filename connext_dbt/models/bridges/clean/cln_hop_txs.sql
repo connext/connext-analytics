@@ -33,6 +33,10 @@ SELECT
     -- relay(protocol fee)
     CAST(NULL AS string) AS gas_symbol,
     CAST(NULL AS float64) AS gas_amount,
-    CAST(NULL AS float64) AS gas_amount_usd
+    CAST(NULL AS float64) AS gas_amount_usd,
+    
+    -- price
+    s.from_amount_usd / s.from_amount AS from_token_price,
+    s.to_amount_usd / s.to_amount AS to_token_price
 
 FROM {{ ref('stg_hop_txs') }} AS s

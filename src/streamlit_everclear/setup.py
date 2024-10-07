@@ -1,10 +1,8 @@
 # Adding the streamlit pages to the sidebar
 import logging
-from datetime import datetime, timedelta
-
+import os
 import pandas as pd
 import pandas_gbq as gbq
-import pytz
 import streamlit as st
 from chains_assets_metadata import ChainsAssetsMetadata
 from google.api_core.exceptions import DeadlineExceeded
@@ -26,11 +24,13 @@ def get_secret_gcp_secrete_manager(secret_name: str):
         return response.payload.data.decode("UTF-8")
     except DeadlineExceeded:
         logging.error("Request to Secret Manager timed out.")
-        raise
+        # if timeout pull from env file
+        return os.getenv(secret_name)
     except Exception as e:
         logging.info(f"Error accessing secret {secret_name}: {e}")
 
 
+@st.cache_data(ttl=86400)
 def get_db_url(mode="prod"):
     """GCP Secret Manager to get the DB URL"""
     if mode == "prod":
@@ -41,7 +41,47 @@ def get_db_url(mode="prod"):
 
 # cache data for a day
 @st.cache_data(ttl=86400)
-def get_raw_data_from_postgres_by_sql(sql_file_name, mode="prod") -> pd.DataFrame:
+def get_raw_data_from_postgres_by_sql(sql_file_name, db_url=None) -> pd.DataFrame:
+    """
+    Fetch raw data from PostgreSQL by executing a SQL file.
+
+    Parameters:
+    - sql_file_name: Name of the SQL file (without extension) located in src/streamlit_everclear/sql/
+    - mode: 'prod' for production database, 'test' for test database
+
+    Returns:
+    - DataFrame containing the query results
+    """
+    # Read SQL file
+    try:
+        logging.info(f"Fetching raw data for {sql_file_name}")
+        with open(f"src/streamlit_everclear/sql/{sql_file_name}.sql") as file:
+            sql = file.read()
+    except FileNotFoundError:
+        logging.error(f"The file {sql_file_name}.sql was not found.")
+        raise
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        raise
+
+    # Create a database connection
+    engine = create_engine(db_url)
+
+    # Execute the query and return the result as a DataFrame
+    with engine.connect() as connection:
+        if isinstance(connection, immutabledict):
+            connection = dict(connection)
+        df = pd.read_sql_query(sql, connection)
+
+    logging.info(f"Raw data fetched for {sql_file_name}")
+    return df
+
+
+# get data for invoices every 30 mins``
+@st.cache_data(ttl=1800)
+def get_raw_data_from_postgres_by_sql_for_invoices(
+    sql_file_name, mode="prod"
+) -> pd.DataFrame:
     """
     Fetch raw data from PostgreSQL by executing a SQL file.
 

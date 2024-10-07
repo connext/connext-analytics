@@ -24,14 +24,23 @@ models:
           
           - eg: BERT -> ETH -> ETH
           - https://app.debridge.finance/order?orderId=0x5e45dd0b95e7eb004061b4673e9e33004f60969b83173748ec17a09a5eacdb87
+            
+      ## Data QA report
       
-      
+      {{ doc("dbt_profiler__stg_debridge_txs") }}
+
       **Potential Issues"
       
         - order: https://app.debridge.finance/order?orderId=0xfc72e2e9ef7a3b7d540ae20207e368c831308eb7eae44cfc156f11ddba7dcdbf
           - The order has from amount = to amount, not sure why?!
           - 293 such orders till 2024-09-21
-      
+
+        - testing ids: where price not aviable hence used take offer and make offer  amounts
+          - id = '0xa6206e9f69b53d6074d2ac487cba5a4a5ec5925148b3cff98ae19afc5b82580d'
+          - id = '0xac6b0279ed3c86eec850c25fd5e6e9908e6f4335d6b62d5a7e73c1bd26bf8bb6'
+        - testing data with price:
+          - id = 
+
       **Sample Data:**
         - id: "0xa76481ef0c7d755c1771e3750294b15b0f73f72b906b04bc8cd9f35f5706abd3"
         - date: "2024-09-21 02:06:19.000000 UTC"

@@ -34,6 +34,11 @@ sqlalchemy = "*"
 dbt-core = "*"
 dbt-bigquery = "*"
 bs4 = "*"
+sqlfluff-templater-dbt = "*"
+yamllint = "*"
+pydantic-settings = "*"
+ydata-profiling = "*"
+bigframes = "*"
 
 [dev-packages]
 black="*"

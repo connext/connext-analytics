@@ -6,6 +6,10 @@ models:
       Cleans and transforms data from the `stg_across_txs` table by renaming columns and converting data types where necessary.
       This model prepares the data for further analysis by ensuring all necessary fields are correctly formatted and ready for consumption.
       
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__cln_across_txs") }}
+
       **Sample Data:**
 
         - bridge: "across_v3"

@@ -1,3 +1,4 @@
+WITH raw_tx AS (
 SELECT DISTINCT
     r.transferid AS id,
     TIMESTAMP_SECONDS(CAST(r.timestamp AS INT64)) AS from_timestamp,
@@ -40,3 +41,7 @@ WHERE r.id NOT IN (
     '126748',
     '126615'
 )
+)
+
+SELECT * FROM raw_tx
+WHERE from_amount > 0 AND to_amount > 0

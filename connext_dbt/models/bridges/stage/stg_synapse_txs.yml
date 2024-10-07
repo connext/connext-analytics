@@ -18,6 +18,10 @@ models:
       **Calculations to consider:**
         - from_amount - to_amount = relayer_fee -> for synapse
 
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__stg_synapse_txs") }}
+
       **Sample Data:**
         - id: "0032f6dbc522ef4fcb9e98362cd5949d67b04293ce7fa46ab96aafcde3b6e175"
         - from_timestamp: "2023-06-23 03:08:45.000000 UTC"

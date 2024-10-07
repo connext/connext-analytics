@@ -1,0 +1,207 @@
+version: 2
+
+models:
+
+  - name: cln_stargate_txs
+    description: >
+      Cleans and transforms data from the `stg_stargate_txs` table by renaming columns and converting data types where necessary.
+      This model prepares the data for further analysis by ensuring all necessary fields are correctly formatted and ready for consumption.
+
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__cln_stargate_txs") }}
+
+      **Sample Data:**
+    
+    columns:
+      - name: bridge
+        description: "Name of the bridge used for the transaction. (eg: 'stargate')"
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: id
+        description: "Unique identifier for each transaction. (eg: '2738053')"
+        data_type: string
+        tests:
+          - not_null
+          - unique
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_date
+        description: "Timestamp indicating when the transaction originated. (eg: '2024-09-21 02:06:19.000000 UTC')"
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: from_tx_hash
+        description: "The hash of the originating transaction on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_chain_id
+        description: "The identifier of the source blockchain where the transaction originated."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: from_chain_name
+        description: "The name of the source blockchain associated with the transaction."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string 
+      - name: from_user_address
+        description: "The address of the user initiating the transaction on the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string 
+      - name: from_token_address
+        description: "The contract address of the token being transferred from the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string 
+      - name: from_token_symbol
+        description: "The symbol of the token being transferred from the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: from_amount
+        description: "The amount of tokens transferred from the source chain."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_amount_usd
+        description: "The USD value of the tokens transferred from the source chain at the time of transaction."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_date
+        description: "The timestamp indicating when the transaction was completed on the destination chain. NULL if not yet completed."
+        data_type: timestamp
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: timestamp
+      - name: to_tx_hash
+        description: "The hash of the transaction on the destination chain. NULL if not yet completed."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_user_address
+        description: "The address of the user receiving the transaction on the destination chain. NULL if not yet completed."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_chain_id
+        description: "The identifier of the destination blockchain where the transaction is intended to complete."
+        data_type: int64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: int64
+      - name: to_chain_name
+        description: "The name of the destination blockchain associated with the transaction."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_address
+        description: "The contract address of the token being transferred to the destination chain. NULL if not yet completed."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_token_symbol
+        description: "The symbol of the token being transferred to the destination chain. NULL if not yet completed."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: to_amount
+        description: "The amount of tokens to be transferred to the destination chain. NULL if not yet completed."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_amount_usd
+        description: "The USD value of the tokens to be transferred to the destination chain at the time of transaction. NULL if not yet completed."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_symbol
+        description: "The symbol of the token used to pay for gas fees in the transaction."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: gas_amount
+        description: "The amount of gas fees paid for the transaction. NULL as it is combined with protocol fees."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: gas_amount_usd
+        description: "The USD value of the gas fees paid for the transaction. NULL as it is combined with protocol fees."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_symbol
+        description: "The symbol of the token used for relay (protocol) fees, taken from the user at the source chain."
+        data_type: string
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: string
+      - name: relay_amount
+        description: "The amount of relay (protocol) fees charged. NULL as it is combined with gas fees."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: relay_amount_usd
+        description: "The USD value of the relay (protocol) fees charged."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_token_price
+        description: "The price of the token being transferred from the source chain."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64

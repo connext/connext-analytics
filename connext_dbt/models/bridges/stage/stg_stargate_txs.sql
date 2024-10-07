@@ -21,19 +21,24 @@ WITH raw AS (
     to_amount
     FROM {{ source('dune', 'stargate_v2_txs_v0') }}
 ),
+
 evm_chains_token_metadata AS (
     SELECT DISTINCT
-      blockchain, symbol, contract_address, decimals
+        chain_id, symbol, CAST(decimals AS INT64) AS decimals
     FROM (
-        SELECT symbol, blockchain, contract_address, decimals, rank() over (partition by blockchain, symbol order by contract_address) as rnk
-        FROM {{source('dune', 'evm_chains_token_metadata')}}
+        SELECT
+            symbol,
+            decimals,
+            c.chain_id,
+        FROM {{source('dune', 'evm_chains_token_metadata')}} tm
+        INNER JOIN {{ref('chains')}} c
+            ON tm.blockchain = c.name
     )
-    WHERE rnk = 1
-  )
-
+),
+str_raw AS (
 SELECT
     "stargate_v2" AS bridge,
-    CONCAT(r.from_hash, ' _ ', RANK() OVER (PARTITION BY r.from_hash ORDER BY r.from_date)) AS id,
+    CAST(ROW_NUMBER() OVER () AS STRING) AS id,
 
     -- from
     r.from_hash AS from_hash,
@@ -55,9 +60,9 @@ SELECT
     CAST(NULL AS STRING) AS from_token_address,
     r.from_user AS from_address,
     r.from_token_symbol AS from_token_symbol,
-    CAST(r.from_amount AS FLOAT64) / POWER(10, tm_from.decimals) AS from_amount,
-    
+    r.from_amount AS from_amount,
     -- to
+    CAST(r.from_token_symbol AS STRING) AS to_token_symbol,
     CAST(NULL AS STRING) AS to_hash,
     CAST(NULL AS TIMESTAMP) AS to_date,
     CASE
@@ -76,17 +81,47 @@ SELECT
     r.to_chain_name AS to_chain_name,
     CAST(NULL AS STRING) AS to_address,
     CAST(NULL AS STRING) AS to_token_address,
-    CAST(r.from_token_symbol AS STRING) AS to_token_symbol,
-    CAST(r.to_amount AS FLOAT64) / POWER(10, tm_from.decimals) AS to_amount,
-
+    r.to_amount AS to_amount,
     -- gas and relay
     CAST(NULL AS STRING) AS gas_token_symbol,
     CAST(NULL AS FLOAT64) AS gas_amount,
-    CAST(NULL AS STRING) AS relayer_fee_token_symbol,
-    CAST(NULL AS FLOAT64) AS relay_fee_amount,
-    CAST(NULL AS FLOAT64) AS relay_fee_usd
+    CAST(NULL AS STRING) AS relay_fee_token_symbol,
+    r.from_amount - r.to_amount AS relay_amount
+    -- CASE 
+    --     WHEN from_chain_name = 'bnb' AND from_token_symbol IN ('USDC', 'USDT') THEN 18
+    --     ELSE NULL
+    -- END AS from_token_decimals
 FROM raw r
+)
 
+
+SELECT
+    sr.bridge,
+    sr.id,
+    sr.from_hash,
+    sr.to_hash,
+    sr.from_date,
+    sr.to_date,
+    sr.from_chain_id,
+    sr.from_chain_name,
+    sr.from_token_address,
+    sr.from_address,
+    sr.from_token_symbol,
+    tm_from.decimals AS from_token_decimals,
+    CAST(sr.from_amount AS FLOAT64) / POWER(10, COALESCE(tm_from.decimals, 18)) AS from_amount,
+    sr.to_chain_id,
+    sr.to_chain_name,
+    sr.to_token_address,
+    sr.to_address,  
+    sr.to_token_symbol,
+    CAST(sr.to_amount AS FLOAT64) / POWER(10, COALESCE(tm_from.decimals, 18)) AS to_amount,
+    -- gas and relay
+    sr.gas_token_symbol,
+    sr.gas_amount,
+    sr.relay_fee_token_symbol AS relay_symbol,
+    sr.relay_fee_amount AS relay_amount
+
+FROM str_raw sr
 -- from token metadata
 LEFT JOIN evm_chains_token_metadata AS tm_from
-ON r.from_chain_name = tm_from.blockchain AND r.from_token_symbol = tm_from.symbol
+ON sr.from_token_symbol = tm_from.symbol AND sr.from_chain_id = tm_from.chain_id

@@ -12,6 +12,10 @@ models:
       - relay_amount
       - gas_amount
 
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__cln_hop_txs") }}
+
       **Sample Data:**
         - bridge: "hop"
         - id: "0xdb1fbb8528f3e26587ac243a0be0a43aa0e80047255170c8a0cd57ca1c4a2d6d"
@@ -220,6 +224,20 @@ models:
               column_type: float64
       - name: relay_amount_usd
         description: "USD value of the relay fees paid. (eg: '1.371')"
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: from_token_price
+        description: "The price of the token being transferred from the source chain."
+        data_type: float64
+        tests:
+          - dbt_expectations.expect_column_to_exist
+          - dbt_expectations.expect_column_values_to_be_of_type:
+              column_type: float64
+      - name: to_token_price
+        description: "The price of the token being transferred to the destination chain."
         data_type: float64
         tests:
           - dbt_expectations.expect_column_to_exist

@@ -5,9 +5,15 @@ import pandas as pd
 import plotly.express as px
 import pytz
 import streamlit as st
-from setup import (apply_sidebar_filters, get_agg_data_from_sql_template,
-                   get_chain_id_to_chain_name_data_from_bq,
-                   get_pricing_data_from_bq, get_raw_data_from_postgres_by_sql)
+from setup import (
+    apply_sidebar_filters,
+    get_agg_data_from_sql_template,
+    get_chain_id_to_chain_name_data_from_bq,
+    get_pricing_data_from_bq,
+    get_raw_data_from_postgres_by_sql,
+    get_db_url,
+)
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,6 +23,7 @@ st.set_page_config(
     page_icon="💸",
     layout="wide",
 )
+PROD_URL = get_db_url(mode="prod")
 
 
 def get_metrics(
@@ -42,7 +49,7 @@ def get_metrics(
         agg["from_chain_id"] = agg["from_chain_id"].astype(int)
         agg["to_chain_id"] = agg["to_chain_id"].astype(int)
 
-        daily = get_raw_data_from_postgres_by_sql(f"daily_{metrics}", mode=mode)
+        daily = get_raw_data_from_postgres_by_sql(f"daily_{metrics}", db_url=PROD_URL)
         daily["day"] = pd.to_datetime(daily["day"])
         daily["from_chain_id"] = daily["from_chain_id"].astype(int)
         daily["to_chain_id"] = daily["to_chain_id"].astype(int)
@@ -205,6 +212,11 @@ def clean_all_metrics(df: pd.DataFrame, c_data: pd.DataFrame, p_data: pd.DataFra
         "mm_daily_avg_settlement_rate_1h_percentage",
         "mm_daily_avg_settlement_rate_3h_percentage",
     ]
+
+    # cleaing volume
+    df_clean["clearing_volume_usd"] = df_clean["netting_volume_usd"].fillna(
+        0
+    ) + df_clean["volume_settled_by_mm_usd"].fillna(0)
     return df_clean[cols_to_keep]
 
 
@@ -316,7 +328,7 @@ def metric_dashboard(mode: str = "prod") -> None:
         mode=mode,
     )
     user_retention = get_raw_data_from_postgres_by_sql(
-        "daily_user_retention", mode=mode
+        "daily_user_retention", db_url=PROD_URL
     )
 
     # add todays date to raw_agg_metrics

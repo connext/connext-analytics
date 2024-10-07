@@ -3,3 +3,5 @@ packages:
     version: 1.3.0
   - package: calogica/dbt_expectations
     version: 0.10.4
+  - package: data-mie/dbt_profiler
+    version: 0.8.2

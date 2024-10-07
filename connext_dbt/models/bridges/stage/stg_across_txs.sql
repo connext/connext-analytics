@@ -149,4 +149,4 @@ SELECT
     CAST(f.relay_fee_usd AS FLOAT64) AS relay_fee_usd
 FROM final f
 -- remove irregularities
-WHERE (f.from_amount IS NOT NULL) AND (f.to_amount IS NOT NULL)
+WHERE (f.from_amount > 0) AND (f.to_amount > 0)

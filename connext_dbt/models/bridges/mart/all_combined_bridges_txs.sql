@@ -1,12 +1,12 @@
---{docs("all_combined_bridges_txs")}
-
-
-
-
+{{ config(
+    materialized='incremental',
+    unique_key='id',
+    incremental_strategy='merge'
+) }}
 
 SELECT
     across.bridge,
-    across.id,
+    CONCAT("across", "_", ROW_NUMBER() OVER ()) AS id,
     across.from_date,
     across.from_tx_hash,
     across.from_chain_id,
@@ -37,7 +37,7 @@ FROM {{ ref('cln_across_txs') }} across
 UNION ALL
 SELECT
     all_bridge.bridge,
-    all_bridge.id,
+    CONCAT("all_bridge", "_", ROW_NUMBER() OVER ()) AS id,
     all_bridge.from_date,
     all_bridge.from_tx_hash,
     all_bridge.from_chain_id,
@@ -68,7 +68,7 @@ FROM {{ ref('cln_all_bridge_txs') }} all_bridge
 UNION ALL
 SELECT
     debridge.bridge,
-    debridge.id,
+    CONCAT("debridge", "_", ROW_NUMBER() OVER ()) AS id,
     debridge.from_date,
     debridge.from_tx_hash,
     debridge.from_chain_id,
@@ -101,7 +101,7 @@ UNION ALL
 SELECT
     
     hop.bridge,
-    hop.id,
+    CONCAT("hop", "_", ROW_NUMBER() OVER ()) AS id,
     hop.from_date,
     hop.from_tx_hash,
     hop.from_chain_id,
@@ -113,9 +113,9 @@ SELECT
     hop.from_amount_usd,
     hop.to_date,
     hop.to_tx_hash,
-    hop.to_user_address,
     hop.to_chain_id,
     hop.to_chain_name,
+    hop.to_user_address,
     hop.to_token_address,
     hop.to_token_symbol,
     hop.to_amount,
@@ -132,39 +132,39 @@ FROM {{ ref('cln_hop_txs') }} hop
 UNION ALL
 
 SELECT
-    symbiosis.bridge,
-    symbiosis.id,
-    symbiosis.from_date,
-    symbiosis.from_tx_hash,
-    symbiosis.from_chain_id,
-    symbiosis.from_chain_name,
-    symbiosis.from_user_address,
-    symbiosis.from_token_address,
-    symbiosis.from_token_symbol,
-    symbiosis.from_amount,
-    symbiosis.from_amount_usd,
-    symbiosis.to_date,
-    symbiosis.to_tx_hash,
-    symbiosis.to_user_address,
-    symbiosis.to_chain_id,
-    symbiosis.to_chain_name,
-    symbiosis.to_token_address,
-    symbiosis.to_token_symbol,
-    symbiosis.to_amount,
-    symbiosis.to_amount_usd,
-    symbiosis.relay_symbol,
-    symbiosis.relay_amount,
-    symbiosis.relay_amount_usd,
-    symbiosis.gas_symbol,
-    symbiosis.gas_amount,
-    symbiosis.gas_amount_usd
+    stargate.bridge,
+    CONCAT("stargate", "_", ROW_NUMBER() OVER ()) AS id,
+    stargate.from_date,
+    stargate.from_tx_hash,
+    stargate.from_chain_id,
+    stargate.from_chain_name,
+    stargate.from_user_address,
+    stargate.from_token_address,
+    stargate.from_token_symbol,
+    stargate.from_amount,
+    stargate.from_amount_usd,
+    stargate.to_date,
+    stargate.to_tx_hash,
+    stargate.to_chain_id,
+    stargate.to_chain_name,
+    stargate.to_user_address,
+    stargate.to_token_address,
+    stargate.to_token_symbol,
+    stargate.to_amount,
+    stargate.to_amount_usd,
+    stargate.relay_symbol,
+    stargate.relay_amount,
+    stargate.relay_amount_usd,
+    stargate.gas_symbol,
+    stargate.gas_amount,
+    stargate.gas_amount_usd
 
-FROM {{ ref('cln_symbiosis_txs') }} symbiosis
+FROM {{ ref('cln_stargate_txs') }} stargate
 
 UNION ALL
 SELECT
     synapse.bridge,
-    synapse.id,
+    CONCAT("synapse", "_", ROW_NUMBER() OVER ()) AS id,
     synapse.from_date,
     synapse.from_tx_hash,
     synapse.from_chain_id,
@@ -176,9 +176,9 @@ SELECT
     synapse.from_amount_usd,
     synapse.to_date,
     synapse.to_tx_hash,
-    synapse.to_user_address,
     synapse.to_chain_id,
     synapse.to_chain_name,
+    synapse.to_user_address,
     synapse.to_token_address,
     synapse.to_token_symbol,
     synapse.to_amount,

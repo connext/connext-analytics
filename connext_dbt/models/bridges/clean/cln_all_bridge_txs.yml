@@ -17,6 +17,10 @@ models:
         - Amount Adjustments: Adjusts the final token amounts by subtracting relayer fees.
         - Final Selection: Creates a final dataset with relevant transaction details, including amounts, fees, and USD conversions.
       
+      ## Data QA report
+      
+      {{ doc("dbt_profiler__cln_all_bridge_txs") }}
+
       **Sample Data:**
         - bridge: all_bridges
         - id: 0x0502558557c2b86709eee43a18ff785fded8d93974da09d45342029aef1d9bd7

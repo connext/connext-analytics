@@ -12,7 +12,9 @@ import requests
 from requests.exceptions import HTTPError, RequestException, Timeout
 
 from src.integrations.models.all_bridge_explorer import (
-    AllBridgeExplorerTokenInfo, AllBridgeExplorerTransfer)
+    AllBridgeExplorerTokenInfo,
+    AllBridgeExplorerTransfer,
+)
 from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
 
 # Base URL for the API
@@ -52,10 +54,11 @@ def get_latest_metadata_from_bq_table() -> int:
     }
 
 
-def get_all_bridge_explorer_transfers(
+def get_all_bridge_explorer_latest_transfers(
     all_bridge_explorer_transfers_url,
-    max_retries=100,
+    max_retries=1000,
     base_delay=5,
+    get_historical_data=False,
 ) -> Iterator[AllBridgeExplorerTransfer]:
     """
     Logic: Paginate through the API and append to the table, pull till timestamp is found to be less than
@@ -66,16 +69,25 @@ def get_all_bridge_explorer_transfers(
     URL start date hy page: https://core.allbridge.io/explorer?status=Complete&page=85000
     from where to page 1.
 
+    Flag: get_historical_data
+    if True:
+        get data from start of the year to the last tx timestamp
+    else:
+        get data from the last tx timestamp to the current timestamp
+
     """
-    page = 1
+    page = 33000
     page_size = 20
     status = "Complete"
 
     page_txs = []
-
-    time_metadata = get_latest_metadata_from_bq_table()
-    last_tx_timestamp = time_metadata["last_tx_timestamp"]
-    last_tx_hash = time_metadata["last_tx_hash"]
+    if get_historical_data:
+        last_tx_timestamp = 1704067200000  # milliseconds- sart of the year 2024
+        last_tx_hash = None
+    else:
+        time_metadata = get_latest_metadata_from_bq_table()
+        last_tx_timestamp = time_metadata["last_tx_timestamp"]
+        last_tx_hash = time_metadata["last_tx_hash"]
 
     logging.info(
         f"Starting transfer fetch. Last processed timestamp: {last_tx_timestamp}, hash: {last_tx_hash}"
@@ -99,9 +111,7 @@ def get_all_bridge_explorer_transfers(
                     logging.error(f"Bad request error for URL: {url}. Error: {str(e)}")
                     raise  # Don't retry on 400 errors
                 if attempt < max_retries - 1:
-                    delay = (base_delay * 2**attempt) + (
-                        random.randint(0, 1000) / 1000
-                    )
+                    delay = (base_delay * 2**attempt) + (random.randint(0, 1000) / 1000)
                     logging.warning(
                         f"Request failed. Retrying in {delay:.2f} seconds..."
                     )
@@ -141,6 +151,7 @@ def get_all_bridge_explorer_transfers(
                 "receive_transaction_hash": transaction.get("receiveTransactionHash"),
                 "api_url": url,
             }
+
             if (
                 record.get("timestamp") == last_tx_timestamp
                 and record.get("id") == last_tx_hash
@@ -150,15 +161,19 @@ def get_all_bridge_explorer_transfers(
                 )
                 found_last_tx = True
                 break
-            elif record.get("timestamp") > last_tx_timestamp or (
-                record.get("timestamp") == last_tx_timestamp
-                and record.get("id") != last_tx_hash
-            ):
+            elif record.get("timestamp") > last_tx_timestamp:
                 tx = AllBridgeExplorerTransfer(**record)
                 page_txs.append(tx.model_dump())
                 logging.debug(
                     f"Added transaction to page_txs. ID: {record['id']}, Timestamp: {record['timestamp']}"
                 )
+            elif get_historical_data and record.get("timestamp") == last_tx_timestamp:
+                logging.info(
+                    f"Reached the last processed transaction till start of the year."
+                    f"ID: {record['id']}, Timestamp: {record['timestamp']}"
+                )
+                found_last_tx = True
+                break
 
         if page % 500 == 0 or found_last_tx:
             logging.info(f"Loading data after {page} pages")
@@ -272,7 +287,7 @@ def get_all_bridge_explorer_token_info(
         print(f"Request failed with status code: {response.status_code}")
 
 
-def main():
+def main(get_historical_data=False):
     all_bridge_explorer_transfers_url = (
         "https://explorer-variant-filter.api.allbridgecoreapi.net/transfers"
     )
@@ -280,8 +295,9 @@ def main():
         "https://core.api.allbridgecoreapi.net/token-info"
     )
 
-    get_all_bridge_explorer_transfers(
+    get_all_bridge_explorer_latest_transfers(
         all_bridge_explorer_transfers_url,
+        get_historical_data=get_historical_data,
     )
     get_all_bridge_explorer_token_info(
         all_bridge_explorer_token_info_url,
@@ -289,4 +305,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(get_historical_data=True)

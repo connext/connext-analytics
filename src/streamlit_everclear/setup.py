@@ -28,6 +28,7 @@ def get_secret_gcp_secrete_manager(secret_name: str):
         return os.getenv(secret_name)
     except Exception as e:
         logging.info(f"Error accessing secret {secret_name}: {e}")
+        return os.getenv(secret_name)
 
 
 @st.cache_data(ttl=86400)
@@ -245,7 +246,6 @@ def get_chains_assets_metadata():
 
     # Pull the registered assets data into a DataFrame
     df_assets = metadata_scraper.pull_registered_assets_data()
-    print(df_assets)
     return df_assets
 
 

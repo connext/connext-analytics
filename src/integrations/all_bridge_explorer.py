@@ -76,7 +76,7 @@ def get_all_bridge_explorer_latest_transfers(
         get data from the last tx timestamp to the current timestamp
 
     """
-    page = 33000
+    page = 40500
     page_size = 20
     status = "Complete"
 

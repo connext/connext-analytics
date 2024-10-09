@@ -1,26 +1,17 @@
 import logging
-import pandas as pd
 from datetime import datetime, timedelta
+
+import pandas as pd
 import pytz
 import streamlit as st
 from setup import (
-    get_raw_data_from_postgres_by_sql,
     get_chain_id_to_chain_name_data_from_bq,
-    get_raw_data_from_bq_df,
     get_db_url,
+    get_raw_data_from_bq_df,
+    get_raw_data_from_postgres_by_sql,
 )
 
-# TODO:
-
-# [ ] Adding Revenue
-# [ ] Adding Fees - gas fee paid - by Everclear for message (Relay)
-# [ ] Adding Message Cost - by Everclear for message Cost
-#  [ ] Add Date: Lasty X days
-
-# calculations steps for each
-# 1. Revenue -> 1 bps fo orgin amount
-# 2. Discount applied to invoice if any - per intent
-# 3. pricing rate per intent by different timestamps
+st.set_page_config(layout="wide")
 
 
 def apply_sidebar_filters(
@@ -222,6 +213,11 @@ def calculate_revenue_fees_metrics(cdf):
         inplace=True,
     )
     df["revenue_usd"] = df["origin_amount_usd"] * 0.0001
+    # when status is not settled_and_completed revenue and hub status is dispatched_and_unsupported is 0
+    df.loc[
+        (df["hub_status"] == "DISPATCHED_UNSUPPORTED"),
+        "revenue_usd",
+    ] = 0
     # total cost
     df["total_cost_usd"] = (
         df["intent_message_cost_usd"]
@@ -239,6 +235,7 @@ def calculate_revenue_fees_metrics(cdf):
     cols_to_keep = [
         "id",
         "status",
+        "hub_status",
         "origin_timestamp",
         "settlement_timestamp",
         # chain and token

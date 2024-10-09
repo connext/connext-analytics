@@ -12,9 +12,7 @@ import requests
 from requests.exceptions import HTTPError, RequestException, Timeout
 
 from src.integrations.models.all_bridge_explorer import (
-    AllBridgeExplorerTokenInfo,
-    AllBridgeExplorerTransfer,
-)
+    AllBridgeExplorerTokenInfo, AllBridgeExplorerTransfer)
 from src.integrations.utilities import get_raw_from_bq, pydantic_schema_to_list
 
 # Base URL for the API
@@ -111,7 +109,9 @@ def get_all_bridge_explorer_latest_transfers(
                     logging.error(f"Bad request error for URL: {url}. Error: {str(e)}")
                     raise  # Don't retry on 400 errors
                 if attempt < max_retries - 1:
-                    delay = (base_delay * 2**attempt) + (random.randint(0, 1000) / 1000)
+                    delay = (base_delay * 2**attempt) + (
+                        random.randint(0, 1000) / 1000
+                    )
                     logging.warning(
                         f"Request failed. Retrying in {delay:.2f} seconds..."
                     )

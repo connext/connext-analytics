@@ -1,6 +1,7 @@
 # Adding the streamlit pages to the sidebar
 import logging
 import os
+
 import pandas as pd
 import pandas_gbq as gbq
 import streamlit as st

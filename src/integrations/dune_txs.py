@@ -1,6 +1,6 @@
+import numpy as np
 import pytz
 from datetime import datetime, timedelta
-from typing import List, Tuple
 import pandas_gbq as gbq
 import logging
 import pandas as pd
@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 dune = DuneClient(api_key=get_secret_gcp_secrete_manager("source_DUNE_API_KEY_1"))
-# query_result = dune.get_latest_result(4025884)
 
 ACROSS_V3_QUERY_ID_v0 = 4025884
 ACROSS_V2_QUERY_ID_v0 = 4073734
@@ -22,6 +21,15 @@ STARGATE_V1_QUERY_ID_v0 = 4073890
 EVM_CHAINS_TOKEN_METADATA_QUERY_ID = 4123583
 TOKENS_METADATA_QUERY_ID = 4136542
 ALL_ETH_BASED_TOKENS_PRICES = 4136881
+ALL_EVERCLEAR_TOKENS_PRICES = 4157302
+
+
+def get_max_token_price_timestamp_from_bq() -> int:
+    sql = "SELECT max(CAST(minute AS TIMESTAMP)) AS max_timestamp FROM `mainnet-bigq.dune.all_everclear_tokens_prices`"
+    df = gbq.read_gbq(sql)
+    final_start_date = np.array(df["max_timestamp"])[0]
+    # convert to int
+    return int(final_start_date.timestamp())
 
 
 def get_dune_txs(
@@ -169,22 +177,34 @@ def evm_chains_token_metadata_pipeline():
     )
 
 
+# Function to filter out non-letter characters
+def filter_letters(s):
+    # drop rows where symbol is not a letter or a dot
+    if not isinstance(s, str):
+        return False
+    return s.isalpha()
+
+
 def tokens_metadata_pipeline():
     # patch
     df = pd.read_csv("data/token_metadata.csv")
-    df["data_fetched_at"] = datetime.now(pytz.UTC).isoformat()
+    print(df.count())
+    df["data_fetched_at"] = pd.to_datetime("now")
+    df_filtered = df[df["symbol"].apply(filter_letters)].copy()
+    df_filtered.reset_index(drop=True, inplace=True)
+    df_filtered.dropna(inplace=True)
+    print(df_filtered.count())
+    print(df_filtered.head())
+    print(df_filtered.dtypes)
+    print(df_filtered.isna().sum())
+
     gbq.to_gbq(
-        dataframe=df,
+        dataframe=df_filtered,
         project_id="mainnet-bigq",
         destination_table="mainnet-bigq.dune.tokens_metadata",
         if_exists="replace",
         api_method="load_csv",
     )
-
-    # get_dune_metadata_pipeline(
-    #     TOKENS_METADATA_QUERY_ID,
-    #     "mainnet-bigq.dune.tokens_metadata",
-    # )
 
 
 def all_eth_based_tokens_prices_pipeline(n: int = 30):
@@ -196,14 +216,50 @@ def all_eth_based_tokens_prices_pipeline(n: int = 30):
     )
 
 
+def get_all_everclear_tokens_prices_pipeline():
+    """date as UTC, convert the number to timestamp from BQ"""
+
+    max_date_bq = get_max_token_price_timestamp_from_bq()
+    from_date, to_date = max_date_bq, int(datetime.now(pytz.UTC).timestamp())
+    logger.info(
+        f"Pulling data for Everclear tokens prices from {from_date} to {to_date}"
+    )
+    df = get_dune_txs(
+        ALL_EVERCLEAR_TOKENS_PRICES,
+        from_date,
+        to_date,
+    )
+    if not df.empty:
+        logger.info(df.head())
+        # keep only min timestamp data for all symbols
+        max_timestamps_by_symbol = df.groupby("symbol")["minute"].max().reset_index()
+        min_of_max_timestamps = np.array(max_timestamps_by_symbol["minute"].min())
+        logger.info(
+            f"Min of max timestamps: {min_of_max_timestamps}, filter out all data above this"
+        )
+
+        df_final = df[df["minute"] <= min_of_max_timestamps].reset_index(drop=True)
+        if not df_final.empty:
+            logger.info(f"Adding data to BigQuery: length {len(df_final)}")
+            gbq.to_gbq(
+                dataframe=df_final,
+                project_id="mainnet-bigq",
+                destination_table="dune.all_everclear_tokens_prices",
+                if_exists="append",
+                api_method="load_csv",
+            )
+        else:
+            logger.info(
+                f"""data not up to date for all symbols,
+                  from {from_date} to {to_date} with min timestamp {min_of_max_timestamps}
+                """
+            )
+    else:
+        logger.info(f"No data fetched for the period {from_date} to {to_date}")
+
+
 def pipeline_all_dune_txs():
     across_v3_txs_pipeline()
     across_v2_txs_pipeline()
     stargate_v2_txs_pipeline()
     stargate_v1_txs_pipeline()
-
-
-if __name__ == "__main__":
-    # pull across v2:
-    # evm_chains_token_metadata_pipeline()
-    tokens_metadata_pipeline()

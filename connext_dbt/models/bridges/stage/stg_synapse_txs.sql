@@ -57,7 +57,7 @@ LEFT JOIN {{ref('chains')}} AS from_chain
 ON tx.from_chain_id = from_chain.chain_id
 LEFT JOIN {{ref('chains')}} AS to_chain
 ON tx.to_chain_id = to_chain.chain_id
-WHERE CAST(from_formatted_value  AS FLOAT64) != 0 OR CAST(to_formatted_value AS FLOAT64) != 0
+WHERE CAST(from_formatted_value  AS FLOAT64) > 0 OR CAST(to_formatted_value AS FLOAT64) > 0
 )
 
 , semi_raw AS (

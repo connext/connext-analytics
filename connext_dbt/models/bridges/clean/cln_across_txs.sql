@@ -42,7 +42,9 @@ LEFT JOIN {{ ref('cln_token_prices') }} AS gas_price_group_p
         rt.gas_price_group
         = gas_price_group_p.symbol
         AND rt.date_hour = gas_price_group_p.date
-)
+),
+
+final AS (
 
 
 -- final table
@@ -87,3 +89,7 @@ SELECT
     s.gas_token_price
 
 FROM semi_raw_tx AS s
+)
+
+SELECT * FROM final
+WHERE from_amount_usd > 0.1 AND to_amount_usd > 0.1 AND relay_amount_usd > 0

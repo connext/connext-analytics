@@ -19,8 +19,8 @@ SELECT
     rt.to_amount * from_price_group_p.price AS to_amount_usd,
 
     -- relay
-    -- (rt.from_amount * from_price_group_p.price) - (rt.to_amount * from_price_group_p.price) AS relay_amount_usd,
-    CAST(NULL AS FLOAT64) AS relay_amount_usd,
+    (rt.from_amount * from_price_group_p.price) - (rt.to_amount * from_price_group_p.price) AS relay_amount_usd,
+    -- CAST(NULL AS FLOAT64) AS relay_amount_usd,
 
     -- prices
     from_price_group_p.price AS from_token_price
@@ -64,10 +64,11 @@ SELECT
 
     -- relay(protocol fee)
     s.relay_symbol,
-    s.relay_amount,
+    (s.from_amount) - (s.to_amount) AS relay_amount,
     s.relay_amount_usd,
 
     -- prices
     s.from_token_price
 
 FROM semi_raw_tx AS s
+WHERE s.from_amount_usd > 0.1 AND s.to_amount_usd > 0.1

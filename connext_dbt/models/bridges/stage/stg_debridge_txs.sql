@@ -61,11 +61,11 @@ SELECT
     from_actual_token_address AS from_token_address,
     COALESCE(pre_swap_in_token_symbol, from_actual_symbol) AS from_token_symbol,
     COALESCE(
-        CAST(pre_swap_in_amount AS FLOAT64) / IFNULL(POW(10, tm.decimals), POW(10,18)),
-        CAST(from_actual_value AS FLOAT64) / IFNULL(POW(10, from_actual_symbol_decimal), POW(10,18))
+        CAST(pre_swap_in_amount AS FLOAT64) / (POW(10, tm.decimals)),
+        CAST(from_actual_value AS FLOAT64) / (POW(10, from_actual_symbol_decimal))
     ) AS from_amount,
     from_actual_symbol AS interim_symbol,
-    CAST(from_actual_value AS FLOAT64) / IFNULL(POW(10, from_actual_symbol_decimal), POW(10,18)) AS interim_amount,
+    CAST(from_actual_value AS FLOAT64) / (POW(10, from_actual_symbol_decimal)) AS interim_amount,
     -- to
     CAST(to_tx_hash AS STRING) AS to_tx_hash,
     CAST(to_chain_id AS INT64) AS to_chain_id,
@@ -94,4 +94,4 @@ LEFT JOIN evm_chains_token_metadata AS tm
     ON s.pre_swap_in_token_symbol = tm.symbol AND CAST(s.from_chain_id AS INT64) = tm.chain_id
 )
 SELECT * FROM semi_raw
-WHERE from_amount > 0 AND to_amount > 0
+WHERE from_amount > 0 AND to_amount > 0 AND relay_fee_amount > 0

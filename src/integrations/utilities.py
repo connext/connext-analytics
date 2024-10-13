@@ -17,15 +17,17 @@ logging.basicConfig(level=logging.INFO)
 def get_secret_gcp_secrete_manager(secret_name: str):
     client = secretmanager.SecretManagerServiceClient()
     name = f"projects/mainnet-bigq/secrets/{secret_name}/versions/latest"
-
     try:
-        response = client.access_secret_version(request={"name": name}, timeout=20)
+        # logging.info(f"Accessing secret {secret_name}")
+        response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
     except DeadlineExceeded:
         logging.error("Request to Secret Manager timed out.")
-        raise
+        # if timeout pull from env file
+        return os.getenv(secret_name)
     except Exception as e:
         logging.info(f"Error accessing secret {secret_name}: {e}")
+        return os.getenv(secret_name)
 
 
 def upload_to_gcs_via_folder(data, bucket_name, folder_name):
@@ -249,38 +251,3 @@ def pydantic_schema_to_list(schema):
         result.append({"name": field_name, "type": field_type})
 
     return result
-
-
-# if __name__ == "__main__":
-#     print(
-#         remove_duplicate_rows_by_col(
-#             table_id="mainnet-bigq.raw.source_all_bridge_explorer_transfers",
-#             col=[
-#                 "id",
-#                 "status",
-#                 "timestamp",
-#                 "from_chain_symbol",
-#                 "to_chain_symbol",
-#                 "from_amount",
-#                 "stable_fee",
-#                 "from_token_address",
-#                 "to_token_address",
-#                 "from_address",
-#                 "to_address",
-#                 "messaging_type",
-#                 "partner_id",
-#                 "from_gas",
-#                 "to_gas",
-#                 "relayer_fee_in_native",
-#                 "relayer_fee_in_tokens",
-#                 "send_transaction_hash",
-#                 "receive_transaction_hash",
-#                 "api_url",
-#             ],
-#         )
-#     )
-
-
-if __name__ == "__main__":
-    # print(get_secret_gcp_secrete_manager("AWS_DB_URL_EVERCLEAR_MAINNET"))
-    print(get_secret_gcp_secrete_manager("PROJECT_ID"))

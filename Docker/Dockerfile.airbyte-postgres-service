@@ -1,0 +1,10 @@
+FROM airbyte/source-postgres:3.6.21
+
+COPY config /app/config
+
+ENV AIRBYTE_VERSION=0.40.23
+ENV DATABASE_URL=jdbc:postgresql://your-postgres-host:5432/your-database
+ENV DATABASE_USER=your-username
+ENV DATABASE_PASSWORD=your-password
+ENV GCS_BUCKET_NAME=your-gcs-bucket-name
+ENV GCS_BUCKET_PATH=your-gcs-bucket-path

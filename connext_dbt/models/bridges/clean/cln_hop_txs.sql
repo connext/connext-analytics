@@ -1,3 +1,4 @@
+WITH final_tx AS (
 -- final table
 SELECT
     'hop' AS bridge,
@@ -40,3 +41,7 @@ SELECT
     s.to_amount_usd / s.to_amount AS to_token_price
 
 FROM {{ ref('stg_hop_txs') }} AS s
+)
+
+SELECT * FROM final_tx
+WHERE from_amount_usd > 0 AND to_amount_usd > 0 AND relay_amount_usd > 0

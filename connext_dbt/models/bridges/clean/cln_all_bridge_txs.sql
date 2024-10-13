@@ -71,7 +71,8 @@ semi_raw_tx AS (
         ON
             rt.relayer_fee_token_price_group = relayer_fee_token_price_group_p.symbol
             AND rt.date_hour = relayer_fee_token_price_group_p.date
-)
+),
+final AS (
 
 
 -- final table
@@ -121,3 +122,7 @@ SELECT
     s.relayer_fee_token_price
 
 FROM semi_raw_tx AS s
+)
+
+SELECT * FROM final
+WHERE from_amount_usd > 0.1 AND to_amount_usd > 0.1 AND relay_amount_usd > 0

@@ -4,6 +4,12 @@ WITH raw AS (
     SELECT DISTINCT * EXCEPT (api_url)
     FROM {{ source('raw', 'source_all_bridge_explorer_transfers_v2') }}
     WHERE CAST(from_amount AS FLOAT64) > 0 AND CAST(to_amount AS FLOAT64) > 0
+    -- - ve value relay tx removed
+    AND id NOT IN (
+        '0x0402fa59821efb3c4140b03bc86a5667287390f8ae9a1b661ae092895b922995',
+        '0x0405b9ec920036f4be00ebf80170e61079e1cdc5eb18887ee8ef984e62a9ab35',
+        '0x040232094e33ddc73941dd012c5a37a8bd73262cb97b5c36d83d4ac289eee0af'
+    )
 ),
 
 semi AS (

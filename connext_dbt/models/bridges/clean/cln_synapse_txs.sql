@@ -16,8 +16,8 @@ semi_raw_tx AS (
     SELECT
         rt.*,
         -- usd amounts
-        rt.from_amount * from_price.price AS from_amount_usd,
-        rt.to_amount * to_price.price AS to_amount_usd
+        rt.cal_from_amount * from_price.price AS from_amount_usd,
+        rt.cal_to_amount * to_price.price AS to_amount_usd
     FROM str_raw AS rt
     LEFT JOIN {{ ref('cln_token_prices') }} AS from_price
         ON
@@ -64,3 +64,4 @@ SELECT
     (s.from_amount_usd - s.to_amount_usd) AS relay_amount_usd
 
 FROM semi_raw_tx AS s
+WHERE s.from_amount_usd > 0.1 AND s.to_amount_usd > 0.1 AND (s.from_amount_usd - s.to_amount_usd) > 0

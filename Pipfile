@@ -38,7 +38,7 @@ sqlfluff-templater-dbt = "*"
 yamllint = "*"
 pydantic-settings = "*"
 ydata-profiling = "*"
-bigframes = "*"
+asyncpgsa = "*"
 
 [dev-packages]
 black="*"

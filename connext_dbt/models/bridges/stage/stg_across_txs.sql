@@ -43,7 +43,7 @@ raw_v3 AS (
     a3.from_token_address AS from_token_address,
     -- even the from token address are based on the destination chain
     tm_from.symbol AS from_token_symbol,
-    SAFE_CAST(a3.from_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_from.decimals AS INT64), 18)) AS from_amount,
+    SAFE_CAST(a3.from_amount AS FLOAT64) / pow(10, CAST(tm_from.decimals AS INT64)) AS from_amount,
     -- to
     a3.id AS to_hash,
     a3.to_user AS to_user,
@@ -51,7 +51,7 @@ raw_v3 AS (
     a3.to_chain_name AS to_chain_name,
     a3.to_token_address AS to_token_address,
     tm_to.symbol AS to_token_symbol,
-    (SAFE_CAST(a3.to_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_to.decimals AS INT64), 18))) AS to_amount,
+    (SAFE_CAST(a3.to_amount AS FLOAT64) / pow(10, CAST(tm_to.decimals AS INT64))) AS to_amount,
     -- fees + protocol
     a3.gas_token_symbol AS gas_token_symbol,
     --TODO: fix the token for native tokens if there is a bug down the line
@@ -82,7 +82,7 @@ raw_v2 AS (
     a2.from_chain_name,
     a2.from_token_address,
     tm_from.symbol AS from_token_symbol,
-    (SAFE_CAST(a2.from_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_from.decimals AS INT64), 18))) AS from_amount,
+    (SAFE_CAST(a2.filled_amount AS FLOAT64) / pow(10, CAST(tm_from.decimals AS INT64))) AS from_amount,
     -- to
 
     a2.id AS to_hash,
@@ -92,7 +92,7 @@ raw_v2 AS (
     a2.to_token_address,
     tm_to.symbol AS to_token_symbol,
     (
-      CAST(a2.from_amount AS FLOAT64) / pow(10, IFNULL(CAST(tm_to.decimals AS INT64), 18)) * 
+      CAST(a2.filled_amount AS FLOAT64) / pow(10, CAST(tm_to.decimals AS INT64)) * 
       ( 1 - CAST(a2.applied_relayer_fee_pct AS FLOAT64) / pow(10,18) - CAST(a2.realized_lp_fee_pct AS FLOAT64) / pow(10,18))
     )  AS to_amount,
     
@@ -134,7 +134,7 @@ SELECT
 
     f.to_hash,
     f.to_user,
-    CAST(f.to_chain_id AS INTEGER) AS to_chain_id,
+    CAST(f.to_chain_id AS INTEGER) AS to_chain_id, 
     f.to_chain_name,
     f.to_token_address,
     f.to_token_symbol,
@@ -148,5 +148,6 @@ SELECT
     f.from_amount - f.to_amount AS relay_fee_amount,
     CAST(f.relay_fee_usd AS FLOAT64) AS relay_fee_usd
 FROM final f
--- remove irregularities
-WHERE (f.from_amount > 0) AND (f.to_amount > 0)
+-- remove irregularities: -- remove tx with issues(1e-18)
+WHERE (f.from_amount > 1/ pow(10, 18)) AND (f.to_amount > 1/ pow(10, 18)) AND (f.from_amount - f.to_amount > 0)
+AND (f.from_token_symbol IS NOT NULL) AND (f.to_token_symbol IS NOT NULL)

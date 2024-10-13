@@ -1,0 +1,131 @@
+version: 2
+
+sources:
+  - name: everclear_prod_db
+    database: mainnet-bigq
+    schema: everclear_prod_db
+    tables:
+      - name: intents
+        description: >
+          Contains data about intents on the Everclear protocol.
+          Sample data:
+
+            - id: "0xa51dd0386964eb57e0debfb04e3e805d5834e5450419d0cc1e0b535bc8b1c6df"
+            - origin_queue_idx: "123"
+            - origin_message_id: "0xd2bc5e94dcbc637549e30655eb14bba35645e45541f7d379dcd6e6239c1b11f1"
+            - origin_status: "DISPATCHED"
+            - origin_initiator: "0x00000000000000000000000039096a17ba70fe5c1eddb923f940b2e6deae5c3b"
+            - origin_receiver: "0x00000000000000000000000039096a17ba70fe5c1eddb923f940b2e6deae5c3b"
+            - origin_input_asset: "0x00000000000000000000000082af49447d8a07e3bd95bd0d56f35241523fbab1"
+            - origin_output_asset: "0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+            - origin_amount: "200000000000000"
+            - origin_max_fee: "0"
+            - origin_origin: "42161"
+            - origin_destinations: "[\u00271\u0027]"
+            - origin_ttl: "0"
+            - origin_nonce: "123"
+            - origin_data: "0x"
+            - origin_transaction_hash: "0xc381a44525c5b043cf1cae2109246dfc8efabf6f2ef84b5a9a857634d8d3e5f7"
+            - origin_timestamp: "1727100015"
+            - origin_block_number: "256537093"
+            - origin_gas_limit: "791761"
+            - origin_gas_price: "10000000"
+            - origin_tx_origin: "0x39096a17ba70fe5c1eddb923f940b2e6deae5c3b"
+            - origin_tx_nonce: "17271000150002"
+            - origin_auto_id: "46303"
+            - destination_queue_idx: null
+            - destination_message_id: null
+            - destination_status: null
+            - destination_initiator: null
+            - destination_receiver: null
+            - destination_solver: null
+            - destination_input_asset: null
+            - destination_output_asset: null
+            - destination_amount: null
+            - destination_fee: null
+            - destination_origin: null
+            - destination_destinations: null
+            - destination_ttl: null
+            - destination_filled: null
+            - destination_nonce: null
+            - destination_data: null
+            - destination_transaction_hash: null
+            - destination_timestamp: null
+            - destination_block_number: null
+            - destination_gas_limit: null
+            - destination_gas_price: null
+            - destination_tx_origin: null
+            - destination_tx_nonce: null
+            - destination_auto_id: null
+            - settlement_amount: null
+            - settlement_asset: null
+            - settlement_recipient: null
+            - settlement_domain: null
+            - settlement_status: null
+            - destination_return_data: null
+            - settlement_transaction_hash: null
+            - settlement_timestamp: null
+            - settlement_block_number: null
+            - settlement_gas_limit: null
+            - settlement_gas_price: null
+            - settlement_tx_origin: null
+            - settlement_tx_nonce: null
+            - settlement_auto_id: null
+            - hub_domain: "25327"
+            - hub_queue_idx: "90.0"
+            - hub_message_id: "0x5b52559078b94360183637f23b40545b2e9a7ca335918c8dcf549dddd0119ca3"
+            - hub_status: "DISPATCHED"
+            - hub_settlement_domain: "1"
+            - hub_settlement_amount: "199500048000000"
+            - hub_added_tx_nonce: "17271001610005"
+            - hub_added_timestamp: "1727100161"
+            - hub_filled_tx_nonce: null
+            - hub_filled_timestamp: null
+            - hub_settlement_enqueued_tx_nonce: "17271437980011.0"
+            - hub_settlement_enqueued_block_number: "30400.0"
+            - hub_settlement_enqueued_timestamp: "1727143798.0"
+            - hub_settlement_epoch: "173478.0"
+            - hub_update_virtual_balance: null
+            - status: "DISPATCHED_HUB"
+            - has_calldata: "false"
+            - hub_auto_id: "39577"
+            - uploaded_at: "2024-10-13 15:00:14.017133 UTC"
+      - name: invoices
+        description: >
+          Contains data about invoices on the Everclear protocol.
+          Sample data:
+            - id: "0x3684af75510a3e63f86b90a625d44da5191f2eed2183a3e6de11581cafb21de7"
+            - origin_queue_idx: "69"
+            - origin_message_id: "0x0b11e71faba96be86461601d570677edba325d5d71560d7469acd5ed100ee66b"
+            - origin_status: "DISPATCHED"
+            - origin_initiator: "0x000000000000000000000000578d3667492127915e50afcf4e47b4233ec531da"
+            - origin_receiver: "0x000000000000000000000000578d3667492127915e50afcf4e47b4233ec531da"
+            - origin_input_asset: "0x0000000000000000000000000b2c639c533813f4aa9d7837caf62653d097ff85"
+            - origin_output_asset: "0x000000000000000000000000af88d065e77c8cc2239327c5edb3a432268e5831"
+            - origin_amount: "1000000000000000000"
+            - origin_max_fee: "0"
+            - origin_origin: "10"
+            - origin_destinations: "[\u002742161\u0027]"
+            - origin_ttl: "0"
+            - origin_nonce: "69"
+            - origin_data: "0x00"
+            - origin_transaction_hash: "0xa322fe5edbe33d3e7419baab6f6bea4f00687fd81abfe19f40a6594e9a6908e3"
+            - origin_timestamp: "1726829303"
+            - origin_block_number: "125615263"
+            - origin_gas_limit: "139776"
+            - origin_gas_price: "6783883"
+            - origin_tx_origin: "0x578d3667492127915e50afcf4e47b4233ec531da"
+            - origin_tx_nonce: "17268293030021"
+            - origin_auto_id: "23530"
+            - hub_invoice_id: "0x5b360f411fd53aa3dc72878e94b1b5786f5e4ccbbd12ff9e9f6c93bc2f8dd9cb01000000"
+            - hub_invoice_intent_id: "0x3684af75510a3e63f86b90a625d44da5191f2eed2183a3e6de11581cafb21de7"
+            - hub_invoice_amount: "1008379152000000000"
+            - hub_invoice_ticker_hash: "0xd6aca1be9729c13d677335161321649cccae6a591554772516700f986f942eaa"
+            - hub_invoice_owner: "0x000000000000000000000000578d3667492127915e50afcf4e47b4233ec531da"
+            - hub_invoice_entry_epoch: "173261"
+            - hub_invoice_enqueued_tx_nonce: "17268295830001"
+            - hub_invoice_enqueued_timestamp: "1726829583"
+            - hub_invoice_auto_id: "4097"
+            - hub_status: "DISPATCHED"
+            - hub_settlement_epoch: "173280.0"
+            - uploaded_at: "2024-10-13 15:00:11.208601 UTC"

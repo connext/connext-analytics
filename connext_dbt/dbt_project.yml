@@ -28,3 +28,6 @@ models:
     dbt_profiler:
       +materialized: view
       +schema: profiles
+    everclear:
+      +materialized: view
+      +schema: everclear

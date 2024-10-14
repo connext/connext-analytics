@@ -5,6 +5,37 @@ sources:
     database: mainnet-bigq
     schema: dune
     tables:
+      - name: all_everclear_tokens_prices
+        description: >
+          Contains hourly token pricing data for all Everclear tokens.
+          Sample data:
+            - minute: "2024-10-14 05:35:00.000 UTC",
+            - blockchain: "ethereum",
+            - contract_address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            - decimals: "6",
+            - symbol: "USDC",
+            - price: "0.999598"
+        columns:
+          - name: minute
+            description: "Timestamp of the pricing data in UTC (e.g., 2024-10-14 05:35:00.000 UTC)."
+            data_type: string
+          - name: blockchain
+            description: "Name of the blockchain."
+            data_type: string
+          - name: contract_address
+            description: "Address of the token contract."
+            data_type: string
+          - name: decimals
+            description: "Number of decimals of the token."
+            data_type: int64
+          - name: symbol
+            description: "Symbol of the token."
+            data_type: string
+          - name: price
+            description: "Price of the token."
+            data_type: float64
+            
+
       - name: stargate_v2_txs_v0
         description: >
           Contains data about transactions on the Stargate v2 protocol.

@@ -1,6 +1,24 @@
 version: 2
 
 seeds:
+  - name: everclear_tokens
+    description: "A seed table containing a list of tokens that are supported by Everclear."
+    columns:
+      - name: asset_name
+        description: "The name of the asset."
+        data_type: STRING
+      - name: symbol
+        description: "The symbol of the asset."
+        data_type: STRING
+      - name: decimals
+        description: "The number of decimals of the asset."
+        data_type: INT64
+      - name: domain_id
+        description: "The domain id of the asset."
+        data_type: INT64
+      - name: address
+        description: "The address of the asset."
+        data_type: STRING
   - name: list_of_tokens_symbols
     description: "A seed table containing a list of token symbols to pull."
     columns:
@@ -41,3 +59,5 @@ seeds:
         data_type: INT64
         data_test:
           - not_null
+  - name: everclear_chains_tokens
+    description: "A seed table containing a list of chains and tokens that are supported by Everclear."

@@ -13,6 +13,7 @@ WITH
             inv.hub_invoice_id,
             inv.hub_invoice_intent_id,
             inv.origin_status,
+            CAST(inv.uploaded_at AS TIMESTAMP) AS updated_at,
             TIMESTAMP_SECONDS(CAST(inv.origin_timestamp AS INT64)) AS origin_timestamp,
             inv.hub_status,
             CAST(inv.hub_invoice_entry_epoch AS INT64) AS hub_invoice_entry_epoch,
@@ -33,6 +34,7 @@ WITH
     ),
     semi_raw AS (
         SELECT 
+            r.updated_at,
             r.id,
             r.hub_invoice_id,
             r.hub_invoice_intent_id,

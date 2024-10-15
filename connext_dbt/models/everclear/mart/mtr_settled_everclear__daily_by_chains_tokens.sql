@@ -1,6 +1,7 @@
 WITH settled AS (
 
     SELECT 
+        i.updated_at,
         DATE_TRUNC(i.origin_timestamp, DAY) AS day,
         i.from_chain_id,
         i.from_chain_name,
@@ -36,10 +37,13 @@ WITH settled AS (
         6,
         7,
         8,
-        9
+        9,
+        10
     )
 
-SELECT day,
+SELECT 
+    updated_at,
+    day,
     from_chain_id,
     from_chain_name,
     from_asset_address,

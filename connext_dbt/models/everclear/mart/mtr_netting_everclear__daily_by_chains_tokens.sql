@@ -1,6 +1,6 @@
 WITH netted AS (
 SELECT
-
+    i.updated_at,
     DATE_TRUNC(i.origin_timestamp, DAY) AS day,
     i.from_chain_id,
     i.from_chain_name,
@@ -28,7 +28,7 @@ LEFT JOIN {{ref('cln_invoices')}} inv
 WHERE inv.id IS NULL
     AND i.status = 'SETTLED_AND_COMPLETED'
     AND i.hub_status != 'DISPATCHED_UNSUPPORTED'
-GROUP BY 1,2,3,4,5,6,7,8,9
+GROUP BY 1,2,3,4,5,6,7,8,9,10
 )
 
 SELECT * FROM netted

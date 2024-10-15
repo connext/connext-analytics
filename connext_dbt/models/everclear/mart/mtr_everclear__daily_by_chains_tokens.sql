@@ -1,5 +1,7 @@
 SELECT 
+    
     -- groups
+    COALESCE(n.updated_at, s.updated_at) AS updated_at,
     COALESCE(n.day, s.day) AS day,
     COALESCE(n.from_chain_id, s.from_chain_id) AS from_chain_id,
     COALESCE(n.from_chain_name, s.from_chain_name) AS from_chain_name,

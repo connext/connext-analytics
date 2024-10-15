@@ -4,6 +4,7 @@
 
 
 SELECT
+    si.updated_at,
     si.id,
     si.status,
     si.hub_status,
@@ -31,11 +32,13 @@ SELECT
     p.price AS to_asset_price,
     p.price * si.to_asset_amount AS to_asset_amount_usd,
     -- misc
+    si.hub_added_timestamp,
+    si.hub_settlement_enqueued_timestamp,
     si.fee_value,
     si.hub_settlement_enqueued_timestamp_epoch,
-    si.hub_added_timestamp_epoch
+    si.hub_added_timestamp_epoch,
+    p.price * si.hub_settlement_amount AS hub_settlement_amount_usd
 
-    -- amounts in usd
     
     
 FROM {{ ref("stg_intents") }} si

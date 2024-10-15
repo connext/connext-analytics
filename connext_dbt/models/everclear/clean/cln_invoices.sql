@@ -1,5 +1,5 @@
 SELECT
-
+    siv.updated_at,
     siv.id,
     siv.hub_invoice_id,
     siv.hub_invoice_intent_id,

@@ -1,0 +1,117 @@
+version: 2
+
+models:
+  - name: mtr_everclear__daily_by_chains_tokens
+    description: "Summary of netting and settlement activity between different chains and assets, including metrics related to volume, intents, revenue, and discounts."
+
+    columns:
+      - name: updated_at
+        description: "Timestamp when the pipeline, updated the data"
+        data_type: timestamp
+        data_tests:
+          - not_null
+      - name: day
+        description: "Date of the netting activity (UTC)."
+        data_type: date
+        data_tests:
+          - not_null
+      - name: from_chain_id
+        description: "Chain ID of the originating chain for the asset transfer."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: from_chain_name
+        description: "Name of the originating chain for the asset transfer."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: from_asset_address
+        description: "Address of the asset on the originating chain."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: from_asset_symbol
+        description: "Symbol of the asset on the originating chain."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: to_chain_id
+        description: "Chain ID of the destination chain for the asset transfer."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: to_chain_name
+        description: "Name of the destination chain for the asset transfer."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: to_asset_address
+        description: "Address of the asset on the destination chain."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: to_asset_symbol
+        description: "Symbol of the asset on the destination chain."
+        data_type: string
+        data_tests:
+          - not_null
+      - name: netting_total_intents
+        description: "Total number of intents (transaction attempts) processed during the netting operation."
+        data_type: float64
+      - name: netting_avg_time_in_hrs
+        description: "Average time taken to process the intents during the netting operation, measured in hours."
+        data_type: float64
+      - name: netting_volume_usd
+        description: "Total volume of the netting operation, denominated in USD."
+        data_type: float64
+      - name: netting_avg_intent_size_usd
+        description: "Average size of each intent in USD during the netting operation."
+        data_type: float64
+      - name: netting_protocol_revenue_usd
+        description: "Total protocol revenue generated from the netting operation, denominated in USD."
+        data_type: float64
+      - name: volume_settled_by_mm_usd
+        description: "Total volume settled by the market maker, denominated in USD."
+        data_type: float64
+      - name: total_intents_by_mm
+        description: "Total number of intents processed by the market maker."
+        data_type: float64  
+      - name: discounts_by_mm_usd
+        description: "Total amount of discounts provided by the market maker, denominated in USD."
+        data_type: float64
+      - name: avg_discounts_by_mm_usd
+        description: "Average discount provided per transaction by the market maker, denominated in USD."
+        data_type: float64
+      - name: rewards_for_invoices_usd
+        description: "Total rewards paid for invoices, denominated in USD."
+        data_type: float64
+      - name: avg_rewards_by_invoice_usd
+        description: "Average reward paid per invoice, denominated in USD."
+        data_type: float64
+      - name: avg_settlement_time_in_hrs_by_mm
+        description: "Average settlement time taken by the market maker, measured in hours."
+        data_type: float64  
+      - name: apy
+        description: "Annual Percentage Yield (APY) for the operation."
+        data_type: float64
+      - name: avg_discount_epoch_by_mm
+        description: "Average discount epoch provided by the market maker."
+        data_type: float64 
+      - name: total_volume_usd
+        description: "Total volume involved in the operation, denominated in USD."
+        data_type: float64
+      - name: total_intents
+        description: "Total number of intents processed during the operation."
+        data_type: float64
+        data_tests:
+          - not_null
+      - name: total_protocol_revenue_usd
+        description: "Total protocol revenue generated from the entire operation, denominated in USD."
+        data_type: float64
+        data_tests:
+          - not_null
+      - name: total_rebalancing_fee_usd
+        description: "Total rebalancing fee paid during the operation, denominated in USD."
+        data_type: float64
+        data_tests:
+          - not_null

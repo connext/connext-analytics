@@ -46,12 +46,6 @@ SELECT
     inv.hub_settlement_epoch,
     inv.hub_invoice_amount_usd,
 
-    -- calculation and flags
-    CASE 
-        WHEN inv.id IS NULL 
-        THEN (10000 * (i.from_asset_amount_usd - i.to_asset_amount_usd) / i.from_asset_amount_usd)
-        ELSE NULL
-    END AS discount_bps_rebalancer,
     CASE 
         WHEN inv.id IS NOT NULL AND i.hub_status IN ('DISPATCHED', 'SETTLED')
         THEN (
@@ -84,20 +78,13 @@ SELECT *,
         WHEN discount_bps_mm >= 4.0 AND discount_bps_mm < 4.8 THEN '4.0 - 4.8'
         ELSE '4.8.0+'
     END AS discount_bucket,
-    CASE
-        WHEN discount_bps_rebalancer = 0 THEN 'netted'
-        ELSE 'market_maker_filled'
-    END AS netted_flag_discount_0,
-    CASE
-        WHEN discount_bps_rebalancer = 0
-        AND settlement_duration_minutes <= 1440 THEN 'netted in 24hrs'
-        ELSE 'not netted in 24hrs'
-    END AS netted_in_24hrs,
     case
     when settlement_duration_minutes <= 360 then 'settled within 6hrs'
     else 'settled in greater than 6hrs'
     end as settled_in_6hrs_flag,
     -- rebalancer_fee_usd
-    protocol_revenue_usd + discounts_by_mm_usd AS rebalancing_fee_usd
+    protocol_revenue_usd + discounts_by_mm_usd AS rebalancing_fee_usd,
+    -- discount_bps_rebalancer
+    (10000 * (protocol_revenue_usd + discounts_by_mm_usd) / from_asset_amount_usd) AS discount_bps_rebalancer
 
 FROM final

@@ -11,7 +11,7 @@ WITH daily_metrics AS (
         DATE_TRUNC(ii.settlement_timestamp, DAY) AS day,
         SUM(ii.from_asset_amount_usd) AS volume_usd,
         AVG(ii.discount_bps_rebalancer) AS avg_rebalancing_fee_bps,
-        SUM(ii.rebalancing_fee_usd) AS rebalancing_fee_usd,
+        AVG(ii.rebalancing_fee_usd) AS avg_rebalancing_fee_usd,
         
         -- avg. time to settlement in hrs -> only for mmarket Makers
         AVG(CASE WHEN ii.invoice_intent_id IS NOT NULL 
@@ -41,7 +41,7 @@ WITH daily_metrics AS (
 SELECT
     dm.day,
     dm.volume_usd,
-    dm.rebalancing_fee_usd,
+    dm.avg_rebalancing_fee_usd,
     dm.avg_rebalancing_fee_bps,
     dm.avg_settlement_time_hrs,
     dm.pct_intents_settled_within_6hrs,

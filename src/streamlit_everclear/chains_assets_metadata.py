@@ -70,9 +70,10 @@ class ChainsAssetsMetadata:
         print(f"Data has been saved to '{filepath}'.")
 
 
-# if __name__ == "__main__":
-#     metadata_scraper = ChainsAssetsMetadata(
-#         url="https://docs.everclear.org/resources/contracts/mainnet"
-#     )
-#     df_assets = metadata_scraper.pull_registered_assets_data()
-#     print(df_assets)
+if __name__ == "__main__":
+    metadata_scraper = ChainsAssetsMetadata(
+        url="https://docs.everclear.org/resources/contracts/mainnet"
+    )
+    df_assets = metadata_scraper.pull_registered_assets_data()
+    print(df_assets)
+    metadata_scraper.save_to_csv(df_assets, "data/everclear_tokens.csv")

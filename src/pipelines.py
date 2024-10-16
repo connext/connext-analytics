@@ -1,7 +1,7 @@
+import requests
+import pickle
 import asyncio
-import json
 import logging
-import re
 from pprint import pprint
 
 import dlt
@@ -9,6 +9,7 @@ import nest_asyncio
 import pandas as pd
 import pandas_gbq
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.integrations.arb_distribution_mode_metis_upload_2_bq import (
     main as arb_distribution_mode_metis_upload_2_bq_main,
@@ -41,13 +42,36 @@ from src.integrations.utilities import (
 
 from src.integrations.dune_txs import get_all_everclear_tokens_prices_pipeline
 from src.integrations.everclear_pg import everclear_pg_2_bq
-
+from src.integrations.everclear_metrics_api import (
+    metrics_daily,
+    metric_rebalancing_fee_usd,
+    metric_volume_usd,
+    metric_avg_rebalancing_fee_bps,
+    metric_avg_settlement_time_hrs,
+    metric_pct_intents_settled_within_6hrs,
+    metric_pct_intents_netted_in_24hrs,
+)
 
 logging.basicConfig(level=logging.INFO)
 nest_asyncio.apply()
 
+origins = [
+    "https://explorer.everclear.org",
+    "https://staging.explorer.everclear.org",
+    "https://testnet-staging.explorer.everclear.org",
+    "https://testnet.explorer.everclear.org",
+]
+
 app = FastAPI(
-    title="CONNEXT DATA Integration", description="Pipline that run data integrations"
+    title="CONNEXT DATA Integration", description="Pipeline that run data integrations"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -321,3 +345,38 @@ def everclear_pipeline():
 
     logging.info("Everclear pipeline completed")
     return {"message": "Pipeline completed"}
+
+
+@app.get("/everclear/metrics/metrics_daily")
+def everclear_daily_metrics():
+    return metrics_daily()
+
+
+@app.get("/everclear/metrics/rebalancing_fee_usd")
+def everclear_rebalancing_fee_bps():
+    return metric_rebalancing_fee_usd()
+
+
+@app.get("/everclear/metrics/volume_usd")
+def everclear_volume_usd():
+    return metric_volume_usd()
+
+
+@app.get("/everclear/metrics/avg_rebalancing_fee_bps")
+def everclear_avg_rebalancing_fee_bps():
+    return metric_avg_rebalancing_fee_bps()
+
+
+@app.get("/everclear/metrics/avg_settlement_time_hrs")
+def everclear_avg_settlement_time_hrs():
+    return metric_avg_settlement_time_hrs()
+
+
+@app.get("/everclear/metrics/pct_intents_settled_within_6hrs")
+def everclear_pct_intents_settled_within_6hrs():
+    return metric_pct_intents_settled_within_6hrs()
+
+
+@app.get("/everclear/metrics/pct_intents_netted_in_24hrs")
+def everclear_pct_intents_netted_in_24hrs():
+    return metric_pct_intents_netted_in_24hrs()

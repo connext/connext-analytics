@@ -304,4 +304,3 @@ FROM netted_final n
 )
 
 SELECT * FROM final
-WHERE day = '2024-10-11'
